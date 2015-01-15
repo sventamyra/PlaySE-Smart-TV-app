@@ -5,6 +5,7 @@ var spinner;
 var buff;
 var nowPlaying;
 var language;
+var html;
 var gurl = "";
 var isLive = 0;
 var airTime = 0;
@@ -69,7 +70,7 @@ Details.Prepare = function(){
 
     // if(isLive > 0){
     //     var url= "http://188.40.102.5/CurrentTime.ashx";
-    //     alert(url);
+    //     Log(url);
     //     $.support.cors = true;
     //     $.ajax(
     //         {
@@ -80,12 +81,12 @@ Details.Prepare = function(){
     //     	retryLimit : 3,
     //     	success: function(data)
     //     	{
-    //     	    alert('Success prepare');
+    //     	    Log('Success prepare');
     //     	    currentTime = +($(data).find('CurrentTime').text());
-    //     	    alert("currentTime=" + currentTime);
+    //     	    Log("currentTime=" + currentTime);
     //     	    if(airTime > currentTime){
     //     		countd = airTime - currentTime + 60;
-    //     		alert("countd = " + countd);
+    //     		Log("countd = " + countd);
     //     		downCounter = setInterval(Details.CountDown, 1000); 
     //     	    }
     //     	    else{
@@ -105,7 +106,7 @@ Details.Prepare = function(){
     //                     return;
     //                 }
     //                 else{
-    //             	alert('Failure');
+    //             	Log('Failure');
     //             	ConnectionError.show();
     //                 }
 	            
@@ -172,7 +173,7 @@ Details.GetPlayUrl = function(){
 			if(key == 'video'){
 				
 				for (var i = 0; i < val.videoReferences.length; i++) {
-				    alert(val.videoReferences[i].url);
+				    Log(val.videoReferences[i].url);
 				    videoUrl = val.videoReferences[i].url;
 				    if(videoUrl.indexOf('.m3u8') >= 0){
 				    	break;
@@ -180,7 +181,7 @@ Details.GetPlayUrl = function(){
 				}
                                 srtUrl="";
                                 for (var i = 0; i < val.subtitleReferences.length; i++) {
-				    alert(val.subtitleReferences[i].url);
+				    Log(val.subtitleReferences[i].url);
 				    srtUrl = val.subtitleReferences[i].url;
                                     if (srtUrl.length > 0){
 				    	break;
@@ -192,10 +193,13 @@ Details.GetPlayUrl = function(){
 				    Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
 				}
 				else{
-				    Player.stopCallback();	
+		                    Player.setVideoURL(videoUrl, srtUrl);
+		                    Player.playVideo();
+                                    
+				    // Player.stopCallback();	
 					
 				// 	gurl = gurl + '?type=embed';
-				// 	alert(gurl);
+				// 	Log(gurl);
 				// 	widgetAPI.runSearchWidget('29_fullbrowser', gurl);
 				// //	$('#outer').css("display", "none");
 				// //	$('.video-wrapper').css("display", "none");
@@ -217,8 +221,7 @@ Details.loadXml = function(){
         url = "http://www.svtplay.se" + url
     var playDirectly = document.location.href.search("\\?play") != -1;
 
-    alert(url);
-    alert(playDirectly);
+    Log(playDirectly);
     $.support.cors = true;
     $.ajax(
         {
@@ -227,9 +230,11 @@ Details.loadXml = function(){
 	    timeout: 15000,
 	    tryCount : 0,
 	    retryLimit : 3,
-            success: function(data)
+            success: function(data, status, xhr)
             {
-                alert('Success:' + this.url);
+                Log('Success:' + this.url);
+                data = xhr.responseText.split("<section class=\"play_js-tabs")[0]
+                data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
 
                 var Name;
 		var DetailsImgLink;
@@ -239,7 +244,6 @@ Details.loadXml = function(){
 		var Description;
 		var onlySweden;
                 var isLive = false;
-
 
                 if (this.url.indexOf("/kanaler/") > -1) {
                     var $video = $(data).find('div').filter(function() {
@@ -259,24 +263,53 @@ Details.loadXml = function(){
                     Name = Name + " - " + $($info.children()[0]).text();
                     VideoLength = $($($info.find('p')[1]).children()[1]).text();
 		    Description = $($info.find('p')[0]).text();
-                    DetailsPlayTime = tsToClock($info.find('div').filter(function() {
+                    var timeData = $info.find('div').filter(function() {
                         if ($(this).attr('data-starttime'))
                             return true;
                         else 
                             return false;
-                    }).attr('data-starttime')*1);
+                    });
+                    DetailsPlayTime = tsToClock(timeData.attr('data-starttime')*1) + "-" +
+                        tsToClock(timeData.attr('data-endtime')*1);
 
-                } else if (url.indexOf("oppetarkiv") == -1) {
+                } else if (url.indexOf("oppetarkiv") > -1) {
+                    Name = $($(data).find('img')[1]).attr('alt');
+                    // Log("Name:" + Name);
+		    DetailsImgLink = $($(data).find('img')[1]).attr('data-imagename');
+		    DetailsPlayTime = $($(data).find('strong')[0]).text();
+                    VideoLength = $($(data).find('strong')[1]).text();
+
+                    Description = $(data).find('div').filter(function() {
+                        return $(this).attr('class') == "svt-text-bread svt-text-margin-large";
+                    }).text();
+
+		    onlySweden = ($(data).find('span').filter(function() {
+                        return $(this).attr('class') == "svtoa-icon-geoblock svtIcon";
+                    }).length > 0);
+
+
+                } else {;
                     var $video = $(data).find('div').filter(function() {
                         return $(this).attr('class') == "play_container";
                     });
-
                     if ($video.find('section').find('a').attr('data-livestart'))
 		        isLive = true;
 
                     Name = $($video.find('h1')[0]).text().trim();
 		    DetailsImgLink = $video.find('img').attr('data-imagename');
-		    DetailsPlayTime = $video.find('time').text();
+                    // Log(DetailsImgLink);
+                    var DetailsClock = "";
+                    try {
+                        DetailsClock = $video.find('li').find('time').attr('datetime').replace(/.+T([^+]+)+.+/, "$1"); 
+                    } catch(err) {
+                        Log("Exception:" + err.message);
+                    }
+                    DetailsPlayTime = $video.find('li').find('time').text();
+                    // Log(DetailsPlayTime);
+                    // Log(DetailsClock);
+                    if (DetailsPlayTime.indexOf(DetailsClock.replace(":", ".")) == -1)
+                        DetailsPlayTime  = DetailsPlayTime + " " + DetailsClock;
+                    
                     if (isLive) {
                         var duration = $video.find('section').find('a').attr('data-length');
                         var hours = Math.floor(duration/3600);
@@ -294,33 +327,20 @@ Details.loadXml = function(){
                             VideoLength = VideoLength + seconds + " sek"
                         }                        
                     } else {
-		        AvailDate  = $($video.find('p')[1]).text().replace("Tillgänglig till ", "");
+		        AvailDate  = $video.find('p').filter(function() {
+                            return $(this).text().indexOf("Tillgänglig till") > -1;
+                        }).text().replace(/.*Tillgänglig till /, "");
                         VideoLength = $video.find('h2').html().replace(/.+span> /,"");
                     }
 		    Description = $($video.find('p')[0]).text();
 		    onlySweden = $video.find('section').find('a').attr('data-only-available-in-sweden');
-
-                } else {
-                    Name = $($(data).find('img')[1]).attr('alt');
-		    DetailsImgLink = $($(data).find('img')[1]).attr('data-imagename');
-		    DetailsPlayTime = $($(data).find('strong')[0]).text();
-                    VideoLength = $($(data).find('strong')[1]).text();
-
-                    Description = $(data).find('div').filter(function() {
-                        return $(this).attr('class') == "svt-text-bread svt-text-margin-large";
-                    }).text();
-
-		    onlySweden = ($(data).find('span').filter(function() {
-                        return $(this).attr('class') == "svtoa-icon-geoblock svtIcon";
-                    }).length > 0);
                 }
-                // alert("Name:" + Name);
-                // alert("DetailsImgLink:" + DetailsImgLink);
-                // alert("Description:" + Description);
-                // alert("DetailsPlayTime:" + DetailsPlayTime);
-                // alert("VideoLength:" + VideoLength);
-                // alert("onlySweden:" + onlySweden);
-
+                // Log("Name:" + Name);
+                // Log("DetailsImgLink:" + DetailsImgLink);
+                // Log("Description:" + Description);
+                // Log("DetailsPlayTime:" + DetailsPlayTime);
+                // Log("VideoLength:" + VideoLength);
+                // Log("onlySweden:" + onlySweden);
 
 		if(Language.getisSwedish()){
 		    nowPlaying='Nu visas';
@@ -331,11 +351,10 @@ Details.loadXml = function(){
 		}
 
                 Details.duration = VideoLength;
-                // alert('JTDEBUG:Details.duration set:' + Details.duration);
 
                 airTime = DetailsPlayTime;
-		// alert("isLive=" + isLive);
-		// alert("airTime=" + airTime);
+		// Log("isLive=" + isLive);
+		// Log("airTime=" + airTime);
 		if (onlySweden != "false" && onlySweden != false) {
 		    //proxy = 'http://playse.kantaris.net/?mode=native&url=';
 		    $.getJSON( "http://smart-ip.net/geoip-json?callback=?",
@@ -351,7 +370,7 @@ Details.loadXml = function(){
 		    Name = Name.substring(0, 47)+ "...";
 		}
 		$('.topoverlaybig').html(nowPlaying+': ' + Name);////
-		var html = '<div class="project-text">';
+		html = '<div class="project-text">';
 		html+='<div class="project-name">';
 		html+='<h1>'+Name+'</h1>';
 		html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+DetailsPlayTime+'</a></div>';
@@ -367,12 +386,13 @@ Details.loadXml = function(){
                 html+='</div>';
 		html+='<img class="imagestyle" src="'+DetailsImgLink+'" alt="Image" />';
             	$('#projdetails').html(html);
+                html = null;
 		
 		Language.setDetailLang();
 
                 if (playDirectly)
                     Details.startPlayer();
-                    
+                data = null;       
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -386,7 +406,7 @@ Details.loadXml = function(){
                     return;
                 }
         	else{
-        	    alert('Failure');
+        	    Log('Failure');
         	    ConnectionError.show();
         	}
                 
@@ -442,7 +462,9 @@ Details.startPlayer = function()
 
 function tsToClock(ts)
 {
-    var time = new Date(ts *1);
+    if ((ts*1) == ts)
+        ts = ts*1;
+    var time = new Date(ts);
     var hour = time.getHours();
     var minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;
@@ -452,4 +474,14 @@ function tsToClock(ts)
 
 String.prototype.trim = function () {
     return this.replace(/^\s*/, "").replace(/\s*$/, "");
+};
+
+function Log(msg) 
+{
+    // logXhr = new XMLHttpRequest();
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // logXhr.send();
+    // logXhr.destroy();
+    // logXhr = null;
+    alert(msg);
 };

@@ -5,7 +5,19 @@ var fired = false;
 var itemCounter = 0;
 var columnCounter = 0;
 var language;
+var html;
+var mainData;
+var $tmpData;
+var $video; 
+var Name;
+var Link;
+var Description;
+var ImgLink;
+var Live;
+var starttime;
 var result="error";
+var i;
+var chunk_length;
 var Main =
 {
 
@@ -46,18 +58,54 @@ Main.loadXml = function(){
         tryCount : 0,
         retryLimit : 3,
 	timeout: 15000,
-        success: function(data)
+        success: function(data, status, xhr)
         {
-            alert('Success:' + this.url);
-            $(data).find('article').each(function(){
-	        var $video = $(this); 
-                var Name = $video.attr('data-title');
-		var Link = $video.find('a').attr('href');
-		var Description = $video.attr('data-description');
-	        var ImgLink  = $video.find('img').attr('data-imagename');
-		var Live = $video.find('Live').text();
-		var starttime = $video.find('Startime').text();
-		var html;
+            Log('Success:' + this.url);
+            data = xhr.responseText.split("</article>");
+            data.pop();
+            mainData = data;
+            data = null;
+            i = 0;
+            chunk_length = mainData.length;
+            decode_data();
+            Log("itemCounter:" + itemCounter);
+        },
+        error: function(XMLHttpRequest, textStatus, errorThrown)
+        {
+          	if (textStatus == 'timeout') {
+                this.tryCount++;
+                if (this.tryCount <= this.retryLimit) {
+                    //try again
+                    $.ajax(this);
+                    return;
+                }            
+                return;
+            }
+        	else{
+        		Log('Failure:' + textStatus);
+        		ConnectionError.show();
+        	}
+         
+        }
+    });
+};
+
+function decode_data() {
+    try {
+        for (; i < mainData.length;) {
+            // Log("working on " + i + " to " + (i+chunk_length));
+            $tmpData = "<div id=\"crap" + mainData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            // Log("slice done:" + $tmpData.length);
+            $tmpData = $($tmpData).find('article');
+            // Log('articles found:' + $tmpData.length);
+            $tmpData.each(function(){
+	        $video = $(this); 
+                Name = $video.attr('data-title');
+		Link = $video.find('a').attr('href');
+		Description = $video.attr('data-description');
+	        ImgLink  = $video.find('img').attr('data-imagename');
+		Live = $video.find('Live').text();
+		starttime = $video.find('Startime').text();
 
 		if(Description.length > 47){
 		    Description = Description.substring(0, 47)+ "...";
@@ -96,26 +144,30 @@ Main.loadXml = function(){
 		else{
 		    $('#bottomRow').append($(html));
 		}
-		itemCounter++;
+	        html = null;
+                i++;
+	        itemCounter++;
 	    });
-        },
-        error: function(XMLHttpRequest, textStatus, errorThrown)
-        {
-          	if (textStatus == 'timeout') {
-                this.tryCount++;
-                if (this.tryCount <= this.retryLimit) {
-                    //try again
-                    $.ajax(this);
-                    return;
-                }            
-                return;
-            }
-        	else{
-        		alert('Failure:' + textStatus);
-        		ConnectionError.show();
-        	}
-         
+            if (i == 0)
+                break;
         }
-    });
+    } catch(err) {
+        // Probably "script stack space quota is exhausted", try smaller chunk
+        Log("decode_data Exception:" + err.message + " chunk_length:" + chunk_length);
+        if (chunk_length > 1) {
+            chunk_length = Math.floor(chunk_length/2);
+            Log("retry with chunk_length:" + chunk_length);
+            decode_data();
+        }
+    }
 };
 
+function Log(msg) 
+{
+    // logXhr = new XMLHttpRequest();
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // logXhr.send();
+    // logXhr.destroy();
+    // logXhr = null;
+    alert(msg);
+};

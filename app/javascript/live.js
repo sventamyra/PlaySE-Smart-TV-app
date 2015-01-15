@@ -6,6 +6,24 @@ var itemSelected;
 var itemCounter = 0;
 var columnCounter = 0;
 var language;
+var html;
+var BaseUrl;
+var $video;
+var articles;
+var liveData;
+var $tmpData;
+var Name;
+var Link;
+var ImgLink;
+var starttime;
+var endtime;
+var running;
+var time;
+var hour;
+var minutes;
+var logXhr;
+var i;
+var chunk_length;
 var live =
 {
 
@@ -21,9 +39,9 @@ live.onLoad = function()
 	ConnectionError.init();
 	Language.setLang();
 	Resolution.displayRes();
-	this.getJson();
-	
-	//this.loadXml();
+        this.getChannelsJson();
+	this.getLiveJson();
+    	//this.loadXml();
 	
 	// Enable key event processing
 	Buttons.enableKeys();
@@ -47,13 +65,13 @@ function getimg(param,arr)
 	for(var i=0;i<arr.length;i++)
 		{
 		
-		alert(arr[i].title);
-		alert(param);
+		Log(arr[i].title);
+		Log(param);
 	       if(arr[i].title.indexOf(param)==0||param.indexOf(arr[i].title)==0)
 			
 			{ 
 	    	   
-	    	   alert(arr[i].thumbnail);
+	    	   Log(arr[i].thumbnail);
 			
 			return arr[i].thumbnail;
 		
@@ -66,16 +84,10 @@ function getimg(param,arr)
 	return ;
 	
 };
-	
 
-
-
-
-live.getJson = function(){
-    var html;
+live.getChannelsJson = function() {
     $.support.cors = true; 
 
-    // CHANNELS
     $.ajax(
         {
             type: 'GET',
@@ -84,58 +96,63 @@ live.getJson = function(){
             tryCount : 0,
             retryLimit : 3,
 	    timeout: 15000,
-            success: function(data)
+            async: false,
+            success: function(data, status, xhr)
             {
-                var BaseUrl = this.url;
-                alert('Success:' + this.url);
-	        
+                BaseUrl = this.url;
+                Log('Success:' + this.url);
+                data = xhr.responseText.split("<div class=\"play_channel-schedules\"")[0];
 	        $(data).find('div').filter(function() {
                     return $(this).attr('class').indexOf("play_channels__active-video-info") > -1;
                 }).each(function(){
-
-		    var $video = $(this); 
-                    var Name = $video.attr('data-channel');
-	            var Link = BaseUrl + '/' + Name;
-                    // alert("Link:" + Link);
-	            var ImgLink  = GetChannelThumb(BaseUrl, Name);
-                    // alert("ImgLink:" + ImgLink);
-                    var starttime = tsToClock($video.find('div').filter(function() {
+                    
+		    $video = $(this); 
+                    Name = $video.attr('data-channel');
+	            Link = BaseUrl + '/' + Name;
+                    // Log("Link:" + Link);
+	            ImgLink  = GetChannelThumb(BaseUrl, Name);
+                    // Log("ImgLink:" + ImgLink);
+                    starttime = tsToClock($video.find('div').filter(function() {
                         if ($(this).attr('data-starttime'))
                             return true;
                         else 
                             return false;
                     }).attr('data-starttime')*1);
-                    Name = Name + ' - ' + starttime  + " " + $($video.children()[0]).text();
-		    if(Name.length<80)
-		    {
-		        if(itemCounter % 2 == 1){
-			    html = '<div class="scroll-content-item topitem">';
-		        }
-		        else{
-			    html = '<div class="scroll-content-item bottomitem">';
-		        }
-		        
-		        
-		        html += '<div class="scroll-item-img">';
-		        html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + '/' + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
-		        html += '</div>';
-		        html += '<div class="scroll-item-name">';
-		        html +=	'<p><a href="#">' + Name + '</a></p>';
-		        html += '</div>';
-		        html += '</div>';
-		        
-		        if(itemCounter % 2 == 1){
-			    $('#topRow').append($(html));
-		        }
-		        else{
-			    $('#bottomRow').append($(html));
-		        }
-		        
-		        itemCounter++;
+                    endtime = tsToClock($video.find('div').filter(function() {
+                        if ($(this).attr('data-endtime'))
+                            return true;
+                        else 
+                            return false;
+                    }).attr('data-endtime')*1);
+                    Name = starttime + "-" + endtime  + " " + $($video.children()[0]).text();
+		    if(itemCounter % 2 == 0){
+			html = '<div class="scroll-content-item topitem">';
 		    }
+		    else{
+			html = '<div class="scroll-content-item bottomitem">';
+		    }
+		    
+		    
+		    html += '<div class="scroll-item-img">';
+		    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + '/' + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
+		    html += '</div>';
+		    html += '<div class="scroll-item-name">';
+		    html +=	'<p><a href="#">' + Name + '</a></p>';
+		    html += '</div>';
+		    html += '</div>';
+		    
+		    if(itemCounter % 2 == 0){
+			$('#topRow').append($(html));
+		    }
+		    else{
+			$('#bottomRow').append($(html));
+		    }
+		    html = null;
+                    // Log(Name);
+		    itemCounter++;
+
 	        });
-                // Add Live Shows
-                GetLives(html);
+                data = null;
 	    },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -149,7 +166,7 @@ live.getJson = function(){
                     return;
                 }
         	else{
-        	    alert('Failure');
+        	    Log('Failure');
         	    ConnectionError.show();
         	}
                 
@@ -158,8 +175,8 @@ live.getJson = function(){
 
 };
 
-function GetLives(html)
-{
+live.getLiveJson = function() {
+
     $.support.cors = true; 
     $.ajax(
         {
@@ -169,65 +186,20 @@ function GetLives(html)
             tryCount : 0,
             retryLimit : 3,
 	    timeout: 15000,
-            success: function(data)
+            success: function(data, status, xhr)
             {
-                alert('Success:' + this.url);
-	        
-	        $(data).find('article').each(function(){
 
-		    var $video = $(this); 
-
-                    if ($video.attr('data-broadcastended') == "true")
-                        return true;
-
-                    var Name = $video.attr('data-title');
-	            var Link = $video.find('a').attr('href');
-	            //var Description = $video.find('Description').text();
-	            var ImgLink  = $video.find('img').attr('data-imagename');
-		    var running = $($video.find('figure').find('span')[0]).attr('class').indexOf("play_graphics-live--inactive") == -1;
-		    var starttime = $video.attr('data-broadcaststarttime');
-		    // var endtime = $video.find('Endtime').text();
-		    if(Name.length<80)
-		    {
-		        if(itemCounter % 2 == 1){
-			    html = '<div class="scroll-content-item topitem">';
-		        }
-		        else{
-			    html = '<div class="scroll-content-item bottomitem">';
-		        }
-		        
-		        
-		        html += '<div class="scroll-item-img">';
-		        html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + '/' + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
-		        if(!running){
-			    html += '<span class="topoverlay">LIVE</span>';
-			    // html += '<span class="bottomoverlay">' + starttime + ' - ' + endtime + '</span>';
-			    html += '<span class="bottomoverlay">' + starttime + '</span>';
-		        }
-		        else{
-			    html += '<span class="topoverlayred">LIVE</span>';
-			    // html += '<span class="bottomoverlayred">' + starttime + ' - ' + endtime + '</span>';
-			    html += '<span class="bottomoverlayred">' + starttime + '</span>';
-		        }
-		        html += '</div>';
-		        html += '<div class="scroll-item-name">';
-		        html +=	'<p><a href="#">' + Name + '</a></p>';
-		        //	html += '<span class="item-date">' + Description + '</span>';
-		        html += '</div>';
-		        html += '</div>';
-		        
-		        if(itemCounter % 2 == 1){
-			    $('#topRow').append($(html));
-		        }
-		        else{
-			    $('#bottomRow').append($(html));
-		        }
-		        
-		        itemCounter++;
-		    }
-		    //
-	        });
-	    },
+                Log('Success:' + this.url);
+                data = xhr.responseText.split("</article>");
+                data.pop();
+                // Log("items:" + data.length + ", channels:" + itemCounter);
+                liveData = data;
+                data = null;
+                i = 0;
+                chunk_length = liveData.length;
+                decode_live();
+                Log("itemCounter:" + itemCounter);
+            },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
           	if (textStatus == 'timeout') {
@@ -240,19 +212,19 @@ function GetLives(html)
                     return;
                 }
         	else{
-        	    alert('Failure');
+        	    Log('Failure');
         	    ConnectionError.show();
         	}
                 
             }
         });
-}
+};
 
 function tsToClock(ts)
 {
-    var time = new Date(ts *1);
-    var hour = time.getHours();
-    var minutes = time.getMinutes();
+    time = new Date(ts *1);
+    hour = time.getHours();
+    minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;
     if (minutes < 10) minutes = "0" + minutes;
     return hour + ":" + minutes;
@@ -275,5 +247,84 @@ function GetChannelThumb(url, Name)
     return url + '/public/images/channels/backgrounds/' + Name + '-background.jpg';
 };
 
+function decode_live() {
+    try {
+        for (; i < liveData.length;) {
+            // Log("working on " + i + " to " + (i+chunk_length));
+            $tmpData = "<div id=\"crap" + liveData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            // Log("slice done:" + $tmpData.length);
+            $tmpData = $($tmpData).find('article');
+            // Log('articles found:' + $tmpData.length);
+            $tmpData.each(function(){
+	        $video = $(this); 
 
+                if ($video.attr('data-broadcastended') == "true") {
+                    i++;
+                    return true;
+                }
+
+                Name = $video.attr('data-title');
+	        Link = $video.find('a').attr('href');
+	        //var Description = $video.find('Description').text();
+	        ImgLink  = $video.find('img').attr('data-imagename');
+	        running = $($video.find('figure').find('span')[0]).attr('class').indexOf("play_graphics-live--inactive") == -1;
+	        starttime  = $video.find('img').attr('alt').replace(/([^:]+):.+/, "$1");
+	        if(itemCounter % 2 == 0){
+		    html = '<div class="scroll-content-item topitem">';
+	        }
+	        else{
+		    html = '<div class="scroll-content-item bottomitem">';
+	        }
+	        
+	        
+	        html += '<div class="scroll-item-img">';
+	        html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + '/' + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
+	        if (!running){
+		    html += '<span class="topoverlay">LIVE</span>';
+		    // html += '<span class="bottomoverlay">' + starttime + ' - ' + endtime + '</span>';
+		    html += '<span class="bottomoverlay">' + starttime + '</span>';
+	        }
+	        else{
+		    html += '<span class="topoverlayred">LIVE</span>';
+		    // html += '<span class="bottomoverlayred">' + starttime + ' - ' + endtime + '</span>';
+		    html += '<span class="bottomoverlayred">' + starttime + '</span>';
+	        }
+	        html += '</div>';
+	        html += '<div class="scroll-item-name">';
+	        html +=	'<p><a href="#">' + Name + '</a></p>';
+	        //	html += '<span class="item-date">' + Description + '</span>';
+	        html += '</div>';
+	        html += '</div>';
+	        
+	        if(itemCounter % 2 == 0){
+		    $('#topRow').append($(html));
+	        }
+	        else{
+		    $('#bottomRow').append($(html));
+	        }
+	        html = null;
+                i++;
+	        itemCounter++;
+	    });
+        }
+    } catch(err) {
+        // Probably "script stack space quota is exhausted", try smaller chunk
+        Log("decode_live Exception:" + err.message + " chunk_length:" + chunk_length);
+        if (chunk_length > 1) {
+            chunk_length = Math.floor(chunk_length/2);
+            Log("retry with chunk_length:" + chunk_length);
+            decode_live();
+        }
+    }
+};
+
+function Log(msg) 
+{
+    // logXhr = new XMLHttpRequest();
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // logXhr.send();
+    // logXhr.destroy();
+    // logXhr = null;
+    alert(msg);
+};
 //window.location = 'project.html?ilink=' + ilink;

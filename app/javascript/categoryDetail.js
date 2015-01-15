@@ -3,6 +3,16 @@ var itemCounter = 0;
 var columnCounter = 0;
 var historyPath;
 var language;
+var html;
+var categoryData;
+var $tmpData;
+var $video; 
+var Name;
+var Link;
+var ImgLink;
+var logXhr;
+var i;
+var chunk_length;
 var categoryDetail =
 {
 
@@ -52,32 +62,70 @@ categoryDetail.Geturl=function(){
 
 
 categoryDetail.loadXml = function(){
-	$.support.cors = true;
-	 $.ajax(
-    {
-        type: 'GET',
-        url: this.Geturl(),
-        tryCount : 0,
-        retryLimit : 3,
-		timeout: 15000,
-        success: function(data)
+    $.support.cors = true;
+    $.ajax(
         {
-            alert('Success:' + this.url);
-            var $alphaData = $(data).find('div').filter(function() {
-                return $(this).attr('id') == "playJs-alphabetic-list";
-            });
-            data = null;
-            $alphaData.find('article').each(function(){
-		
-		
-                var $video = $(this); 
-                var Name = $video.attr('data-title');
-                // alert("Name:" + Name);
-	        var Link = "http://www.svtplay.se"+$video.find('a').attr('href');
-	        // alert(Link);
-	        var ImgLink  = $video.find('img').attr('data-imagename');
+            type: 'GET',
+            url: this.Geturl(),
+            tryCount : 0,
+            retryLimit : 3,
+	    timeout: 15000,
+            success: function(data, status, xhr)
+            {
+                Log('Success:' + this.url);
+                // Log("xhr.responseText.length:"+ xhr.responseText.length);
+                // Log("org items:" + $(data).find('article').length);
+                // data = xhr.responseText.split("a id=\"play-navigation-tabs")[1];
+                data = xhr.responseText.split("div id=\"playJs-alphabetic-list")[1];
+                data = data.split("div id=\"playJs-")[0];
+                // Log("data.length:"+ data.length);
+                data = data.split("</article>");
+                data.pop();
+                categoryData = data;
+                data = null;
+                i = 0;
+                chunk_length = categoryData.length;
+                decode_data();
+                Log("itemCounter:" + itemCounter);
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown)
+            {
+          	if (textStatus == 'timeout') {
+                    this.tryCount++;
+                    if (this.tryCount <= this.retryLimit) {
+                        //try again
+                        $.ajax(this);
+                        return;
+                    }            
+                    return;
+                }
+        	else{
+        	    Log('Failure');
+        	    ConnectionError.show();
+        	}
+                
+            }
+        });
+
+};
+
+function decode_data() {
+    try {
+        for (; i < categoryData.length;) {
+            // Log("working on " + i + " to " + (i+chunk_length));
+            $tmpData = "<div id=\"crap" + categoryData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            // Log("slice done:" + $tmpData.length);
+            $tmpData = $($tmpData).find('article');
+            // Log('articles found:' + $tmpData.length);
+            $tmpData.each(function(){
+                $video = $(this); 
+                Name = $video.attr('data-title');
+                // Log("Name:" + Name);
+	        Link = "http://www.svtplay.se"+$video.find('a').attr('href');
+	        // Log("Link:" + Link);
+	        ImgLink  = $video.find('img').attr('data-imagename');
                 if (!ImgLink) ImgLink = $video.find('img').attr('src');
-	        var html;
+	        // Log("ImgLink:" + ImgLink);
 	        if(itemCounter % 2 == 0){
 		    if(itemCounter > 0){
 		        html = '<div class="scroll-content-item topitem">';
@@ -104,30 +152,31 @@ categoryDetail.loadXml = function(){
 	        else{
 		    $('#bottomRow').append($(html));
 	        }
+	        html = null;
+                i++;
 	        itemCounter++;
-	        //
-            });
-        },
-        error: function(XMLHttpRequest, textStatus, errorThrown)
-        {
-          	if (textStatus == 'timeout') {
-                this.tryCount++;
-                if (this.tryCount <= this.retryLimit) {
-                    //try again
-                    $.ajax(this);
-                    return;
-                }            
-                return;
-            }
-        	else{
-        		alert('Failure');
-        		ConnectionError.show();
-        	}
-         
+	    });
+            if (i == 0)
+                break;
         }
-    });
-
+    } catch(err) {
+        // Probably "script stack space quota is exhausted", try smaller chunk
+        Log("decode_data Exception:" + err.message + " chunk_length:" + chunk_length);
+        if (chunk_length > 1) {
+            chunk_length = Math.floor(chunk_length/2);
+            Log("retry with chunk_length:" + chunk_length);
+            decode_data();
+        }
+    }
 };
 
-
+function Log(msg) 
+{
+    // logXhr = new XMLHttpRequest();
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // logXhr.send();
+    // logXhr.destroy();
+    // logXhr = null;
+    alert(msg);
+};
 //window.location = 'showList.html?name=' + ilink + '&history=' + historyPath + iname + '/';

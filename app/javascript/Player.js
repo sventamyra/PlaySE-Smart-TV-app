@@ -70,6 +70,8 @@ Player.init = function()
 
 Player.deinit = function()
 {
+        if (this.plugin)
+            Player.plugin.Stop();
         var mwPlugin = document.getElementById("pluginTVMW");
         
         if (mwPlugin && (this.originalSource != null) )

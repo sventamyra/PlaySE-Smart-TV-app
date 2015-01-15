@@ -2,6 +2,15 @@ var widgetAPI = new Common.API.Widget();
 var itemCounter = 0;
 var columnCounter = 0;
 var historyPath;
+var mainData;
+var showData;
+var $video; 
+var Name;
+var Link;
+var ImgLink;
+var html;
+var i;
+var chunk_length;
 var showList =
 {
 };
@@ -36,7 +45,7 @@ showList.Geturl=function(){
     {
         name = url.substring(url.indexOf("=")+1,url.indexOf("&"));
     }
-    alert(name);
+    Log(name);
     return name;
 };
 
@@ -45,8 +54,8 @@ showList.Geturl=function(){
 
 
 showList.loadXml = function(){
-	
-	$.support.cors = true;
+    
+    $.support.cors = true;
     $.ajax(
         {
             type: 'GET',
@@ -54,26 +63,62 @@ showList.loadXml = function(){
             tryCount : 0,
             retryLimit : 3,
 	    timeout: 15000,
-            success: function(data)
+            success: function(data, status, xhr)
             {
-                alert('Success:' + this.url);
-	
-       
-            $($(data).find('section')[1]).find('article').each(function(){
-		
-                var $video = $(this); 
+                Log('Success:' + this.url);
+                data = xhr.responseText.split("id=\"videos-in-same-category")[0];
+                data = "<div id=\"more-episodes-panel\"" + data.split("id=\"more-episodes-panel")[1];
+                data = data.split("</article>");
+                data.pop();
+                showData = data;
+                data = null;
+                i = 0;
+                chunk_length = showData.length;
+                decode_data();
+                Log("itemCounter:" + itemCounter);
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown)
+            {
+          	if (textStatus == 'timeout') {
+                    this.tryCount++;
+                    if (this.tryCount <= this.retryLimit) {
+                        //try again
+                        $.ajax(this);
+                        return;
+                    }            
+                    return;
+                }
+        	else{
+        	    Log('Failure');
+        	    ConnectionError.show();
+        	}
+                
+            }
+        });
 
-                var Name = $video.find('a').find('span').filter(function() {
+};
+
+function decode_data() {
+    try {
+        for (; i < showData.length;) {
+            // Log("working on " + i + " to " + (i+chunk_length));
+            $tmpData = "<div id=\"crap" + showData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            // Log("slice done:" + $tmpData.length);
+            $tmpData = $($tmpData).find('article');
+            // Log('articles found:' + $tmpData.length);
+            $tmpData.each(function(){
+                $video = $(this); 
+                Name = $video.find('a').find('span').filter(function() {
                     return $(this).attr('class') == "play_videolist-element__title-text";
                 }).text();
                 if (!Name)
                     Name = $video.attr('data-title');
-	        var Link = $video.find('a').attr('href');
-	        //var Description = $video.find('Description').text();
-	        var ImgLink  = $video.find('img').attr('data-imagename');
+                Link = $video.find('a').attr('href');
+                // Log(Link);
+	        // var Description = $video.find('Description').text();
+	        ImgLink  = $video.find('img').attr('data-imagename');
                 if (!ImgLink) ImgLink = $video.find('img').attr('src');
-	        // alert(ImgLink);
-	        var html;
+	        // Log(ImgLink);
 	        if(itemCounter % 2 == 0){
 		    if(itemCounter > 0){
 		        html = '<div class="scroll-content-item topitem">';
@@ -100,32 +145,32 @@ showList.loadXml = function(){
 	        else{
 		    $('#bottomRow').append($(html));
 	        }
-	        
+	        html = null;
+                i++;
 	        itemCounter++;
-	        // alert(Link);
-            });
-        },
-        error: function(XMLHttpRequest, textStatus, errorThrown)
-        {
-          	if (textStatus == 'timeout') {
-                this.tryCount++;
-                if (this.tryCount <= this.retryLimit) {
-                    //try again
-                    $.ajax(this);
-                    return;
-                }            
-                return;
-            }
-        	else{
-        		alert('Failure');
-        		ConnectionError.show();
-        	}
-         
+	    });
+            if (i == 0)
+                break;
         }
-    });
-
+    } catch(err) {
+        // Probably "script stack space quota is exhausted", try smaller chunk
+        Log("decode_data Exception:" + err.message + " chunk_length:" + chunk_length);
+        if (chunk_length > 1) {
+            chunk_length = Math.floor(chunk_length/2);
+            Log("retry with chunk_length:" + chunk_length);
+            decode_data();
+        }
+    }
 };
 
-
+function Log(msg) 
+{
+    // logXhr = new XMLHttpRequest();
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // logXhr.send();
+    // logXhr.destroy();
+    // logXhr = null;
+    alert(msg);
+};
 
 //window.location = 'project.html?ilink=' + ilink + '&history=' + historyPath + iname + '/';

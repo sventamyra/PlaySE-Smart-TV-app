@@ -2,6 +2,7 @@ var widgetAPI = new Common.API.Widget();
 var itemCounter = 0;
 var columnCounter = 0;
 var language;
+var html;
 var Categories =
 {
 
@@ -38,9 +39,12 @@ Categories.loadXml = function(){
         tryCount : 0,
         retryLimit : 3,
 		timeout: 15000,
-        success: function(data)
+            success: function(data, status, xhr)
         {
             alert('Success:' + this.url);
+            // alert("xhr.responseText:"+ xhr.responseText.length);
+            // alert("xhr.responseText:"+ xhr.responseText.split("<section class=\"play_alphabetic-group")[1].length);
+            // data = xhr.responseText.split("<section class=\"play_alphabetic-group")[1];
        
             $(data).find('a').filter(function() {
                 return $(this).attr('class') == "play_category-grid__link";
@@ -53,7 +57,6 @@ Categories.loadXml = function(){
 	        var ImgLink  = $video.find('img').attr('data-imagename');
                 if (!ImgLink) ImgLink = $video.find('img').attr('src');
 		ImgLink  = "http://www.svtplay.se"+ImgLink;
-		var html;
 		if(itemCounter % 2 == 0){
 		    if(itemCounter > 0){
 			html = '<div class="scroll-content-item topitem">';
@@ -80,10 +83,11 @@ Categories.loadXml = function(){
 		else{
 		    $('#bottomRow').append($(html));
 		}
-		
+	        html = null;	
 		itemCounter++;
 		//
             });
+            data = null;
         },
         error: function(XMLHttpRequest, textStatus, errorThrown)
         {
