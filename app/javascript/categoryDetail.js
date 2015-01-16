@@ -75,8 +75,8 @@ categoryDetail.loadXml = function(){
                 Log('Success:' + this.url);
                 // Log("xhr.responseText.length:"+ xhr.responseText.length);
                 // Log("org items:" + $(data).find('article').length);
-                // data = xhr.responseText.split("a id=\"play-navigation-tabs")[1];
-                data = xhr.responseText.split("div id=\"playJs-alphabetic-list")[1];
+                data = xhr.responseText.split("a id=\"play-navigation-tabs")[1];
+                data = data.split("div id=\"playJs-alphabetic-list")[1];
                 data = data.split("div id=\"playJs-")[0];
                 // Log("data.length:"+ data.length);
                 data = data.split("</article>");

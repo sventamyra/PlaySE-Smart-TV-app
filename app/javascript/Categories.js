@@ -44,7 +44,7 @@ Categories.loadXml = function(){
             alert('Success:' + this.url);
             // alert("xhr.responseText:"+ xhr.responseText.length);
             // alert("xhr.responseText:"+ xhr.responseText.split("<section class=\"play_alphabetic-group")[1].length);
-            // data = xhr.responseText.split("<section class=\"play_alphabetic-group")[1];
+            data = xhr.responseText.split("<section class=\"play_alphabetic-group")[1];
        
             $(data).find('a').filter(function() {
                 return $(this).attr('class') == "play_category-grid__link";
