@@ -5,7 +5,6 @@ var spinner;
 var buff;
 var nowPlaying;
 var language;
-var html;
 var gurl = "";
 var isLive = 0;
 var airTime = 0;
@@ -217,6 +216,7 @@ Details.GetPlayUrl = function(){
 
 Details.loadXml = function(){
     var url = this.Geturl();
+    var html;
     if (url.indexOf("http://") == -1)
         url = "http://www.svtplay.se" + url
     var playDirectly = document.location.href.search("\\?play") != -1;
@@ -235,6 +235,8 @@ Details.loadXml = function(){
                 Log('Success:' + this.url);
                 data = xhr.responseText.split("<section class=\"play_js-tabs")[0]
                 data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
+                xhr.destroy();
+                xhr = null;
 
                 var Name;
 		var DetailsImgLink;
@@ -244,6 +246,7 @@ Details.loadXml = function(){
 		var Description;
 		var onlySweden;
                 var isLive = false;
+                var $video;
 
                 if (this.url.indexOf("/kanaler/") > -1) {
                     var $video = $(data).find('div').filter(function() {
@@ -288,8 +291,8 @@ Details.loadXml = function(){
                     }).length > 0);
 
 
-                } else {;
-                    var $video = $(data).find('div').filter(function() {
+                } else {
+                    $video = $(data).find('div').filter(function() {
                         return $(this).attr('class') == "play_container";
                     });
                     if ($video.find('section').find('a').attr('data-livestart'))
@@ -386,7 +389,7 @@ Details.loadXml = function(){
                 html+='</div>';
 		html+='<img class="imagestyle" src="'+DetailsImgLink+'" alt="Image" />';
             	$('#projdetails').html(html);
-                html = null;
+	        $video = html = null;
 		
 		Language.setDetailLang();
 

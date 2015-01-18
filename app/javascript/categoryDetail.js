@@ -3,14 +3,7 @@ var itemCounter = 0;
 var columnCounter = 0;
 var historyPath;
 var language;
-var html;
 var categoryData;
-var $tmpData;
-var $video; 
-var Name;
-var Link;
-var ImgLink;
-var logXhr;
 var i;
 var chunk_length;
 var categoryDetail =
@@ -77,15 +70,17 @@ categoryDetail.loadXml = function(){
                 // Log("org items:" + $(data).find('article').length);
                 data = xhr.responseText.split("a id=\"play-navigation-tabs")[1];
                 data = data.split("div id=\"playJs-alphabetic-list")[1];
-                data = data.split("div id=\"playJs-")[0];
+                data = data.split("div class=\"play_js-videolist__item-container")[1];
                 // Log("data.length:"+ data.length);
                 data = data.split("</article>");
                 data.pop();
                 categoryData = data;
-                data = null;
+                xhr.destroy();
+                xhr = data = null;
                 i = 0;
                 chunk_length = categoryData.length;
                 decode_data();
+                categoryData = null;
                 Log("itemCounter:" + itemCounter);
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
@@ -110,15 +105,26 @@ categoryDetail.loadXml = function(){
 };
 
 function decode_data() {
+    var $tmpData;
+    var $video;
+    var html;
+    var Name;
+    var Link;
+    var ImgLink;
+
     try {
         for (; i < categoryData.length;) {
             // Log("working on " + i + " to " + (i+chunk_length));
-            $tmpData = "<div id=\"crap" + categoryData.slice(i, i+chunk_length).join("</article>") + "</article>";
-            // Log("slice done:" + $tmpData.length);
-            $tmpData = $($tmpData).find('article');
+            if (i == 0) {
+                html = "<div id=\"crap" + categoryData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            } else {
+                html = "<div id=\"crap\">" + categoryData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            }            
+            // Log("slice done:" + html.length);
+            $tmpData = $(html).find('article');
             // Log('articles found:' + $tmpData.length);
             $tmpData.each(function(){
-                $video = $(this); 
+                $video = $(this);
                 Name = $video.attr('data-title');
                 // Log("Name:" + Name);
 	        Link = "http://www.svtplay.se"+$video.find('a').attr('href');
@@ -152,20 +158,23 @@ function decode_data() {
 	        else{
 		    $('#bottomRow').append($(html));
 	        }
-	        html = null;
+	        $tmpData = $video = html = null;
                 i++;
 	        itemCounter++;
 	    });
-            if (i == 0)
+            if (i == 0 || html != null) {
+                Log("Unexpected quit i:" + i + " $tmpData:" + html);
                 break;
+            }
         }
     } catch(err) {
         // Probably "script stack space quota is exhausted", try smaller chunk
         Log("decode_data Exception:" + err.message + " chunk_length:" + chunk_length);
+        $tmpData = null;
         if (chunk_length > 1) {
             chunk_length = Math.floor(chunk_length/2);
             Log("retry with chunk_length:" + chunk_length);
-            decode_data();
+            return decode_data();
         }
     }
 };

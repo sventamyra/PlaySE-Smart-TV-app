@@ -1,24 +1,12 @@
 var widgetAPI = new Common.API.Widget();
 var fired = false;
-var topItems;
-var html;
 var i;
 var chunk_length;
 var searchData;
-var $tmpData;
 var BottomItems;
 var itemSelected;
 var itemCounter = 0;
 var columnCounter = 0;
-var $video; 
-var Name;
-var IsLive;
-var running;
-var starttime;
-var Link;
-var LinkPrefx;
-var Description;
-var ImgLink;
 var SearchList =
 {
 
@@ -109,10 +97,12 @@ SearchList.loadXml = function(){
                 data.shift();
                 searchData = data.join("").split("</article>");
                 searchData.pop();
-                data = null;
+                xhr.destroy();
+                xhr = data = null;
                 i = 0;
                 chunk_length = searchData.length;
                 decode_data();
+                searchData = null;
                 Log("itemCounter:" + itemCounter);
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
@@ -139,12 +129,27 @@ SearchList.loadXml = function(){
 };
 
 function decode_data() {
+    var html;
+    var $tmpData;
+    var $video; 
+    var Name;
+    var IsLive;
+    var running;
+    var starttime;
+    var Link;
+    var LinkPrefx;
+    var Description;
+    var ImgLink;
     try {
         for (; i < searchData.length;) {
             // Log("working on " + i + " to " + (i+chunk_length));
-            $tmpData = "<div id=\"crap" + searchData.slice(i, i+chunk_length).join("</article>") + "</article>";
-            // Log("slice done:" + $tmpData.length);
-            $tmpData = $($tmpData).find('article');
+            if (i == 0) {
+                html = "<div id=\"crap" + searchData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            } else {
+                html = "<div id=\"crap\">" + searchData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            }
+            // Log("slice done:" + html.length);
+            $tmpData = $(html).find('article');
             // Log('articles found:' + $tmpData.length);
             $tmpData.each(function(){
                 if ($(this).find('a').attr('class').indexOf("play_categorylist-element__link") != -1) {
@@ -215,20 +220,23 @@ function decode_data() {
 		else{
 		    $('#bottomRow').append($(html));
 		}
-	        html = null;
+	        $tmpData = $video = html = null;
                 i++;
 	        itemCounter++;
 	    });
-            if (i == 0)
+            if (i == 0 || html != null) {
+                Log("Unexpected quit i:" + i + " $tmpData:" + html);
                 break;
+            }
         }
     } catch(err) {
         // Probably "script stack space quota is exhausted", try smaller chunk
         Log("decode_data Exception:" + err.message + " chunk_length:" + chunk_length);
+        $tmpData = null;
         if (chunk_length > 1) {
             chunk_length = Math.floor(chunk_length/2);
             Log("retry with chunk_length:" + chunk_length);
-            decode_data();
+            return decode_data();
         }
     }
 };

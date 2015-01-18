@@ -9,9 +9,7 @@ var language;
 var html;
 var BaseUrl;
 var $video;
-var articles;
 var liveData;
-var $tmpData;
 var Name;
 var Link;
 var ImgLink;
@@ -147,12 +145,13 @@ live.getChannelsJson = function() {
 		    else{
 			$('#bottomRow').append($(html));
 		    }
-		    html = null;
+	            $video = html = null;
                     // Log(Name);
 		    itemCounter++;
 
 	        });
-                data = null;
+                // xhr.destroy();
+                xhr = data = null;
 	    },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -194,7 +193,8 @@ live.getLiveJson = function() {
                 data.pop();
                 // Log("items:" + data.length + ", channels:" + itemCounter);
                 liveData = data;
-                data = null;
+                xhr.destroy();
+                xhr = data = null;
                 i = 0;
                 chunk_length = liveData.length;
                 decode_live();
@@ -248,12 +248,17 @@ function GetChannelThumb(url, Name)
 };
 
 function decode_live() {
+    var $tmpData;
     try {
         for (; i < liveData.length;) {
             // Log("working on " + i + " to " + (i+chunk_length));
-            $tmpData = "<div id=\"crap" + liveData.slice(i, i+chunk_length).join("</article>") + "</article>";
-            // Log("slice done:" + $tmpData.length);
-            $tmpData = $($tmpData).find('article');
+            if (i == 0) {
+                html = "<div id=\"crap" + liveData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            } else {
+                html = "<div id=\"crap\">" + liveData.slice(i, i+chunk_length).join("</article>") + "</article>";
+            }
+            // Log("slice done:" + html.length);
+            $tmpData = $(html).find('article');
             // Log('articles found:' + $tmpData.length);
             $tmpData.each(function(){
 	        $video = $(this); 
@@ -302,18 +307,23 @@ function decode_live() {
 	        else{
 		    $('#bottomRow').append($(html));
 	        }
-	        html = null;
+	        $tmpData = $video = html = null;
                 i++;
 	        itemCounter++;
 	    });
+            if (i == 0 || html != null) {
+                Log("Unexpected quit i:" + i + " $tmpData:" + html);
+                break;
+            }
         }
     } catch(err) {
+	$tmpData = null;
         // Probably "script stack space quota is exhausted", try smaller chunk
         Log("decode_live Exception:" + err.message + " chunk_length:" + chunk_length);
         if (chunk_length > 1) {
             chunk_length = Math.floor(chunk_length/2);
             Log("retry with chunk_length:" + chunk_length);
-            decode_live();
+            return decode_live();
         }
     }
 };
