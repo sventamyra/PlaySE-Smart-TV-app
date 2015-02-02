@@ -12,6 +12,7 @@ var currentTime = 0;
 var countd=0;
 var downCounter;
 var proxy = "";
+var seqNo = 0;
 
 var Details =
 {
@@ -238,137 +239,141 @@ Details.loadXml = function(){
                 xhr.destroy();
                 xhr = null;
 
-                var Name;
-		var DetailsImgLink;
-		var DetailsPlayTime;
+                var Name="";
+		var DetailsImgLink="";
+		var DetailsPlayTime="";
                 var VideoLength = "";
                 var AvailDate="";
-		var Description;
-		var onlySweden;
+		var Description="";
+		var onlySweden="";
                 var isLive = false;
                 var $video;
+                try {
 
-                if (this.url.indexOf("/kanaler/") > -1) {
-                    var $video = $(data).find('div').filter(function() {
-                        return $(this).attr('class') == "play_channels";
-                    });
+                    if (this.url.indexOf("/kanaler/") > -1) {
+                        var $video = $(data).find('div').filter(function() {
+                            return $(this).attr('class') == "play_channels";
+                        });
 
-                    Name = $video.find('a').attr('data-title');
-		    DetailsImgLink = $video.find('img').attr('data-imagename');
-                    if (DetailsImgLink.indexOf("http") == -1)
-                        DetailsImgLink = "http://www.svtplay.se" + DetailsImgLink;
-                    pattern = new RegExp("\\b" + Name + "\\b", "i");
-	            var $info = $(data).find('div').filter(function() {
-                        
-                        return ($(this).attr('class').indexOf("play_channels__active-video-info") > -1 &&
-                                pattern.test($(this).attr('data-channel')));
-                    });
-                    Name = Name + " - " + $($info.children()[0]).text();
-                    VideoLength = $($($info.find('p')[1]).children()[1]).text();
-		    Description = $($info.find('p')[0]).text();
-                    var timeData = $info.find('div').filter(function() {
-                        if ($(this).attr('data-starttime'))
-                            return true;
-                        else 
-                            return false;
-                    });
-                    DetailsPlayTime = tsToClock(timeData.attr('data-starttime')*1) + "-" +
-                        tsToClock(timeData.attr('data-endtime')*1);
+                        Name = $video.find('a').attr('data-title');
+		        DetailsImgLink = $video.find('img').attr('data-imagename');
+                        if (DetailsImgLink.indexOf("http") == -1)
+                            DetailsImgLink = "http://www.svtplay.se" + DetailsImgLink;
+                        pattern = new RegExp("\\b" + Name + "\\b", "i");
+	                var $info = $(data).find('div').filter(function() {
+                            
+                            return ($(this).attr('class').indexOf("play_channels__active-video-info") > -1 &&
+                                    pattern.test($(this).attr('data-channel')));
+                        });
+                        Name = Name + " - " + $($info.children()[0]).text();
+                        VideoLength = $($($info.find('p')[1]).children()[1]).text();
+		        Description = $($info.find('p')[0]).text();
+                        var timeData = $info.find('div').filter(function() {
+                            if ($(this).attr('data-starttime'))
+                                return true;
+                            else 
+                                return false;
+                        });
+                        DetailsPlayTime = tsToClock(timeData.attr('data-starttime')*1) + "-" +
+                            tsToClock(timeData.attr('data-endtime')*1);
 
-                } else if (url.indexOf("oppetarkiv") > -1) {
-                    Name = $($(data).find('img')[1]).attr('alt');
-                    // Log("Name:" + Name);
-		    DetailsImgLink = $($(data).find('img')[1]).attr('data-imagename');
-		    DetailsPlayTime = $($(data).find('strong')[0]).text();
-                    VideoLength = $($(data).find('strong')[1]).text();
+                    } else if (url.indexOf("oppetarkiv") > -1) {
+                        Name = $($(data).find('img')[1]).attr('alt');
+                        // Log("Name:" + Name);
+		        DetailsImgLink = $($(data).find('img')[1]).attr('data-imagename');
+		        DetailsPlayTime = $($(data).find('strong')[0]).text();
+                        VideoLength = $($(data).find('strong')[1]).text();
 
-                    Description = $(data).find('div').filter(function() {
-                        return $(this).attr('class') == "svt-text-bread svt-text-margin-large";
-                    }).text();
+                        Description = $(data).find('div').filter(function() {
+                            return $(this).attr('class') == "svt-text-bread svt-text-margin-large";
+                        }).text();
 
-		    onlySweden = ($(data).find('span').filter(function() {
-                        return $(this).attr('class') == "svtoa-icon-geoblock svtIcon";
-                    }).length > 0);
+		        onlySweden = ($(data).find('span').filter(function() {
+                            return $(this).attr('class') == "svtoa-icon-geoblock svtIcon";
+                        }).length > 0);
 
 
-                } else {
-                    $video = $(data).find('div').filter(function() {
-                        return $(this).attr('class') == "play_container";
-                    });
-                    if ($video.find('section').find('a').attr('data-livestart'))
-		        isLive = true;
-
-                    Name = $($video.find('h1')[0]).text().trim();
-		    DetailsImgLink = $video.find('img').attr('data-imagename');
-                    // Log(DetailsImgLink);
-                    var DetailsClock = "";
-                    try {
-                        DetailsClock = $video.find('li').find('time').attr('datetime').replace(/.+T([^+]+)+.+/, "$1"); 
-                    } catch(err) {
-                        Log("Exception:" + err.message);
-                    }
-                    DetailsPlayTime = $video.find('li').find('time').text();
-                    // Log(DetailsPlayTime);
-                    // Log(DetailsClock);
-                    if (DetailsPlayTime.indexOf(DetailsClock.replace(":", ".")) == -1)
-                        DetailsPlayTime  = DetailsPlayTime + " " + DetailsClock;
-                    
-                    if (isLive) {
-                        var duration = $video.find('section').find('a').attr('data-length');
-                        var hours = Math.floor(duration/3600);
-                        if (hours > 0) {
-                            VideoLength = hours + " h "
-                            duration = duration - (hours*3600)
-                        }
-                        var minutes = Math.floor(duration/60);
-                        if (minutes > 0) {
-                            VideoLength = VideoLength + minutes + " min "
-                            duration = duration - (minutes*60)
-                        }
-                        var seconds = Math.floor(duration/60);
-                        if (seconds > 0) {
-                            VideoLength = VideoLength + seconds + " sek"
-                        }                        
                     } else {
-		        AvailDate  = $video.find('p').filter(function() {
-                            return $(this).text().indexOf("Tillgänglig till") > -1;
-                        }).text().replace(/.*Tillgänglig till /, "");
-                        VideoLength = $video.find('h2').html().replace(/.+span> /,"");
+                        $video = $(data).find('div').filter(function() {
+                            return $(this).attr('class') == "play_container";
+                        });
+                        if ($video.find('section').find('a').attr('data-livestart'))
+		            isLive = true;
+
+                        Name = $($video.find('h1')[0]).text().trim();
+		        DetailsImgLink = $video.find('img').attr('data-imagename');
+                        // Log(DetailsImgLink);
+                        var DetailsClock = "";
+                        try {
+                            DetailsClock = $video.find('li').find('time').attr('datetime').replace(/.+T([^+]+)+.+/, "$1"); 
+                        } catch(err) {
+                            Log("Exception:" + err.message);
+                        }
+                        DetailsPlayTime = $video.find('li').find('time').text();
+                        // Log(DetailsPlayTime);
+                        // Log(DetailsClock);
+                        if (DetailsPlayTime.indexOf(DetailsClock.replace(":", ".")) == -1)
+                            DetailsPlayTime  = DetailsPlayTime + " " + DetailsClock;
+                        
+                        if (isLive) {
+                            var duration = $video.find('section').find('a').attr('data-length');
+                            var hours = Math.floor(duration/3600);
+                            if (hours > 0) {
+                                VideoLength = hours + " h "
+                                duration = duration - (hours*3600)
+                            }
+                            var minutes = Math.floor(duration/60);
+                            if (minutes > 0) {
+                                VideoLength = VideoLength + minutes + " min "
+                                duration = duration - (minutes*60)
+                            }
+                            var seconds = Math.floor(duration/60);
+                            if (seconds > 0) {
+                                VideoLength = VideoLength + seconds + " sek"
+                            }                        
+                        } else {
+		            AvailDate  = $video.find('p').filter(function() {
+                                return $(this).text().indexOf("Kan ses till") > -1;
+                            }).text().replace(/.*Kan ses till /, "");
+                            VideoLength = $video.find('h2').html().replace(/.+span> /,"");
+                        }
+		        Description = $($video.find('p')[0]).text();
+		        onlySweden = $video.find('section').find('a').attr('data-only-available-in-sweden');
                     }
-		    Description = $($video.find('p')[0]).text();
-		    onlySweden = $video.find('section').find('a').attr('data-only-available-in-sweden');
+                    // Log("Name:" + Name);
+                    // Log("DetailsImgLink:" + DetailsImgLink);
+                    // Log("Description:" + Description);
+                    // Log("DetailsPlayTime:" + DetailsPlayTime);
+                    // Log("VideoLength:" + VideoLength);
+                    // Log("onlySweden:" + onlySweden);
+
+		    if(Language.getisSwedish()){
+		        nowPlaying='Nu visas';
+		    }else{
+		        nowPlaying='Now playing';
+		        DetailsPlayTime=DetailsPlayTime.replace("igår","yesterday");
+		        DetailsPlayTime=DetailsPlayTime.replace("idag","today");
+		    }
+
+                    Details.duration = VideoLength;
+
+                    airTime = DetailsPlayTime;
+		    // Log("isLive=" + isLive);
+		    // Log("airTime=" + airTime);
+		    if (onlySweden != "false" && onlySweden != false) {
+		        //proxy = 'http://playse.kantaris.net/?mode=native&url=';
+		        $.getJSON( "http://smart-ip.net/geoip-json?callback=?",
+			           function(data){
+				       if(data.countryCode != 'SE'){
+				           
+				           //Geofilter.show();	
+				       }
+			           }
+			         );
+                    }
+                } catch(err) {
+                    Log("Details Exception:" + err.message);
                 }
-                // Log("Name:" + Name);
-                // Log("DetailsImgLink:" + DetailsImgLink);
-                // Log("Description:" + Description);
-                // Log("DetailsPlayTime:" + DetailsPlayTime);
-                // Log("VideoLength:" + VideoLength);
-                // Log("onlySweden:" + onlySweden);
-
-		if(Language.getisSwedish()){
-		    nowPlaying='Nu visas';
-		}else{
-		    nowPlaying='Now playing';
-		    DetailsPlayTime=DetailsPlayTime.replace("igår","yesterday");
-		    DetailsPlayTime=DetailsPlayTime.replace("idag","today");
-		}
-
-                Details.duration = VideoLength;
-
-                airTime = DetailsPlayTime;
-		// Log("isLive=" + isLive);
-		// Log("airTime=" + airTime);
-		if (onlySweden != "false" && onlySweden != false) {
-		    //proxy = 'http://playse.kantaris.net/?mode=native&url=';
-		    $.getJSON( "http://smart-ip.net/geoip-json?callback=?",
-			       function(data){
-				   if(data.countryCode != 'SE'){
-				       
-				       //Geofilter.show();	
-				   }
-			       }
-			     );
-		}
 		if(Name.length > 47){
 		    Name = Name.substring(0, 47)+ "...";
 		}
@@ -453,7 +458,7 @@ Details.startPlayer = function()
 	       (by choice or when it reaches the end) */
 	    //   Main.setWindowMode();
             if (playDirectly)
-                history.go(-1);
+                Buttons.goBack();
 	};
 
 	//Player.setVideoURL("http://svt10hls-lh.akamaihd.net/i/svt10hls_0@78142/master.m3u8?__b__=563&bkup=off"  + "|COMPONENT=HLS");
@@ -481,10 +486,14 @@ String.prototype.trim = function () {
 
 function Log(msg) 
 {
-    // logXhr = new XMLHttpRequest();
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // var logXhr = new XMLHttpRequest();
+    // logXhr.onreadystatechange = function () {
+    //     if (logXhr.readyState == 4) {
+    //         logXhr.destroy();
+    //         logXhr = null;
+    //     }
+    // };
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
     // logXhr.send();
-    // logXhr.destroy();
-    // logXhr = null;
     alert(msg);
 };

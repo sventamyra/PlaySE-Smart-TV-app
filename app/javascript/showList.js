@@ -1,10 +1,6 @@
 var widgetAPI = new Common.API.Widget();
 var itemCounter = 0;
-var columnCounter = 0;
-var historyPath;
-var showData;
-var i;
-var chunk_length;
+var seqNo = 0;
 var showList =
 {
 };
@@ -64,14 +60,12 @@ showList.loadXml = function(){
                 data = "<div id=\"more-episodes-panel\"" + data.split("id=\"more-episodes-panel")[1];
                 data = data.split("</article>");
                 data.pop();
-                showData = data;
                 xhr.destroy();
-                xhr = data = null;
-                i = 0;
-                chunk_length = showData.length;
-                decode_data();
-                showData = null;
+                xhr = null;
+                decode_data(data);
+                data = null;
                 Log("itemCounter:" + itemCounter);
+                Buttons.restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -94,92 +88,81 @@ showList.loadXml = function(){
 
 };
 
-function decode_data() {
-    var $video; 
-    var $tmpData; 
-    var Name;
-    var Link;
-    var ImgLink;
-    var html;
-    
+function decode_data(showData) {
     try {
-        for (; i < showData.length;) {
-            // Log("working on " + i + " to " + (i+chunk_length));
-            if (i == 0) {
-                html = "<div id=\"crap" + showData.slice(i, i+chunk_length).join("</article>") + "</article>";
+        var html; 
+        var Name;
+        var Link;
+        var ImgLink;
+        for (var k=0; k < showData.length; k++) {
+            
+            // Name = $(showData[k]).find('span').filter(function() {
+            //         return $(this).attr('class') == "play_videolist-element__title-text";
+            //     }).text();
+            showData[k] = showData[k].split("<article")[1];
+            Name = showData[k].match(/play_videolist-element__title-text[^>]+>([^<]+)/);
+            if (Name && Name[1].length > 0) {
+                Name = Name[1].trim();
             } else {
-                html = "<div id=\"crap\">" + showData.slice(i, i+chunk_length).join("</article>") + "</article>";
+                // Name = $video.attr('data-title');
+                Name = showData[k].match(/data-title="([^"]+)"/)[1];
             }
-            // Log("slice done:" + html.length);
-            $tmpData = $(html).find('article');
-            // Log('articles found:' + $tmpData.length);
-            $tmpData.each(function(){
-                $video = $(this); 
-                Name = $video.find('a').find('span').filter(function() {
-                    return $(this).attr('class') == "play_videolist-element__title-text";
-                }).text();
-                if (!Name)
-                    Name = $video.attr('data-title');
-                Link = $video.find('a').attr('href');
-                // Log(Link);
-	        // var Description = $video.find('Description').text();
-	        ImgLink  = $video.find('img').attr('data-imagename');
-                if (!ImgLink) ImgLink = $video.find('img').attr('src');
-	        // Log(ImgLink);
-	        if(itemCounter % 2 == 0){
-		    if(itemCounter > 0){
-		        html = '<div class="scroll-content-item topitem">';
-		    }
-		    else{
-		        html = '<div class="scroll-content-item selected topitem">';
-		    }
-	        }
-	        else{
-		    html = '<div class="scroll-content-item bottomitem">';
-	        }
-	        html += '<div class="scroll-item-img">';
-	        html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-	        html += '</div>';
-	        html += '<div class="scroll-item-name">';
-	        html +=	'<p><a href="#">' + Name + '</a></p>';
-	        //html += '<span class="item-date">' + Description + '</span>';
-	        html += '</div>';
-	        html += '</div>';
-	        
-	        if(itemCounter % 2 == 0){
-		    $('#topRow').append($(html));
-	        }
-	        else{
-		    $('#bottomRow').append($(html));
-	        }
-	        $tmpData = $video = html = null;
-                i++;
-	        itemCounter++;
-	    });
-            if (i == 0 || html != null) {
-                Log("Unexpected quit i:" + i + " $tmpData:" + html);
-                break;
-            }
-        }
+            Link = showData[k].match(/href="([^#][^#"]+)"/)[1];
+            ImgLink = showData[k].match(/data-imagename="([^"]+)"/);
+            ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
+            showData[k] = "";
+	    // if(Description.length > 55){
+	    //     Description = Description.substring(0, 52)+ "...";
+	    // }
+	    if(itemCounter % 2 == 0){
+		if(itemCounter > 0){
+		    html = '<div class="scroll-content-item topitem">';
+		}
+		else{
+		    html = '<div class="scroll-content-item selected topitem">';
+		}
+	    }
+	    else{
+		html = '<div class="scroll-content-item bottomitem">';
+	    }
+	    html += '<div class="scroll-item-img">';
+	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
+	    html += '</div>';
+	    html += '<div class="scroll-item-name">';
+	    html +=	'<p><a href="#">' + Name + '</a></p>';
+	    //html += '<span class="item-date">' + Description + '</span>';
+	    html += '</div>';
+	    html += '</div>';
+	    
+	    if(itemCounter % 2 == 0){
+		$('#topRow').append($(html));
+	    }
+	    else{
+		$('#bottomRow').append($(html));
+	    }
+	    html = null;
+	    itemCounter++;
+	}
     } catch(err) {
-        // Probably "script stack space quota is exhausted", try smaller chunk
-        Log("decode_data Exception:" + err.message + " chunk_length:" + chunk_length);
-        $tmpData = null;
-        if (chunk_length > 1) {
-            chunk_length = Math.floor(chunk_length/2);
-            Log("retry with chunk_length:" + chunk_length);
-            return decode_data();
-        }
+        Log("decode_data Exception:" + err.message + ". showData[" + k + "]:" + showData[k]);
     }
+};
+
+String.prototype.trim = function () {
+    return this.replace(/^\s*/, "").replace(/\s*$/, "").replace(/[ 	]*\n[	 ]*/g, "");
 };
 
 function Log(msg) 
 {
-    // logXhr = new XMLHttpRequest();
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // var logXhr = new XMLHttpRequest();
+    // logXhr.onreadystatechange = function () {
+    //     if (logXhr.readyState == 4) {
+    //         logXhr.destroy();
+    //         logXhr = null;
+    //     }
+    // };
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
     // logXhr.send();
-    // logXhr.destroy();
-    // logXhr = null;
     alert(msg);
 };
 

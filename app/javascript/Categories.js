@@ -1,7 +1,6 @@
 var widgetAPI = new Common.API.Widget();
 var itemCounter = 0;
-var columnCounter = 0;
-var language;
+var seqNo = 0;
 var Categories =
 {
 
@@ -90,6 +89,7 @@ Categories.loadXml = function(){
 		    //
                 });
                 data = null;
+                Buttons.restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -112,14 +112,17 @@ Categories.loadXml = function(){
 
 };
 
-
 function Log(msg) 
 {
-    // logXhr = new XMLHttpRequest();
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + msg + "'", false);
+    // var logXhr = new XMLHttpRequest();
+    // logXhr.onreadystatechange = function () {
+    //     if (logXhr.readyState == 4) {
+    //         logXhr.destroy();
+    //         logXhr = null;
+    //     }
+    // };
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
     // logXhr.send();
-    // logXhr.destroy();
-    // logXhr = null;
     alert(msg);
 };
 //window.location = 'categoryDetail.html?category=' + ilink + '&history=Kategorier/' + iname +'/';

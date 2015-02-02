@@ -7,6 +7,12 @@ var lastPos = 0;
 var videoUrl;
 var startup = true;
 var smute = 0;
+var subtitles = [];
+var subtitlesEnabled = false;
+var currentSubTime = 0;
+var currentSubtitle = -1;
+var subtitleTimer = 0;
+var seqNo = 0;
 
 var Player =
 {
@@ -58,7 +64,7 @@ Player.init = function()
   //  this.setWindow();
     
     this.plugin.OnCurrentPlayTime = 'Player.setCurTime';
-    this.plugin.OnStreamInfoReady = 'Player.setTotalTime';
+    this.plugin.OnStreamInfoReady = 'Player.onStreamInfoReady';
     this.plugin.OnBufferingStart = 'Player.onBufferingStart';
     this.plugin.OnBufferingProgress = 'Player.onBufferingProgress';
     this.plugin.OnBufferingComplete = 'Player.onBufferingComplete';           
@@ -78,7 +84,7 @@ Player.deinit = function()
         {
             /* Restore original TV source before closing the widget */
             mwPlugin.SetSource(this.originalSource);
-            alert("Restore source to " + this.originalSource);
+            Log("Restore source to " + this.originalSource);
         }
 };
 
@@ -96,7 +102,7 @@ Player.setFullscreen = function()
 Player.setVideoURL = function(url, srtUrl)
 {
     videoUrl = url;
-    alert("URL = " + videoUrl);
+    Log("URL = " + videoUrl);
 };
 
 Player.setDuration = function(duration)
@@ -106,14 +112,14 @@ Player.setDuration = function(duration)
         var h = GetDigits("h", duration);
         var m = GetDigits("min", duration);
         var s = GetDigits("sek", duration);
-        // alert("JTDEBUG decoded duration " + h + ":" + m + ":" + s);
+        // Log("decoded duration " + h + ":" + m + ":" + s);
         this.sourceDuration = (h*3600 + m*60 + s*1) * 1000;
     }
     else
     {
         this.sourceDuration = 0;
     }
-    // alert("JTDEBUG Player.sourceDuration: " + this.sourceDuration);
+    // Log("Player.sourceDuration: " + this.sourceDuration);
 
 };
 
@@ -134,7 +140,7 @@ Player.playVideo = function()
 {
     if (videoUrl == null)
     {
-        alert("No videos to play");
+        Log("No videos to play");
     }
     else
     {
@@ -184,7 +190,7 @@ Player.pauseVideo = function()
 
 Player.stopVideo = function()
 {
-  
+        widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
         this.plugin.Stop();
 		//pluginAPI.set0nScreenSaver(6000);
         $('.topoverlayresolution').html("");
@@ -206,7 +212,7 @@ Player.stopVideoNoCallback = function()
     }
     else
     {
-        alert("Ignoring stop request, not in correct state");
+        Log("Ignoring stop request, not in correct state");
     }
 };
 
@@ -223,7 +229,7 @@ Player.reloadVideo = function()
 	this.plugin.Stop();
 	lastPos = Math.floor(ccTime / 1000.0);
 	this.plugin.ResumePlay(videoUrl, lastPos);
-	alert("video reloaded. url = " + videoUrl + "pos " + lastPos );
+	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
     this.state = this.PLAYING;
 	this.hideControls();
 };
@@ -236,7 +242,7 @@ Player.skipInVideo = function()
     timediff = timediff / 1000;
     if(timediff > 0){
     	Player.plugin.JumpForward(timediff);
-    	alert("forward jump: " + timediff);
+    	Log("forward jump: " + timediff);
     }
     else if(timediff < 0){
     	timediff = 0 - timediff;
@@ -247,6 +253,7 @@ Player.skipInVideo = function()
 
 Player.skipForward = function(time)
 {
+    widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), ""); //hide subs while we jump
     var duration = this.GetDuration();
     if(this.skipState == -1)
     {
@@ -264,7 +271,7 @@ Player.skipForward = function(time)
     this.showControls();
     skipTime = +skipTime + time;
     this.skipState = this.FORWARD;
-    alert("forward skipTime: " + skipTime);
+    Log("forward skipTime: " + skipTime);
     this.updateSeekBar(skipTime);
     timeoutS = window.setTimeout(this.skipInVideo, 2000);
 };
@@ -281,6 +288,7 @@ Player.skipLongForwardVideo = function()
 
 Player.skipBackward = function(time)
 {
+    widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), ""); //hide subs while we jump
     window.clearTimeout(timeoutS);
     this.showControls();
     if(this.skipState == -1){
@@ -314,7 +322,11 @@ Player.getState = function()
 
 Player.onBufferingStart = function()
 {
-	this.showControls();
+    Log("onBufferingStart");
+    currentSubtitle = 0;
+    subtitlesEnabled = this.getSubtitlesEnabled();
+    this.setSubtitleProperties();
+    this.showControls();
     $('.bottomoverlaybig').css("display", "block");
 	if(Language.getisSwedish()){
 	buff='Buffrar';
@@ -359,7 +371,7 @@ Player.onRenderingComplete = function()
 Player.showControls = function(){
   $('.video-wrapper').css("display", "block");				
   $('.video-footer').css("display", "block");
-  alert("show controls");
+  Log("show controls");
 
 };
 
@@ -368,7 +380,7 @@ Player.hideControls = function(){
 	$('.video-footer').css("display", "none");
 	$('.bottomoverlaybig').css("display", "none");
         Player.infoActive = false;
-	alert("hide controls");
+	Log("hide controls");
 };
 
 Player.setCurTime = function(time)
@@ -382,6 +394,9 @@ Player.setCurTime = function(time)
 	if(this.skipState == -1){
 		this.updateSeekBar(time);
 	}
+	if (this.state != this.PAUSED) { // because on 2010 device the device triggers this function even if video is paused
+		this.onSubTitle(time);
+        }
 	
 };
 
@@ -421,6 +436,12 @@ Player.updateSeekBar = function(time){
 	
 }; 
 
+Player.onStreamInfoReady = function()
+{
+    this.setTotalTime();
+    this.setResolution(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+};
+
 Player.setTotalTime = function()
 {
 	var tsecs = this.GetDuration() / 1000;
@@ -446,7 +467,6 @@ Player.setTotalTime = function()
 	
 	$('.totalTime').text(hours + ':' + smins + ':' + ssecs);
     //Display.setTotalTime(Player.GetDuration());
-        this.setResolution(Player.plugin.GetVideoWidth(), Player.plugin.GetVideoHeight());
 };
 
 Player.showInfo = function(force)
@@ -483,17 +503,17 @@ Player.OnNetworkDisconnected = function()
 			        	var $entries = $(data).find('video');
 
 			        	if ($entries.length > 0) {
-			        		alert('Success:' + this.url);
+			        		Log('Success:' + this.url);
 			        		Player.reloadVideo();
 			        	}
 			        	else{
-			        		alert('Failure');
+			        		Log('Failure');
 			        		$.ajax(this);
 			        	}
 			        },
 			        error: function(XMLHttpRequest, textStatus, errorThrown)
 			        {
-			        		alert('Failure');
+			        		Log('Failure');
 			        		$.ajax(this);
          
 			        }
@@ -512,17 +532,21 @@ Player.GetDuration = function()
 
 Player.toggleAspectRatio = function() {
 
-    if (Player.getAspectMode() === 0) {
-        Player.setAspectMode(1);
+    if (this.getAspectMode() === 0) {
+        this.setAspectMode(1);
     }
     else 
     {
-        Player.setAspectMode(0);
+        this.setAspectMode(0);
     }
-    this.setAspectRatio(Player.plugin.GetVideoWidth(), Player.plugin.GetVideoHeight());
+    this.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+
+    // Update OSD
+    var resolution_text = $('.topoverlayresolution').text().replace(/\).*/, ")");
+    $('.topoverlayresolution').html(resolution_text + this.getAspectModeText());
 
     if (this.state === this.PAUSED) {
-        Player.pauseVideo();
+        this.pauseVideo();
     }
 };
 
@@ -550,39 +574,27 @@ Player.setAspectRatio = function(videoWidth, videoHeight) {
         {
             var cropX     = Math.round(videoWidth/960*120);
             var cropWidth = videoWidth-(2*cropX);
-            Player.plugin.SetCropArea(cropX, 0, cropWidth, videoHeight);
+            this.plugin.SetCropArea(cropX, 0, cropWidth, videoHeight);
         }
         else
         {
-            Player.plugin.SetCropArea(0, 0, videoWidth, videoHeight);
+            this.plugin.SetCropArea(0, 0, videoWidth, videoHeight);
         }
     }
 };
 
 Player.setAspectMode = function(value)
 {
-    var exdate=new Date();
-    exdate.setDate(exdate.getDate() + 1);
-    var c_value=escape(value) + "; expires="+exdate.toUTCString();
-    document.cookie="aspectMode=" + c_value;
+    this.setCookie("aspectMode",value);
 };
 
 
 Player.getAspectMode = function(){
-    var i,x,y,ARRcookies=document.cookie.split(";");
-    for (i=0;i<ARRcookies.length;i++)
-    {
-        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-        x=x.replace(/^\s+|\s+$/g,"");
-        if (x=="aspectMode")
-        {
-            var aspectMode = unescape(y);
-            if (aspectMode)
-                return aspectMode*1
-        }
-    }
-    return 0
+    var savedValue = this.getCookie("aspectMode");
+    if (savedValue)
+        return savedValue*1;
+    else
+        return 0;
 };
 
 Player.getAspectModeText = function()
@@ -592,4 +604,353 @@ Player.getAspectModeText = function()
     }
     else 
         return "";
+};
+
+// Subtitles support
+
+Player.toggleSubtitles = function () {
+    if (subtitles.length > 0)
+        subtitlesEnabled = !subtitlesEnabled;
+    else 
+        subtitlesEnabled = true;
+
+    this.setCookie("subEnabled",subtitlesEnabled*1, 100);
+    if (!subtitlesEnabled || $("#srtSubtitle").html() == "" || $("#srtSubtitle").html() == "<br />Subtitles Off") {
+        clearTimeout(subtitleTimer);
+        subtitleTimer = setTimeout(function () {
+            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+        }, 2500);
+        if (subtitlesEnabled && subtitles.length > 0) {
+            $("#srtSubtitle").html("<br />Subtitles On");
+        } else if (subtitlesEnabled) {
+            $("#srtSubtitle").html("<br />Subtitles not available");
+        } else {
+            $("#srtSubtitle").html("<br />Subtitles Off");
+        }
+    }
+};
+
+Player.getSubtitlesEnabled = function () {
+    var savedValue = this.getCookie("subEnabled");
+    if (savedValue) {
+        // To reduce risk of setting being cleared
+        this.setCookie("subEnabled",(savedValue == "1")*1, 100);
+        return savedValue == "1";
+    } else {
+        return false;
+    }
+};
+
+Player.getCookie = function(cName){
+    var i,x,y,ARRcookies=document.cookie.split(";");
+    for (i=0;i<ARRcookies.length;i++)
+    {
+        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+        x=x.replace(/^\s+|\s+$/g,"");
+        if (x==cName)
+        {
+            return unescape(y);
+        }
+    }
+    return null;
+};
+
+Player.setCookie = function(cName,value,exdays)
+{
+    var exdate=new Date();
+    exdate.setDate(exdate.getDate() + exdays);
+    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    document.cookie=cName + "=" + c_value;
+};
+
+
+Player.fetchSubtitle = function (srtUrl) {
+    var subtitleXhr = new XMLHttpRequest();
+
+    subtitleXhr.onreadystatechange = function () {
+        if (subtitleXhr.readyState === 4) {
+            if (subtitleXhr.status === 200) {
+                Player.parseSubtitle(subtitleXhr);
+                subtitleXhr.destroy();
+                subtitleXhr = null;
+            }
+        }
+    };
+    subtitleXhr.open("GET", srtUrl);
+    subtitleXhr.send();
+};
+
+Player.parseSubtitle = function (xhr) {
+    var srt;
+    var srtdata;
+    srtdata = xhr.responseText;
+    srt = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/<\/*[0-9]+>/g, ""));
+    var srtline = srt.split('\n\n');
+    if (srtline.length > 0) {
+        for (var s = 0; s < srtline.length; s++) {
+            var st = srtline[s].split('\n');
+            this.parseLine(st);
+        }
+    }
+};
+
+Player.strip = function (s) {
+    return s.replace(/^\s+|\s+$/g, "");
+};
+
+Player.timeToMS = function (t) {
+    var s = 0.0;
+    if (t) {
+        var p = t.split(':');
+        for (var i = 0; i < p.length; i++)
+            s = s * 60 + parseFloat(p[i].replace(',', '.'));
+    }
+    return Math.round(s * 1000);
+};
+
+Player.parseLine = function (st) {
+    try {
+        if (st.length >= 2) {
+            var i = this.strip(st[1].split(' --> ')[0]);
+            var o = this.strip(st[1].split(' --> ')[1]);
+            var t = st[2];
+
+            if (isEmpty(i) || isEmpty(o) || isEmpty(t)) {
+                return false;
+            }
+
+            if (st.length > 2) {
+                for (var j = 3; j < st.length; j++) {
+                    t += '<br>' + st[j];
+                }
+            }
+
+            var start = this.timeToMS(i);
+            var end = this.timeToMS(o);
+
+            if (t.length > 0) {
+                var newsub = {
+                    start: start,
+                    end: end,
+                    text: t
+                };
+                subtitles.push(newsub);
+            }
+        }
+    }
+    catch (err) {
+        Log("parseLine on Subtitles failed: [" + err + "] in line : " + st);
+    }
+};
+
+Player.onSubTitle = function (time) {
+    try {
+        if (subtitlesEnabled && this.state != this.STOPPED) {
+            var start;
+            var stop;
+            var now = Number(time);
+
+            if (now === currentSubTime) {
+                now += 500;
+            }
+
+            currentSubTime = now;
+
+            for (var i = currentSubtitle; i < subtitles.length; i++) {
+                if (subtitles[i]) {
+                    start = Number(subtitles[i].start);
+                    stop = Number(subtitles[i].end);
+                    // Log("i:" + i + " start:" + start + " stop:" + stop + " now:" + now);
+                    if ((start <= now) && (now < stop)) {
+                        if (currentSubtitle != i || currentSubtitle === 0) {
+                            this.OnSubtitleTimeHandler(subtitles[i].text, stop-now);
+                            currentSubtitle = i;
+                        }
+                        break;
+                    } else {
+                        stop = Number(subtitles[currentSubtitle].end);
+                        if (subtitles[i + 1] && subtitles[i + 1].start > now) {
+                            //do we need to hide the current subtitle?
+                            if (now > stop) {
+                                // Log("Clearing srt due to next, start:" + subtitles[i + 1].start);
+                                widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+                            }
+                            break;
+                        } else if (now > stop) {
+                            // Log("Clearing srt due to end");
+                            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+                        }
+                    }
+                }
+            }
+        } else {
+            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+        }
+    } catch (err) {
+        Log("Error displaying subtitle: " + err);
+    }
+};
+
+Player.OnSubtitleTimeHandler = function (subline, timeout) {
+    try {
+        if (subtitlesEnabled === false || isEmpty(subline)) {
+            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+            return false;
+        }
+
+        var t = subline;
+        t = t.replace(/\n\r/g, "<br />");
+        t = t.replace(/\r\n/g, "<br />");
+        t = t.replace(/\n/g, "<br />");
+        t = t.replace(/\r/g, "<br />");
+        t = t.replace(/<BR>/g, "<br />");
+        t = t.replace(/<BR \/>/g, "<br />");
+        t = t.replace(/<br>/g, "<br />");
+        t = t.replace(/<\/br>/g, "<br />");
+        t = t.replace(/<\/BR>/g, "<br />");
+        t = t.replace(/<br \/>$/, "");//remove last one
+
+        var lines = (t.match(/<br \/>/g) || []).length;
+        var i = 2 - lines;
+        var cs = "";
+        while (i > 0) {
+            cs += "<br />";
+            i--;
+        }
+        $("#srtSubtitle").html(cs + t);
+        // Log("Showing sub:" + cs + t);
+        clearTimeout(subtitleTimer);
+        subtitleTimer = setTimeout(function () {
+            // Log("Clearing srt due to timer");
+            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+        }, timeout+100)
+
+    } catch (e) {
+        Log("Player.OnSubtitleTimeHandler error: " + e.message);
+    }
+};
+
+function isEmpty(obj) {
+    if (typeof obj === 'undefined' || obj === null || obj === '') return true;
+    if (typeof obj === 'number' && isNaN(obj)) return true;
+    if (obj instanceof Date && isNaN(Number(obj))) return true;
+    return false;
+};
+
+Player.getSubtitleSize = function () {
+    var savedValue = this.getCookie("subSize");
+    if (savedValue) {
+        // To avoid it ever beeing cleared
+        this.setCookie("subSize", savedValue, 100);
+        return Number(savedValue);
+    } else {
+        return 30;
+    }
+};
+
+Player.getSubtitlePos = function () {
+    var savedValue = this.getCookie("subPos");
+    if (savedValue) {
+        // To avoid it ever beeing cleared
+        this.setCookie("subPos", savedValue, 100);
+        return Number(savedValue);
+    } else {
+        return 405;
+    }
+};
+
+Player.getSubtitleLineHeight = function () {
+    var savedValue = this.getCookie("subHeight");
+    if (savedValue) {
+        // To avoid it ever beeing cleared
+        this.setCookie("subHeight", savedValue, 100);
+        return Number(savedValue);
+    } else {
+        return 100;
+    }
+};
+
+Player.saveSubtitleSize = function (value) {
+    this.setCookie("subSize", value, 100); 
+};
+
+Player.saveSubtitlePos = function (value) {
+    this.setCookie("subPos", value, 100);
+};
+
+Player.saveSubtitleLineHeight = function (value) {
+    this.setCookie("subHeight", value, 100);
+};
+
+Player.moveSubtitles = function (moveUp) {
+    if (!subtitlesEnabled) return;
+    var oldValue = this.getSubtitlePos();
+    var newValue = (moveUp) ? oldValue-2 : oldValue+2;
+    Log("moveSubtitles new:" + newValue);
+    if (newValue > 300 && newValue < 550) {
+        $("#srtSubtitle").css("top", newValue); // write value to CSS
+        this.saveSubtitlePos(newValue);
+        this.showTestSubtitle();
+    }
+};
+
+Player.sizeSubtitles = function(increase) {
+    if (!subtitlesEnabled) return;
+    var oldValue = this.getSubtitleSize();
+    var newValue = (increase) ? oldValue+1 : oldValue-1;
+    Log("sizeSubtitles new:" + newValue);
+    if (newValue > 15 && newValue < 51) {
+        $("#srtSubtitle").css("font-size", newValue); // write value to CSS
+        this.saveSubtitleSize(newValue);
+        this.showTestSubtitle();
+    }
+};
+
+Player.separateSubtitles = function(increase) {
+    if (!subtitlesEnabled) return;
+    var oldValue = this.getSubtitleLineHeight();
+    var newValue = (increase) ? oldValue+1 : oldValue-1;
+    Log("separateSubtitles new:" + newValue);
+    if (newValue >= 100 && newValue < 200) {
+        if (newValue == 100) {
+            $("#srtSubtitle").css("line-height", ""); // write value to CSS
+        } else {
+            $("#srtSubtitle").css("line-height", newValue + "%"); // write value to CSS
+        }
+        this.saveSubtitleLineHeight(newValue);
+        this.showTestSubtitle();
+    }
+};
+
+Player.showTestSubtitle = function () {
+    if ($("#srtSubtitle").html() == "") 
+    {
+        $("#srtSubtitle").html("<br />Test subtitle<br />Test subtitle");
+    }
+}
+
+Player.setSubtitleProperties = function() {
+    $("#srtSubtitle").css("font-size", this.getSubtitleSize());
+    $("#srtSubtitle").css("top", this.getSubtitlePos());
+
+    var lineHeight = this.getSubtitleLineHeight();
+    if (lineHeight > 100)
+        $("#srtSubtitle").css("line-height", lineHeight + "%");
+    else
+        $("#srtSubtitle").css("line-height", "");
+};
+
+Log = function (msg) 
+{
+    // var logXhr = new XMLHttpRequest();
+    // logXhr.onreadystatechange = function () {
+    //     if (logXhr.readyState == 4) {
+    //         logXhr.destroy();
+    //         logXhr = null;
+    //     }
+    // };
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
+    // logXhr.send();
+    alert(msg);
 };

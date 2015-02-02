@@ -1,4 +1,5 @@
 var tvKey = new Common.API.TVKeyValue();
+var isTopRowSelected = true;
 
 var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, search = 4, player2 = 5, language = 6, imeSearch = 7, blocked = 8, connection error = 9
 var keyHeld = false;
@@ -18,6 +19,7 @@ var menuId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
 var reslButton = ["#resl1", "#resl2", "#resl3", "#resl4", "#resl5"];
 var langButton = ["#english", "#swedish"];
+var seqNo = 0;
 var Buttons =
 {
     
@@ -86,7 +88,7 @@ Buttons.enableKeys = function()
 
 Buttons.clearKey = function() 
 {
-    alert("clearKey");
+    Log("clearKey");
     lastKey = 0;
     keyHeld = false;
 };
@@ -114,7 +116,7 @@ Buttons.keyHandleForList = function()
         }
 
         if (keyCode != lastKey || keyHeld) {
-                alert("Key handled: " + keyCode + " lastKey=" + lastKey);
+                Log("Key handled: " + keyCode + " lastKey=" + lastKey);
                 lastKey = keyCode;
                 window.clearTimeout(keyTimer);
                 if (keyHeld) {
@@ -163,32 +165,38 @@ Buttons.keyHandleForList = function()
 	                    break;
 
 			case tvKey.KEY_DOWN:
-				if(bottomItems.length > columnCounter){
+				if(isTopRowSelected && bottomItems.length > columnCounter){
+                                        isTopRowSelected = false;
 					itemSelected.removeClass('selected');
 					itemSelected = bottomItems.eq(columnCounter).addClass('selected');
 				}
 				break;
+
 			case tvKey.KEY_UP:				
-				itemSelected.removeClass('selected');
-				itemSelected = topItems.eq(columnCounter).addClass('selected');				
+		               if (!isTopRowSelected) {
+                                   isTopRowSelected = true;
+		                   itemSelected.removeClass('selected');
+               		           itemSelected = topItems.eq(columnCounter).addClass('selected');				
+                                }
 				break;
 			case tvKey.KEY_INFO:
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
                         case tvKey.KEY_PLAY:
 				var ilink = itemSelected.find('.ilink').attr("href");
-				alert(ilink);
+				Log(ilink);
                                 if (ilink != undefined)
                                 {
                                     if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
-                                        alert("JTDEBUG Adding ?play to ilink:" + ilink)
+                                        // Log("Adding ?play to ilink:" + ilink)
                                         ilink = ilink + "?play";
                                     }
                                     else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
                                         // Info only relevant if episode, not if show.
                                         break;
                                     }
-	                            window.location = ilink;
+                                    
+	                            this.setLocation(ilink);
                                 }
                                 else {
 	                            itemSelected.removeClass('selected');
@@ -200,7 +208,7 @@ Buttons.keyHandleForList = function()
 		this.sscroll(itemSelected);
         }
         else {
-            alert("Key repeated, first time is ignored: " + keyCode + " KeyHeld:" + keyHeld);
+            Log("Key repeated, first time is ignored: " + keyCode + " KeyHeld:" + keyHeld);
             keyHeld = true;
             window.clearTimeout(keyTimer);
 	    keyTimer = window.setTimeout(this.clearKey, 600);
@@ -227,6 +235,7 @@ nextInList = function(topItems, itemSelected, steps)
     } else {
 	itemSelected = topItems.eq(0).addClass('selected');
 	columnCounter = 0;
+        isTopRowSelected = true;
     }
     return itemSelected;
 };
@@ -251,6 +260,7 @@ prevInList = function(topItems, itemSelected, steps)
     } else {
 	itemSelected = topItems.last().addClass('selected');
 	columnCounter = topItems.length - 1;
+        isTopRowSelected = true;
     }
     return itemSelected;
 };
@@ -272,9 +282,9 @@ Buttons.keyHandleForDetails = function()
 		break;
 		case tvKey.KEY_ENTER:
 		case tvKey.KEY_PANEL_ENTER:
-			alert("enter");
+			Log("enter");
 			if(isLeft == 0){
-				history.go(-1);
+			        this.goBack();
 			}
 			else{
 				Details.startPlayer();
@@ -319,7 +329,7 @@ Buttons.keyHandleForLanguage = function()
 				break;
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
-				alert("enter");
+				Log("enter");
 				if(lSel == 1){
 					$('#swedish').addClass('checked');
 					$('#swedish').addClass('selected');
@@ -353,7 +363,7 @@ Buttons.keyHandleForLanguage = function()
 				cSel = ri;
 			}
 		}
-		alert(cSel);
+		Log(cSel);
 		switch(keyCode)
 		{
 			case tvKey.KEY_RIGHT:
@@ -374,7 +384,7 @@ Buttons.keyHandleForLanguage = function()
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
 				if(cSel > -1){
-					alert("enter");
+					Log("enter");
 					var rj = 0;
 					for(rj = 0; rj < resButton.length; rj++){
 						if($(resButton[rj]).hasClass('checked')){
@@ -409,7 +419,7 @@ Buttons.keyHandleForLanguage = function()
 				cSel = ri;
 			}
 		}
-		alert(cSel);
+		Log(cSel);
 		switch(keyCode)
 		{
 			case tvKey.KEY_RIGHT:
@@ -430,7 +440,7 @@ Buttons.keyHandleForLanguage = function()
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
 				if(cSel > -1){
-					alert("enter");
+					Log("enter");
 					var rj = 0;
 					for(rj = 0; rj < reslButton.length; rj++){
 						if($(reslButton[rj]).hasClass('checked')){
@@ -495,7 +505,7 @@ Buttons.keyHandleForSearch = function()
 				first = false;
 			}
 			var character = $this.html(); // If it's a lowercase letter, nothing happens to this variable
-			alert(character);
+			Log(character);
         // Shift keys
         if ($this.hasClass('left-shift') || $this.hasClass('right-shift')) {
             $('.letter').toggleClass('uppercase');
@@ -525,7 +535,7 @@ Buttons.keyHandleForSearch = function()
         if ($this.hasClass('space')) character = ' ';
         if ($this.hasClass('tab')) character = "\t";
         if ($this.hasClass('return')) {
-			window.location = 'SearchList.html?sok=' + $('#write').val();
+			this.setLocation('SearchList.html?sok=' + $('#write').val());
 			return false;
 		}
 
@@ -541,7 +551,7 @@ Buttons.keyHandleForSearch = function()
         }
 
         // Add the character
-		alert("text " + $('#write').val() + character);
+		Log("text " + $('#write').val() + character);
         $('#write').val($('#write').val() + character);
 		break;
 	}
@@ -550,7 +560,7 @@ Buttons.keyHandleForSearch = function()
 		keyCount = keys.length - 1;
 	}
 	keys.eq(keyCount).addClass('selected');
-	alert(keyCount);
+	Log(keyCount);
 	$('.keyboard').hide(0, function(){$(this).show();});
 	this.handleMenuKeys(keyCode);
 };
@@ -572,9 +582,9 @@ Buttons.keyHandleForKanaler = function()
 		break;
 		case tvKey.KEY_ENTER:
 		case tvKey.KEY_PANEL_ENTER:
-			alert("enter");
+			Log("enter");
 			if(isLeft == 0){
-				history.go(-1);
+			        this.goBack();
 			}
 			else{
 				Kanaler.startPlayer();
@@ -599,19 +609,19 @@ Buttons.keyHandleForPlayer2 = function(){
 				Player.stopVideo();
 				break;
 			case tvKey.KEY_VOL_DOWN:
-					alert("VOL_DOWN");
+					Log("VOL_DOWN");
 					Audio.setRelativeVolume(1);
 				break;
 			case tvKey.KEY_PANEL_VOL_DOWN:
-				alert("VOL_DOWN");
+				Log("VOL_DOWN");
 					Audio.setRelativeVolume(1);
 				break;
 			case tvKey.KEY_VOL_UP:
-				alert("VOL_UP");
+				Log("VOL_UP");
 				Audio.setRelativeVolume(0);
 				break;
 			case tvKey.KEY_PANEL_VOL_UP:
-				alert("VOL_UP");
+				Log("VOL_UP");
 				Audio.setRelativeVolume(0);
 				break;
 			case tvKey.KEY_RETURN:
@@ -619,33 +629,33 @@ Buttons.keyHandleForPlayer2 = function(){
 				Player.stopVideo();
 				break;
 			case tvKey.KEY_CH_UP:
-				alert('ch up');
+				Log('ch up');
 				Player.stopVideoNoCallback();
 				if(channelId < channels.length - 1){
 					channelId = channelId + 1;
-					window.location = 'kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1';
+					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_PANEL_CH_UP:
-				alert('ch up');
+				Log('ch up');
 				Player.stopVideoNoCallback();
 				if(channelId < channels.length - 1){
 					channelId = channelId + 1;
-					window.location = 'kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1';
+					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_CH_DOWN:
 				Player.stopVideoNoCallback();
 				if(channelId > 0){
 					channelId--;
-					window.location = 'kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1';
+					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_PANEL_CH_DOWN:
 				Player.stopVideoNoCallback();
 				if(channelId > 0){
 					channelId--;
-					window.location = 'kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1';
+					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_INFO:
@@ -657,68 +667,84 @@ Buttons.keyHandleForPlayer2 = function(){
 			}
 };
 Buttons.keyHandleForPlayer = function(){
-	var keyCode = event.keyCode;
-	switch(keyCode)
-		{
-			case tvKey.KEY_RIGHT:
-                                Player.skipLongForwardVideo();
-				break;
-			case tvKey.KEY_LEFT:
-                                Player.skipLongBackwardVideo();
-				break;
-			case tvKey.KEY_RW:
-				Player.skipBackwardVideo();
-				break;
-			case tvKey.KEY_PAUSE:
-				Player.pauseVideo();
-				break;
-			case tvKey.KEY_FF:
-				Player.skipForwardVideo();
-				break;
-			case tvKey.KEY_PLAY:
-				Player.resumeVideo();
-				break;
-			case tvKey.KEY_STOP:
-				Player.stopVideo();
-				break;
-			case tvKey.KEY_VOL_DOWN:
-					alert("VOL_DOWN");
-					Audio.setRelativeVolume(1);
-				break;
-			case tvKey.KEY_PANEL_VOL_DOWN:
-				alert("VOL_DOWN");
-					Audio.setRelativeVolume(1);
-				break;
-			case tvKey.KEY_VOL_UP:
-				alert("VOL_UP");
-					Audio.setRelativeVolume(0);
-				break;
-			case tvKey.KEY_PANEL_VOL_UP:
-				alert("VOL_UP");
-					Audio.setRelativeVolume(0);
-				break;
-			case tvKey.KEY_RETURN:
-				widgetAPI.blockNavigation(event); 
-				Player.stopVideo();
-				break;
-			case tvKey.KEY_EXIT:
-				Player.stopVideo();
-	            // Terminated by force
-	            break;
-			case tvKey.KEY_INFO:
-				Player.showInfo();
-				break;
-			case tvKey.KEY_MUTE:
-				Audio.toggleMute();
-				break;
-			 break;
-			case tvKey.KEY_BLUE:
-			case tvKey.KEY_ASPECT:
-				Player.toggleAspectRatio();
-				break;
-			 break;
-                    
-		}
+    var keyCode = event.keyCode;
+    switch(keyCode)
+    {
+    case tvKey.KEY_RIGHT:
+        Player.skipLongForwardVideo();
+	break;
+    case tvKey.KEY_LEFT:
+        Player.skipLongBackwardVideo();
+	break;
+    case tvKey.KEY_RW:
+	Player.skipBackwardVideo();
+	break;
+    case tvKey.KEY_PAUSE:
+	Player.pauseVideo();
+	break;
+    case tvKey.KEY_FF:
+	Player.skipForwardVideo();
+	break;
+    case tvKey.KEY_PLAY:
+	Player.resumeVideo();
+	break;
+    case tvKey.KEY_STOP:
+	Player.stopVideo();
+	break;
+    case tvKey.KEY_VOL_DOWN:
+	Log("VOL_DOWN");
+	Audio.setRelativeVolume(1);
+	break;
+    case tvKey.KEY_PANEL_VOL_DOWN:
+	Log("VOL_DOWN");
+	Audio.setRelativeVolume(1);
+	break;
+    case tvKey.KEY_VOL_UP:
+	Log("VOL_UP");
+	Audio.setRelativeVolume(0);
+	break;
+    case tvKey.KEY_PANEL_VOL_UP:
+	Log("VOL_UP");
+	Audio.setRelativeVolume(0);
+	break;
+    case tvKey.KEY_RETURN:
+	widgetAPI.blockNavigation(event); 
+	Player.stopVideo();
+	break;
+    case tvKey.KEY_EXIT:
+	Player.stopVideo();
+	// Terminated by force
+	break;
+    case tvKey.KEY_INFO:
+	Player.showInfo();
+	break;
+    case tvKey.KEY_MUTE:
+	Audio.toggleMute();
+	break;
+    case tvKey.KEY_BLUE:
+    case tvKey.KEY_ASPECT:
+	Player.toggleAspectRatio();
+	break;
+    case tvKey.KEY_YELLOW:
+	Player.toggleSubtitles();
+	break;
+
+    case tvKey.KEY_UP:
+    case tvKey.KEY_DOWN:
+	Player.moveSubtitles(keyCode == tvKey.KEY_UP);
+	break;
+
+    case tvKey.KEY_2:
+    case tvKey.KEY_8:
+	Player.sizeSubtitles(keyCode == tvKey.KEY_2);
+	break;
+
+    case tvKey.KEY_4:
+    case tvKey.KEY_6:
+	Player.separateSubtitles(keyCode == tvKey.KEY_6);
+	break;
+        
+    }
 };
 
 
@@ -730,7 +756,7 @@ Buttons.keyHandleForGeofilter = function()
 		
 		case tvKey.KEY_ENTER:
 		case tvKey.KEY_PANEL_ENTER:
-			history.go(-1);
+	                history.go(-1);
 			break;
 		
 	}
@@ -759,23 +785,24 @@ Buttons.handleMenuKeys = function(keyCode){
 		{
 			case tvKey.KEY_RED: 
                                 // Use history to be able to use IME
+                                this.savePosValue("");
                                 history.go(-(history.length - 1));
-				// window.location = 'index.html';
+				// this.setLocation('index.html');
 				break;
 			case tvKey.KEY_GREEN: 
-				window.location = 'categories.html';
+				this.setLocation('categories.html');
 				break;
 			case tvKey.KEY_YELLOW:
-				window.location = 'live.html';
+				this.setLocation('live.html');
 				break;
 			case tvKey.KEY_BLUE:
 				Language.hide();
                                 if (window.location.href.search('/index.html') != -1) {
-                                    alert("Search in index.html");
+                                    Log("Search in index.html");
                                     Search.imeShow();
                                 }
                                 else {
-                                    alert("Search in other" + window.location.href);
+                                    Log("Search in other" + window.location.href);
 	                            Search.show();
                                 }
 				break;
@@ -791,9 +818,8 @@ Buttons.handleMenuKeys = function(keyCode){
 					Search.hide();
 				}
 				else if(ifound < 0){
-					alert("not index.html");
 					widgetAPI.blockNavigation(event); 
-					history.go(-1);
+					this.goBack();
 				}
 				else{
 					//terminate app
@@ -813,3 +839,133 @@ Buttons.handleMenuKeys = function(keyCode){
 			 break;
 		}
 };
+
+Buttons.getCookie = function(cName){
+    var i,x,y,ARRcookies=document.cookie.split(";");
+    for (i=0;i<ARRcookies.length;i++)
+    {
+        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+        x=x.replace(/^\s+|\s+$/g,"");
+        if (x==cName)
+        {
+            return unescape(y);
+        }
+    }
+    return null;
+};
+
+// Methods for "restoring" item position during "history.back"
+
+Buttons.setCookie = function(cName,value,exdays)
+{
+    var exdate=new Date();
+    exdate.setDate(exdate.getDate() + exdays);
+    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    document.cookie=cName + "=" + c_value;
+};
+
+Buttons.setLocation = function(location)
+{
+    this.addPos();
+    window.location = location;
+};
+
+Buttons.goBack = function(location)
+{
+    // history.length doesn't seem to get updated by history.go(-1) really... Or was it only in emulator...
+    this.saveRestorePos(this.popPos());
+    history.go(-1);
+};
+
+Buttons.restorePosition = function() 
+{
+    var pos = Buttons.popRestorePos();
+    if (pos) {
+        Buttons.setPosition(pos[0], pos[1]);
+    }
+};
+
+Buttons.setPosition = function(oldColumnCounter, top)
+{
+    if (itemSelected) {
+        itemSelected.removeClass('selected');
+    } else {
+        $('.topitem').eq(0).removeClass('selected');
+    }
+    if (top) itemSelected = $('.topitem').eq(oldColumnCounter).addClass('selected');
+    else     itemSelected = $('.bottomitem').eq(oldColumnCounter).addClass('selected');
+    columnCounter = oldColumnCounter;
+    isTopRowSelected = top;
+    // Log("Position set to "  + oldColumnCounter + " " + top);
+    this.sscroll();
+};
+
+Buttons.addPos = function() {
+    var oldPosition = this.getSavedPosValue();
+    
+    if (oldPosition && oldPosition.split('n').length > 0 && history.length > 1)
+        this.savePosValue(oldPosition + "n" + columnCounter + "," + isTopRowSelected*1);
+    else
+        this.savePosValue(columnCounter + "," + isTopRowSelected*1);
+};
+
+Buttons.savePosValue = function(posValue) {
+    this.setCookie("history_pos", posValue);
+    // Log("history_pos saved:" + posValue);
+};  
+
+Buttons.popPos = function() {
+    var oldPosition = this.getSavedPosValue();
+    if (oldPosition) {
+        oldPosition = oldPosition.split('n');
+        // Log("oldPosition: " + oldPosition);
+        var pos = oldPosition.pop();
+        this.savePosValue(oldPosition.join('n'));
+        if (pos.length > 2) {
+            return pos.match(/([0-9]+,[0-9])/)[1];
+        }
+    }
+    return null
+};
+
+Buttons.getSavedPosValue = function() {
+    return this.getCookie("history_pos");
+};
+
+Buttons.saveRestorePos = function(posValue) {
+    this.setCookie("restore_pos", posValue);
+    // Log("restore_pos saved:" + posValue);
+};
+
+Buttons.popRestorePos = function() {
+    var pos = this.getSavedRestorePos();
+
+    if (pos) {
+        this.saveRestorePos("");
+        if (pos.length > 2) {
+            pos = pos.match(/([0-9]+),([0-9])/);
+            return [pos[1]*1, pos[2] == 1];
+        }
+    }
+    return null
+};
+
+Buttons.getSavedRestorePos = function() {
+    return this.getCookie("restore_pos");
+};
+
+function Log(msg) 
+{
+    // var logXhr = new XMLHttpRequest();
+    // logXhr.onreadystatechange = function () {
+    //     if (logXhr.readyState == 4) {
+    //         logXhr.destroy();
+    //         logXhr = null;
+    //     }
+    // };
+    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
+    // logXhr.send();
+    alert(msg);
+};
+

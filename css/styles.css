@@ -10,6 +10,51 @@ body {
 	overflow:hidden;
 }
 
+#srtSubtitle {
+    text-align: center;
+    letter-spacing: -1px;
+    color: white;
+}
+
+#srtBlock {
+    color: white;
+    text-align: center;
+}
+
+/*
+###############################
+#
+#       SUBTITLES
+#
+###############################
+*/
+
+.subtitles {
+    /*position: absolute;*/
+    position: relative;
+    overflow: hidden;
+    top: 405px;
+    left: 0px;
+    width: 958px;
+    height: 80px;
+    text-align: center;
+    font-size: 30px;
+    color: white;
+    opacity: 0.9;
+    border: 0px solid red;
+    text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
+    z-index: 3;
+    background-color:rgba(0, 0, 0, 0.5);
+}
+
+.subtitles i {
+    color: white;
+}
+
+.subtitles b {
+    color: white;
+}
+
 .topmenu a:hover, .topmenu a.active, .news-name a, .scroll-item-name a:hover, a.link-view, .column h2, .news-name h2, a.link-button.selected, 
 a.link-button2, a.link-button4.selected, .btn-submit, .short-title a:hover, a:hover, .contact-form .btn-submit, h1, .dropdown .root-item span, #cboxTitle{
  color:#58b827;
