@@ -188,8 +188,15 @@ Buttons.keyHandleForList = function()
                                 if (ilink != undefined)
                                 {
                                     if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
-                                        // Log("Adding ?play to ilink:" + ilink)
-                                        ilink = ilink + "?play";
+				        var duration = itemSelected.find('.ilink').attr("data-length");
+                                        var isLive   = (itemSelected.find('.ilink').attr("is-live") != null);
+                                        if (duration.search(/[hsekmin]/) == -1) {
+                                            duration = duration + " sek";
+                                        }
+                                        Player.setDuration(duration);
+                                        Player.setNowPlaying(itemSelected.find('a').text());
+                                        Player.startPlayer(ilink.match(/ilink=(.+)&history/)[1], isLive);
+                                        break;
                                     }
                                     else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
                                         // Info only relevant if episode, not if show.
@@ -712,6 +719,12 @@ Buttons.keyHandleForPlayer = function(){
 	Player.stopVideo();
 	break;
     case tvKey.KEY_EXIT:
+    case tvKey.KEY_INFOLINK:
+    case tvKey.KEY_HOME:
+    case tvKey.KEY_MENU:
+    case tvKey.KEY_PANEL_MENU:
+    case tvKey.KEY_12:
+    case tvKey.KEY_DISC_MENU:
 	Player.stopVideo();
 	// Terminated by force
 	break;
@@ -726,6 +739,8 @@ Buttons.keyHandleForPlayer = function(){
 	Player.toggleAspectRatio();
 	break;
     case tvKey.KEY_YELLOW:
+    case tvKey.KEY_SUBTITLE:     
+    case tvKey.KEY_SUB_TITLE:
 	Player.toggleSubtitles();
 	break;
 
@@ -785,8 +800,13 @@ Buttons.handleMenuKeys = function(keyCode){
 		{
 			case tvKey.KEY_RED: 
                                 // Use history to be able to use IME
+                                var myHistoryLength = this.getSavedPosValue();
+                                if (myHistoryLength)
+                                    myHistoryLength = myHistoryLength.split('n').length;
+                                else
+                                    myHistoryLength = history.length-1;
                                 this.savePosValue("");
-                                history.go(-(history.length - 1));
+                                history.go(-myHistoryLength);
 				// this.setLocation('index.html');
 				break;
 			case tvKey.KEY_GREEN: 
@@ -826,6 +846,12 @@ Buttons.handleMenuKeys = function(keyCode){
 				}
 				break;
 			case tvKey.KEY_EXIT:
+                        case tvKey.KEY_INFOLINK:
+                        case tvKey.KEY_HOME:
+                        case tvKey.KEY_MENU:
+                        case tvKey.KEY_PANEL_MENU:
+                        case tvKey.KEY_12:
+                        case tvKey.KEY_DISC_MENU:
 	            // Terminated by force
 	            break;
 			case tvKey.KEY_TOOLS:

@@ -27,7 +27,7 @@ SearchList.onLoad = function()
 
 SearchList.onUnload = function()
 {
-
+	Player.deinit();
 };
 
 SearchList.enableKeys = function()
@@ -130,7 +130,9 @@ function decode_data(searchData) {
     try {
         var html;
         var Name;
+        var Duration;
         var IsLive;
+        var IsLiveText;
         var running;
         var starttime;
         var Link;
@@ -139,6 +141,7 @@ function decode_data(searchData) {
         var ImgLink;
         for (var k=0; k < searchData.length; k++) {
             Name = searchData[k].match(/data-title="([^"]+)"/)[1];
+            Duration = searchData[k].match(/data-length="([^"]+)"/);
             Description = searchData[k].match(/data-description="([^"]+)"/);
             Link = searchData[k].match(/href="([^#][^#"]+)"/)[1];
             ImgLink = searchData[k].match(/data-imagename="([^"]+)"/);
@@ -154,10 +157,12 @@ function decode_data(searchData) {
 	    }
             LinkPrefx = '<a href="showList.html?name=';
             if (Link.search("/klipp/") != -1 || Link.search("/video/") != -1) {
+                Duration = Duration[1];
                 LinkPrefx = '<a href="details.html?ilink=';
             }
             else {
                 Link = "http://svtplay.se" + Link
+                Duration = 0;
             }
 	    if(itemCounter % 2 == 0){
 		if(itemCounter > 0){
@@ -171,8 +176,9 @@ function decode_data(searchData) {
 		html = '<div class="scroll-content-item bottomitem">';
 	    }
 
+            IsLiveText = (IsLive) ? " is-live" : "";
 	    html += '<div class="scroll-item-img">';
-	    html += LinkPrefx + Link + '&history=' + document.title  + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
+	    html += LinkPrefx + Link + '&history=' + document.title + '/' + Name + '/" class="ilink" data-length="' + Duration + '"' + IsLiveText + '><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
 
 	    if (IsLive && !running) {
 		html += '<span class="topoverlay">LIVE</span>';

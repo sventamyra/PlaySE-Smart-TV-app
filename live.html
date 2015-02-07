@@ -8,6 +8,7 @@
     <!-- TODO : Common API -->
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/API/Widget.js"></script>
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/API/TVKeyValue.js"></script>
+    <script type="text/javascript" src="$MANAGER_WIDGET/Common/API/Plugin.js"></script>
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/jquery.js"></script>
     <!-- js/jquery.min.js -->
     <!-- TODO : Javascript code -->
@@ -18,14 +19,45 @@
 	<script type="text/javascript" src="app/javascript/ConnectionError.js"></script>
 	<script type="text/javascript" src="app/javascript/Resolution.js"></script>
 	<script type="text/javascript" src="app/javascript/Audio.js"></script>
+	<script type="text/javascript" src="app/javascript/Player.js"></script>
 	<script type="text/javascript" src="app/javascript/Header.js"></script>
 	<script type="text/javascript" src="app/javascript/Footer.js"></script>
-	<object id="pluginAudio" border="0" classid="clsid:SAMSUNG-INFOLINK-AUDIO"></object>
         <object id="pluginObjectNNavi" border="0" classid="clsid:SAMSUNG-INFOLINK-NNAVI" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object> <!-- firmware 2010/2011 - Tools -->
+        <object id="pluginPlayer" border="0" classid="clsid:SAMSUNG-INFOLINK-PLAYER"></object>
+        <object id="pluginAudio" border="0" classid="clsid:SAMSUNG-INFOLINK-AUDIO"></object>
+        <object id="pluginTVMW" border="0" classid="clsid:SAMSUNG-INFOLINK-TVMW"></object>
 </head>
 <body onload="live.onLoad();" onunload="live.onUnload();">
     <!-- Dummy anchor as focus for key events -->
     <a href="javascript:void(0);" id="anchor" onkeydown="Buttons.keyDown();"></a>
+    <div class="video-wrapper">
+        <div class="video-header">
+        </div>
+        <span class="topoverlayresolution"></span>
+        <span class="topoverlaybig">Nu visas:</span> 
+	<span class="bottomoverlaybig">Buffrar: 100%</span>
+        <div class="video-push">
+        </div>
+    </div>
+    <span class="muteoverlay"><img src="images/mute.png" alt="" border="0" /></span>
+    <div id="flash-content">
+	            <iframe id="iframe" width="100%" height="100%" frameborder="0">Your browser does not support iFrames</iframe>
+     </div>
+    <div class="video-footer">
+	<div class="currentTime">
+            00:00</div>
+        <div class="totalTime">
+            00:00</div>
+        <div class="progressfull">
+        </div>
+        <div class="thumb">
+        </div>
+        <div class="progressempty">
+        </div>
+    </div>
+    <div id="srtBlock">
+      <span id="srtSubtitle" class="subtitles"></span>
+    </div>
    <div id="outer">
         <div class="container">
             <!-- header -->

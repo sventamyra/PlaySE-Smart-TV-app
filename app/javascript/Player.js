@@ -101,6 +101,10 @@ Player.setFullscreen = function()
 
 Player.setVideoURL = function(url, srtUrl)
 {
+    if (srtUrl && srtUrl.length > 0) {
+        this.fetchSubtitle(srtUrl);
+    }
+
     videoUrl = url;
     Log("URL = " + videoUrl);
 };
@@ -120,7 +124,16 @@ Player.setDuration = function(duration)
         this.sourceDuration = 0;
     }
     // Log("Player.sourceDuration: " + this.sourceDuration);
+};
 
+Player.setNowPlaying = function (Name) {
+    var nowPlaying = 'Now playing';
+    if(Language.getisSwedish()) {
+        nowPlaying = 'Nu visas';
+    }
+    $('.topoverlaybig').html(nowPlaying+': ' + Name);
+    alert("name:" + Name);
+    alert("top:" + $('.topoverlaybig').html());
 };
 
 GetDigits = function(type, data)
@@ -193,7 +206,6 @@ Player.stopVideo = function()
         widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
         this.plugin.Stop();
 		//pluginAPI.set0nScreenSaver(6000);
-        $('.topoverlayresolution').html("");
         if (this.stopCallback)
         {
             this.stopCallback();
@@ -606,6 +618,104 @@ Player.getAspectModeText = function()
         return "";
 };
 
+Player.startPlayer = function(url, isLive)
+{
+    if(Language.getisSwedish()){
+	buff='Buffrar';
+    }else{
+	buff='Buffering';
+    }
+    subtitles = [];
+    ccTime = 0;
+    lastPos = 0;
+    $('.topoverlayresolution').html("");
+    $('.currentTime').text("");
+    $('.totalTime').text("");
+    $('.progressfull').css("width", 0);
+    $('.progressempty').css("width", 960);
+
+    $('#outer').css("display", "none");
+    $('.video-wrapper').css("display", "block");
+    $('.video-footer').css("display", "block");
+    $('.bottomoverlaybig').css("display", "block");
+    $('.bottomoverlaybig').html(buff+': 0%');
+    
+    var oldKeyHandleID = Buttons.getKeyHandleID();
+    Buttons.setKeyHandleID(2);
+    
+    if ( Player.init() && Audio.init())
+    {
+	
+	Player.stopCallback = function()
+	{
+	    $('#outer').css("display", "block");
+	    $('.video-wrapper').css("display", "none");
+	    
+	    $('.video-footer').css("display", "none");
+	    
+	    Buttons.setKeyHandleID(oldKeyHandleID);
+	    /* Return to windowed mode when video is stopped
+	       (by choice or when it reaches the end) */
+	    //   Main.setWindowMode();
+	};
+        this.GetPlayUrl(url, isLive);
+    } else
+        alert("INIT FAILED!!!!!");
+        
+    
+    
+};
+
+Player.GetPlayUrl = function(gurl, isLive) {
+    if(gurl.indexOf("http://") < 0){
+	gurl = 'http://www.svtplay.se' + gurl;
+    }
+    Log("gurl:" + gurl);
+    $.getJSON(gurl + '?output=json', function(data) {
+	
+	$.each(data, function(key, val) {
+	    if(key == 'video'){
+		
+                videoUrl="";
+		for (var i = 0; i < val.videoReferences.length; i++) {
+		    Log(val.videoReferences[i].url);
+		    videoUrl = val.videoReferences[i].url;
+		    if(videoUrl.indexOf('.m3u8') >= 0){
+			break;
+		    }
+		}
+                srtUrl="";
+                for (var i = 0; i < val.subtitleReferences.length; i++) {
+		    Log(val.subtitleReferences[i].url);
+		    srtUrl = val.subtitleReferences[i].url;
+                    if (srtUrl.length > 0){
+			break;
+		    }
+		}
+
+		if(videoUrl.indexOf('.m3u8') >= 0){
+		    Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
+		}
+		else{
+		    gurl = gurl + '?type=embed';
+		    Log(gurl);
+		    widgetAPI.runSearchWidget('29_fullbrowser', gurl);
+		    // //	$('#outer').css("display", "none");
+		    // //	$('.video-wrapper').css("display", "none");
+		    
+		    // //	$('.video-footer').css("display", "none");
+
+		    // //	$('#flash-content').css("display", "block");
+		    // //	$('#iframe').attr('src', gurl);
+		}
+	    }
+	});
+	
+    });
+};
+
+
+
 // Subtitles support
 
 Player.toggleSubtitles = function () {
@@ -685,7 +795,7 @@ Player.parseSubtitle = function (xhr) {
     var srt;
     var srtdata;
     srtdata = xhr.responseText;
-    srt = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/<\/*[0-9]+>/g, ""));
+    srt = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
     var srtline = srt.split('\n\n');
     if (srtline.length > 0) {
         for (var s = 0; s < srtline.length; s++) {

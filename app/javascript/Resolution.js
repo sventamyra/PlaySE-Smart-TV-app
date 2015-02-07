@@ -3,8 +3,7 @@ var bwidths = [0, 400000, 700000, 1200000, 2000000, 3000000];
 var lbwidths = [400000, 700000, 1200000, 2000000, 3000000];
 var target = 1200000;
 var livetarget = 1200000;
-var bandwidths = [];
-var urls = [];
+
 
 var Resolution =
 {
@@ -46,6 +45,8 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl){
 			timeout: 15000,
 	       success: function(data)
 	       {
+                                var bandwidths = [];
+                                var urls = [];
 				var sa = data.split("\n");
 				var ii = 0;
 				for (ii = 0; ii < sa.length; ii++) {

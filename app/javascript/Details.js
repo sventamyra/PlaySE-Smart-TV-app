@@ -3,7 +3,6 @@ var videoUrl = '';
 var isPlaying = 0;
 var spinner;
 var buff;
-var nowPlaying;
 var language;
 var gurl = "";
 var isLive = 0;
@@ -187,7 +186,7 @@ Details.GetPlayUrl = function(){
 				    	break;
 				    }
 				}
-                                Player.setDuration(Details.duration);
+
 
 				if(videoUrl.indexOf('.m3u8') >= 0){
 				    Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
@@ -220,9 +219,8 @@ Details.loadXml = function(){
     var html;
     if (url.indexOf("http://") == -1)
         url = "http://www.svtplay.se" + url
-    var playDirectly = document.location.href.search("\\?play") != -1;
 
-    Log(playDirectly);
+
     $.support.cors = true;
     $.ajax(
         {
@@ -300,7 +298,7 @@ Details.loadXml = function(){
                         if ($video.find('section').find('a').attr('data-livestart'))
 		            isLive = true;
 
-                        Name = $($video.find('h1')[0]).text().trim();
+                        Name = $video.find('a').attr('data-title');
 		        DetailsImgLink = $video.find('img').attr('data-imagename');
                         // Log(DetailsImgLink);
                         var DetailsClock = "";
@@ -347,10 +345,7 @@ Details.loadXml = function(){
                     // Log("VideoLength:" + VideoLength);
                     // Log("onlySweden:" + onlySweden);
 
-		    if(Language.getisSwedish()){
-		        nowPlaying='Nu visas';
-		    }else{
-		        nowPlaying='Now playing';
+		    if(!Language.getisSwedish()){
 		        DetailsPlayTime=DetailsPlayTime.replace("igår","yesterday");
 		        DetailsPlayTime=DetailsPlayTime.replace("idag","today");
 		    }
@@ -377,7 +372,7 @@ Details.loadXml = function(){
 		if(Name.length > 47){
 		    Name = Name.substring(0, 47)+ "...";
 		}
-		$('.topoverlaybig').html(nowPlaying+': ' + Name);////
+                Player.setNowPlaying(Name);
 		html = '<div class="project-text">';
 		html+='<div class="project-name">';
 		html+='<h1>'+Name+'</h1>';
@@ -398,8 +393,6 @@ Details.loadXml = function(){
 		
 		Language.setDetailLang();
 
-                if (playDirectly)
-                    Details.startPlayer();
                 data = null;       
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
@@ -426,45 +419,8 @@ Details.loadXml = function(){
 
 Details.startPlayer = function()
 {
-    var playDirectly = document.location.href.search("\\?play") != -1;
-		
-    if(Language.getisSwedish()){
-	buff='Buffrar';
-    }else{
-	buff='Buffering';
-    }
-    $('#outer').css("display", "none");
-    $('.video-wrapper').css("display", "block");
-    $('.video-footer').css("display", "block");
-    $('.bottomoverlaybig').css("display", "block");
-    $('.bottomoverlaybig').html(buff+': 0%');
-    
-
-    Buttons.setKeyHandleID(2);
-    
-    if ( Player.init() && Audio.init())
-    {
-	
-	Player.stopCallback = function()
-	{
-	    isPlaying = 0;
-	    $('#outer').css("display", "block");
-	    $('.video-wrapper').css("display", "none");
-	    
-	    $('.video-footer').css("display", "none");
-	    
-	    Buttons.setKeyHandleID(1);
-	    /* Return to windowed mode when video is stopped
-	       (by choice or when it reaches the end) */
-	    //   Main.setWindowMode();
-            if (playDirectly)
-                Buttons.goBack();
-	};
-
-	//Player.setVideoURL("http://svt10hls-lh.akamaihd.net/i/svt10hls_0@78142/master.m3u8?__b__=563&bkup=off"  + "|COMPONENT=HLS");
-	isPlaying = 1;
-	this.Prepare();
-    }
+    Player.setDuration(Details.duration);
+    Player.startPlayer(this.Geturl(), isLive);
     
 };
 

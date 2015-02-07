@@ -24,7 +24,7 @@ showList.onLoad = function()
 
 showList.onUnload = function()
 {
-
+	Player.deinit();
 };
 
 
@@ -92,6 +92,7 @@ function decode_data(showData) {
     try {
         var html; 
         var Name;
+        var Duration;
         var Link;
         var ImgLink;
         for (var k=0; k < showData.length; k++) {
@@ -107,6 +108,7 @@ function decode_data(showData) {
                 // Name = $video.attr('data-title');
                 Name = showData[k].match(/data-title="([^"]+)"/)[1];
             }
+            Duration = showData[k].match(/data-length="([^"]+)"/)[1];
             Link = showData[k].match(/href="([^#][^#"]+)"/)[1];
             ImgLink = showData[k].match(/data-imagename="([^"]+)"/);
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
@@ -126,7 +128,7 @@ function decode_data(showData) {
 		html = '<div class="scroll-content-item bottomitem">';
 	    }
 	    html += '<div class="scroll-item-img">';
-	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
+	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + Name + '/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
 	    html += '</div>';
 	    html += '<div class="scroll-item-name">';
 	    html +=	'<p><a href="#">' + Name + '</a></p>';

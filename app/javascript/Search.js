@@ -42,11 +42,13 @@ function Input(/**Object*/id)
     var onEnter = function(string)
     {
         Search.imeShow(0);
-	window.location = 'SearchList.html?sok=' + $('#ime_write').val();
+        Search.setCookie("search_text", $('#ime_write').val(),1);
+	Buttons.setLocation('SearchList.html?sok=' + $('#ime_write').val());
 	return true;
     };
 
     var onReturn = function() {
+        Search.setCookie("search_text", $('#ime_write').val(),1);
         Search.imeShow();
 	return true;
     };
@@ -59,7 +61,6 @@ function Input(/**Object*/id)
 
 Search.init = function()
 {
-
 	var html = '<div class="search-content">';
 	html += '<div class="input_bg">';
 	html += '<input id="write" class="footer_input" type="text" value="Sök programtitlar..." />';
@@ -132,15 +133,6 @@ Search.init = function()
 	$('.slider-search').html(html);
 
 	var ime_html = '<div class="imesearch-content">';
-        // var search_text = "";
-        // if (input != null){
-        //     search_text = $('#ime_write').val();
-        //     alert("Search.init search_text:" + search_text);
-        // }
-        // else
-        // {
-        //     alert("Search.init null");
-        // }
 	ime_html += '<div class="input_bg">';
         ime_html += '    <form id="searchForm" onSubmit="return false;">';
 	ime_html += '        <input id="ime_write" type="text" class="footer_input" maxlength="256" />';
@@ -182,8 +174,13 @@ Search.imeShow = function(slideDuration)
         });
 
         // pluginAPI.registIMEKey()
+        var search_text = Search.getCookie("search_text");
         if(input == null)
         {
+            if (search_text) {
+	        $('#ime_write').val(search_text);
+            }
+
             try {
                 input = new Input("ime_write");
             }
@@ -219,4 +216,26 @@ Search.hide = function()
         else if (Buttons.getKeyHandleID()==7){
             Search.imeShow();
         }
+};
+
+Search.getCookie = function(cName){
+    var i,x,y,ARRcookies=document.cookie.split(";");
+    for (i=0;i<ARRcookies.length;i++)
+    {
+        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+        x=x.replace(/^\s+|\s+$/g,"");
+        if (x==cName)
+        {
+            return unescape(y);
+        }
+    }
+};
+
+Search.setCookie = function(cName,value,exdays)
+{
+    var exdate=new Date();
+    exdate.setDate(exdate.getDate() + exdays);
+    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    document.cookie=cName + "=" + c_value;
 };

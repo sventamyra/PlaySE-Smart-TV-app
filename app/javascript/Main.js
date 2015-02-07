@@ -27,7 +27,7 @@ Main.onLoad = function()
 
 Main.onUnload = function()
 {
-
+	Player.deinit();
 };
 
 
@@ -84,6 +84,7 @@ function decode_data(mainData) {
         var Name;
         var Link;
         var Description;
+        var Duration;
         var ImgLink;
         var Live;
         var starttime;
@@ -92,6 +93,7 @@ function decode_data(mainData) {
                 // Show already ended
                 continue;
             Name = mainData[k].match(/data-title="([^"]+)"/)[1];
+            Duration = mainData[k].match(/data-length="([^"]+)"/)[1];
             Link = mainData[k].match(/href="([^#][^#"]+)"/)[1];
             Description = mainData[k].match(/data-description="([^"]+)"/);
             Description = (!Description) ? "" : Description[1];
@@ -113,7 +115,7 @@ function decode_data(mainData) {
 		html = '<div class="scroll-content-item bottomitem">';
 	    }
 	    html += '<div class="scroll-item-img">';
-	    html += '<a href="details.html?ilink=' + Link + '&history=Populärt/' + Name +'/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
+	    html += '<a href="details.html?ilink=' + Link + '&history=Populärt/' + Name +'/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
 	    if(Live == 1){
 		html += '<span class="topoverlay">LIVE</span>';
 		html += '<span class="bottomoverlay">' + starttime + '</span>';
