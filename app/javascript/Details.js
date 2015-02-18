@@ -5,7 +5,7 @@ var spinner;
 var buff;
 var language;
 var gurl = "";
-var isLive = 0;
+var isLive = false;
 var airTime = 0;
 var currentTime = 0;
 var countd=0;
@@ -15,8 +15,8 @@ var seqNo = 0;
 
 var Details =
 {
-    duration:null
-
+    duration:null,
+    starttime:0
 };
 
 Details.onLoad = function()
@@ -67,7 +67,7 @@ Details.Prepare = function(){
 
     this.GetPlayUrl();
 
-    // if(isLive > 0){
+    // if(isLive){
     //     var url= "http://188.40.102.5/CurrentTime.ashx";
     //     Log(url);
     //     $.support.cors = true;
@@ -244,14 +244,16 @@ Details.loadXml = function(){
                 var AvailDate="";
 		var Description="";
 		var onlySweden="";
-                var isLive = false;
                 var $video;
+                var isChannel=false;
+                var notAvailable=false;
                 try {
 
                     if (this.url.indexOf("/kanaler/") > -1) {
                         var $video = $(data).find('div').filter(function() {
                             return $(this).attr('class') == "play_channels";
                         });
+                        isChannel = true;
 
                         Name = $video.find('a').attr('data-title');
 		        DetailsImgLink = $video.find('img').attr('data-imagename');
@@ -274,6 +276,7 @@ Details.loadXml = function(){
                         });
                         DetailsPlayTime = tsToClock(timeData.attr('data-starttime')*1) + "-" +
                             tsToClock(timeData.attr('data-endtime')*1);
+                        isLive = true;
 
                     } else if (url.indexOf("oppetarkiv") > -1) {
                         Name = $($(data).find('img')[1]).attr('alt');
@@ -315,6 +318,7 @@ Details.loadXml = function(){
                         
                         if (isLive) {
                             var duration = $video.find('section').find('a').attr('data-length');
+                            notAvailable = +($video.find('section').find('a').attr('data-livestart')) < 0;
                             var hours = Math.floor(duration/3600);
                             if (hours > 0) {
                                 VideoLength = hours + " h "
@@ -353,6 +357,12 @@ Details.loadXml = function(){
                     Details.duration = VideoLength;
 
                     airTime = DetailsPlayTime;
+                    Details.starttime = DetailsPlayTime.match(/([0-9]+[:.][0-9]+)/);
+                    if (isChannel && Details.starttime.length > 1)
+                        Details.starttime = Details.starttime[1];
+                    else 
+                        Details.starttime = 0;
+                        
 		    // Log("isLive=" + isLive);
 		    // Log("airTime=" + airTime);
 		    if (onlySweden != "false" && onlySweden != false) {
@@ -381,8 +391,13 @@ Details.loadXml = function(){
 		html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+VideoLength+'</a></div>';
 		html+='<div class="project-desc">'+Description+'</div>';
 		html+='<div class="bottom-buttons">';
-                html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a> ';
-                html+='<a href="#" id="backButton" class="link-button">Tillbaka</a>';
+                if (notAvailable) {
+                    html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
+                    html+='<a href="#" id="backButton" class="link-button selected">Tillbaka</a>';
+                } else {
+                    html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a> ';
+                    html+='<a href="#" id="backButton" class="link-button">Tillbaka</a>';
+                }
                 html+=' </div>';
 		html+=' </div>';
 		
@@ -420,7 +435,7 @@ Details.loadXml = function(){
 Details.startPlayer = function()
 {
     Player.setDuration(Details.duration);
-    Player.startPlayer(this.Geturl(), isLive);
+    Player.startPlayer(this.Geturl(), isLive, this.starttime);
     
 };
 

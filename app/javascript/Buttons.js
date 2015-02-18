@@ -190,12 +190,23 @@ Buttons.keyHandleForList = function()
                                     if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
 				        var duration = itemSelected.find('.ilink').attr("data-length");
                                         var isLive   = (itemSelected.find('.ilink').attr("is-live") != null);
+                                        var starttime = 0;
+                                        if (isLive) {
+                                            if (itemSelected.html().indexOf('bottomoverlay\"') != -1) {
+                                                // live shows already shows correct "offset"
+                                                break;
+                                            } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
+                                                // Channels don't though...
+                                                starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
+                                            }
+                                        }
+                                        // Log("isLive:" + isLive + " starttime:" + starttime);
                                         if (duration.search(/[hsekmin]/) == -1) {
                                             duration = duration + " sek";
                                         }
                                         Player.setDuration(duration);
                                         Player.setNowPlaying(itemSelected.find('a').text());
-                                        Player.startPlayer(ilink.match(/ilink=(.+)&history/)[1], isLive);
+                                        Player.startPlayer(ilink.match(/ilink=(.+)&history/)[1], isLive, starttime);
                                         break;
                                     }
                                     else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
@@ -274,33 +285,37 @@ prevInList = function(topItems, itemSelected, steps)
 
 Buttons.keyHandleForDetails = function()
 {
-	var keyCode = event.keyCode;
-	switch(keyCode)
-	{
-		case tvKey.KEY_LEFT:
-		isLeft = 1;
-		$('#playButton').addClass('selected');
-		$('#backButton').removeClass('selected');
-		break;
-		case tvKey.KEY_RIGHT:
-		isLeft = 0;
-		$('#backButton').addClass('selected');
-		$('#playButton').removeClass('selected');
-		break;
-		case tvKey.KEY_ENTER:
-		case tvKey.KEY_PANEL_ENTER:
-			Log("enter");
-			if(isLeft == 0){
-			        this.goBack();
-			}
-			else{
-				Details.startPlayer();
-			}
-			break;
-		
+    var keyCode = event.keyCode;
+    switch(keyCode)
+    {
+    case tvKey.KEY_LEFT:
+        if ($('#playButton').is(':visible')) {
+	    isLeft = 1;
+	    $('#playButton').addClass('selected');
+	    $('#backButton').removeClass('selected');
+        }
+	break;
+    case tvKey.KEY_RIGHT:
+        if ($('#playButton').is(':visible')) {
+	    isLeft = 0;
+	    $('#backButton').addClass('selected');
+	    $('#playButton').removeClass('selected');
+        }
+	break;
+    case tvKey.KEY_ENTER:
+    case tvKey.KEY_PANEL_ENTER:
+	Log("enter");
+	if(isLeft == 0 || !$('#playButton').is(':visible')) {
+	    this.goBack();
 	}
-	this.handleMenuKeys(keyCode);
+	else {
+	    Details.startPlayer();
+	}
+	break;
 	
+    }
+    this.handleMenuKeys(keyCode);
+    
 };
 
 Buttons.keyHandleForLanguage = function()

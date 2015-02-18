@@ -23,6 +23,7 @@ var Player =
     originalSource : null,
     sourceDuration: 0,
     infoActive:false,
+    offset:0,
     
     STOPPED : 0,
     PLAYING : 1,
@@ -239,7 +240,7 @@ Player.resumeVideo = function()
 Player.reloadVideo = function()
 {
 	this.plugin.Stop();
-	lastPos = Math.floor(ccTime / 1000.0);
+        lastPos = Math.floor((ccTime-Player.offset) / 1000.0);
 	this.plugin.ResumePlay(videoUrl, lastPos);
 	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
     this.state = this.PLAYING;
@@ -307,8 +308,8 @@ Player.skipBackward = function(time)
 	skipTime = ccTime;
     }
     skipTime = +skipTime - time;
-    if(+skipTime < 0){
-	skipTime = 0;
+    if(+skipTime < Player.offset){
+	skipTime = Player.offset;
     }
     this.skipState = this.REWIND;
     this.updateSeekBar(skipTime);
@@ -402,12 +403,12 @@ Player.setCurTime = function(time)
 		startup = false;
 		Audio.setCurrentMode(smute);
 	}
-	ccTime = time;
+	ccTime = +time + Player.offset;
 	if(this.skipState == -1){
-		this.updateSeekBar(time);
+	    this.updateSeekBar(ccTime);
 	}
 	if (this.state != this.PAUSED) { // because on 2010 device the device triggers this function even if video is paused
-		this.onSubTitle(time);
+	    this.onSubTitle(ccTime);
         }
 	
 };
@@ -509,19 +510,16 @@ Player.OnNetworkDisconnected = function()
 			        // url: 'http://188.40.102.5/recommended.ashx',
                                 url: 'http://www.svtplay.se/populara?sida=1',
 					timeout: 10000,
-			        success: function(data)
+			        success: function(data, status, xhr)
 			        {
-			        	
-			        	var $entries = $(data).find('video');
-
-			        	if ($entries.length > 0) {
-			        		Log('Success:' + this.url);
-			        		Player.reloadVideo();
-			        	}
-			        	else{
-			        		Log('Failure');
-			        		$.ajax(this);
-			        	}
+                                    if (xhr.responseText.split("</article>").length > 1)
+                                    {
+			        	Log('Success:' + this.url);
+			        	Player.reloadVideo();
+			            } else {
+			        	Log('Failure');
+			        	$.ajax(this);
+			            }
 			        },
 			        error: function(XMLHttpRequest, textStatus, errorThrown)
 			        {
@@ -618,13 +616,29 @@ Player.getAspectModeText = function()
         return "";
 };
 
-Player.startPlayer = function(url, isLive)
+Player.startPlayer = function(url, isLive, starttime)
 {
     if(Language.getisSwedish()){
 	buff='Buffrar';
     }else{
 	buff='Buffering';
     }
+
+    if (!isLive || +starttime == 0) {
+        Player.offset = 0;
+    } else {
+        var start_mins = starttime.match(/([0-9]+)[:.]/)[1]*60;
+        start_mins = start_mins + starttime.match(/[:.]([0-9]+)/)[1]*1;
+        var now = new Date();
+        var now_mins = now.getHours()*60 + now.getMinutes();
+
+        if (start_mins > now_mins)
+            // Time passed midnight
+            now_mins = now_mins + 24*60;
+        Player.offset = (now_mins - start_mins)*60*1000;
+        // Log("starttime:" + starttime + " start_mins:" + start_mins + " now_mins:" + now_mins + " Player.offset:" + Player.offset);
+    }
+
     subtitles = [];
     ccTime = 0;
     lastPos = 0;

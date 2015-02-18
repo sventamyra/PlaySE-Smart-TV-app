@@ -114,6 +114,7 @@ Language.setDetailLang=function(){
 		$("#available").text("Available to: ");		
 		$("#duration").text("Duration: ");
 		$("#playButton").text("Play");	
+		$("#notStartedButton").text("Not started");	
 		$("#backButton").text("Return");
 		
 	}else {
@@ -121,6 +122,7 @@ Language.setDetailLang=function(){
 		$("#available").text("Tillgänglig till: ");
 		$("#duration").text("Längd: ");
 		$("#playButton").text("Spela upp");
+		$("#notStartedButton").text("Ej Startat");
 		$("#backButton").text("Tillbaka");
 	}
 };
