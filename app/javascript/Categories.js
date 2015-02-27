@@ -57,7 +57,10 @@ Categories.loadXml = function(){
 		    //var Description = $video.find('Description').text();
 	            var ImgLink  = $video.find('img').attr('data-imagename');
                     if (!ImgLink) ImgLink = $video.find('img').attr('src');
-		    ImgLink  = "http://www.svtplay.se"+ImgLink;
+                    if (ImgLink.match(/^\/\//))
+                        ImgLink = "http:"+ImgLink;
+                    else
+		        ImgLink  = "http://www.svtplay.se"+ImgLink;
 		    if(itemCounter % 2 == 0){
 		        if(itemCounter > 0){
 			    html = '<div class="scroll-content-item topitem">';
