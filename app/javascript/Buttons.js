@@ -193,10 +193,9 @@ Buttons.keyHandleForList = function()
                                         var starttime = 0;
                                         if (isLive) {
                                             if (itemSelected.html().indexOf('bottomoverlay\"') != -1) {
-                                                // live shows already shows correct "offset"
+                                                // Not available yet
                                                 break;
                                             } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
-                                                // Channels don't though...
                                                 starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
                                             }
                                         }

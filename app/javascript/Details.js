@@ -162,11 +162,14 @@ Details.CountDown = function()
 };
 
 Details.GetPlayUrl = function(){
+        var url_param = '?output=json';
 	gurl = this.Geturl();
 	if(gurl.indexOf("http://") < 0){
 		gurl = 'http://www.svtplay.se' + gurl;
 	}
-	$.getJSON(proxy + gurl + '?output=json', function(data) {
+        if (gurl.indexOf('?') != -1)
+                url_param = '&output=json'; 
+	$.getJSON(proxy + gurl + url_param, function(data) {
 		
 		$.each(data, function(key, val) {
 			if(key == 'video'){
@@ -306,11 +309,11 @@ Details.loadXml = function(){
                         // Log(DetailsImgLink);
                         var DetailsClock = "";
                         try {
-                            DetailsClock = $video.find('li').find('time').attr('datetime').replace(/.+T([^+]+)+.+/, "$1"); 
+                            DetailsClock = $video.find('p').find('time').attr('datetime').replace(/.+T([^+]+)+.+/, "$1"); 
                         } catch(err) {
                             Log("Exception:" + err.message);
                         }
-                        DetailsPlayTime = $video.find('li').find('time').text();
+                        DetailsPlayTime = $video.find('p').find('time').text();
                         // Log(DetailsPlayTime);
                         // Log(DetailsClock);
                         if (DetailsPlayTime.indexOf(DetailsClock.replace(":", ".")) == -1)

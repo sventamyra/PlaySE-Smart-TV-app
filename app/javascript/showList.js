@@ -57,7 +57,7 @@ showList.loadXml = function(){
             {
                 Log('Success:' + this.url);
                 data = xhr.responseText.split("id=\"videos-in-same-category")[0];
-                data = "<div id=\"more-episodes-panel\"" + data.split("id=\"more-episodes-panel")[1];
+                data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
                 data = data.split("</article>");
                 data.pop();
                 xhr.destroy();
@@ -101,14 +101,10 @@ function decode_data(showData) {
             //         return $(this).attr('class') == "play_videolist-element__title-text";
             //     }).text();
             showData[k] = showData[k].split("<article")[1];
-            Name = showData[k].match(/play_videolist-element__title-text[^>]+>([^<]+)/);
-            if (Name && Name[1].length > 0) {
-                Name = Name[1].trim();
-            } else {
-                // Name = $video.attr('data-title');
-                Name = showData[k].match(/data-title="([^"]+)"/)[1];
-            }
-            Duration = showData[k].match(/data-length="([^"]+)"/)[1];
+            Name = showData[k].match(/play_vertical-list__header-link\">([^<]+)</)[1].trim();
+
+            // Duration = showData[k].match(/data-length="([^"]+)"/)[1];
+            Duration = showData[k].match(/time>([^<]+)/)[1];
             Link = showData[k].match(/href="([^#][^#"]+)"/)[1];
             ImgLink = showData[k].match(/data-imagename="([^"]+)"/);
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];

@@ -212,19 +212,6 @@ function decode_data(searchData) {
     }
 };
 
-function getModelYear() 
-{
-    var pluginNNavi = document.getElementById("pluginObjectNNavi");
-    var firmwareVersion = pluginNNavi.GetFirmware();
-
-    if (firmwareVersion === "") {  // for emulator only
-        firmwareVersion = "T-INFOLINK2011-1000";
-    }
-
-    //Main.debug("[Main.js] - firmwareVersion: " + firmwareVersion);
-    return Number(firmwareVersion.substr(10, 4));
-};
-
 function Log(msg) 
 {
     // var logXhr = new XMLHttpRequest();

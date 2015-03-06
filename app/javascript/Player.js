@@ -237,9 +237,11 @@ Player.resumeVideo = function()
 	this.hideControls();
 };
 
-Player.reloadVideo = function()
+Player.reloadVideo = function(time)
 {
 	this.plugin.Stop();
+        if (time)
+            ccTime = time;
         lastPos = Math.floor((ccTime-Player.offset) / 1000.0);
 	this.plugin.ResumePlay(videoUrl, lastPos);
 	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
@@ -253,7 +255,7 @@ Player.skipInVideo = function()
     Player.skipState = -1;
     var timediff = +skipTime - +ccTime;
     timediff = timediff / 1000;
-    if(timediff > 0){
+    if(timediff > 0) {
     	Player.plugin.JumpForward(timediff);
     	Log("forward jump: " + timediff);
     }
@@ -681,11 +683,16 @@ Player.startPlayer = function(url, isLive, starttime)
 };
 
 Player.GetPlayUrl = function(gurl, isLive) {
+    var url_param = '?output=json';
+
     if(gurl.indexOf("http://") < 0){
 	gurl = 'http://www.svtplay.se' + gurl;
     }
     Log("gurl:" + gurl);
-    $.getJSON(gurl + '?output=json', function(data) {
+    if (gurl.indexOf('?') != -1)
+        url_param = '&output=json'; 
+
+    $.getJSON(gurl+url_param, function(data) {
 	
 	$.each(data, function(key, val) {
 	    if(key == 'video'){
