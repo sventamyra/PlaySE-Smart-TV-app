@@ -107,6 +107,7 @@ function decode_data(categoryData) {
         var Link;
         var ImgLink;
         for (var k=0; k < categoryData.length; k++) {
+            categoryData[k] = "<article" + categoryData[k].split("<article")[1];
             Name = categoryData[k].match(/data-title="([^"]+)"/)[1];
             Link = "http://www.svtplay.se"+ categoryData[k].match(/href="([^"]+)"/)[1];
             ImgLink = categoryData[k].match(/data-imagename="([^"]+)"/);
