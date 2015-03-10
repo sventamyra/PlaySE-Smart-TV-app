@@ -2,7 +2,7 @@
 html,body{height:540px;width:960px;}
 
 body {
-	/*text-align:center;*/ Messed up IME T9...
+	/*text-align:center;*//* Messed up IME T9... */
 	min-height:540px;/* for good browsers*/
 	min-width:960px;/* for good browsers*/
 	font-family:Arial, Helvetica, sans-serif;
@@ -194,9 +194,8 @@ h4 {
 	height:100%;
 	width:100%;
 	top:0px;
+        position:absolute;
 }
-
-
 
 .header {
 	height:62px;

@@ -1,7 +1,7 @@
 var buff;
 var skipTime = 0;
 var timeoutS;
-var pluginAPI;
+var pluginAPI = new Common.API.Plugin();
 var ccTime = 0;
 var lastPos = 0;
 var videoUrl;
@@ -37,7 +37,6 @@ Player.init = function()
     var success = true;
     
     this.state = this.STOPPED;
-    pluginAPI = new Common.API.Plugin();
     this.plugin = document.getElementById("pluginPlayer");
     
     if (!this.plugin)
@@ -46,7 +45,7 @@ Player.init = function()
     }
     else
     {
-        var mwPlugin = document.getElementById("pluginTVMW");
+        var mwPlugin = document.getElementById("pluginObjectTVMW");
         
         if (!mwPlugin)
         {
@@ -79,7 +78,7 @@ Player.deinit = function()
 {
         if (this.plugin)
             Player.plugin.Stop();
-        var mwPlugin = document.getElementById("pluginTVMW");
+        var mwPlugin = document.getElementById("pluginObjectTVMW");
         
         if (mwPlugin && (this.originalSource != null) )
         {
@@ -158,7 +157,7 @@ Player.playVideo = function()
     }
     else
     {
-	pluginAPI.setOffScreenSaver();
+        Player.disableScreenSaver();
         this.state = this.PLAYING;
  
         this.setWindow();
@@ -199,6 +198,7 @@ Player.pauseVideo = function()
 	$('.bottomoverlaybig').html(pp);
 
     this.state = this.PAUSED;
+    Player.enableScreenSaver();
     this.plugin.Pause();
 };
 
@@ -206,7 +206,7 @@ Player.stopVideo = function()
 {
         widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
         this.plugin.Stop();
-		//pluginAPI.set0nScreenSaver(6000);
+        Player.enableScreenSaver();
         if (this.stopCallback)
         {
             this.stopCallback();
@@ -231,6 +231,7 @@ Player.stopVideoNoCallback = function()
 
 Player.resumeVideo = function()
 {
+    Player.disableScreenSaver();
 	//this.plugin.ResumePlay(vurl, time);
     this.state = this.PLAYING;
     this.plugin.Resume();
@@ -243,6 +244,7 @@ Player.reloadVideo = function(time)
         if (time)
             ccTime = time;
         lastPos = Math.floor((ccTime-Player.offset) / 1000.0);
+        Player.disableScreenSaver();
 	this.plugin.ResumePlay(videoUrl, lastPos);
 	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
     this.state = this.PLAYING;
@@ -503,6 +505,7 @@ Player.showInfo = function(force)
 Player.OnNetworkDisconnected = function()
 {
 	this.showControls();
+        Player.enableScreenSaver();
 	$('.bottomoverlaybig').css("display", "block");
 	$('.bottomoverlaybig').html('Network Error!');
 	// just to test the network so that we know when to resume
@@ -1070,6 +1073,14 @@ Player.setSubtitleProperties = function() {
         $("#srtSubtitle").css("line-height", lineHeight + "%");
     else
         $("#srtSubtitle").css("line-height", "");
+};
+
+Player.enableScreenSaver = function() {
+    pluginAPI.setOnScreenSaver(5*60);
+};
+
+Player.disableScreenSaver = function() {
+    pluginAPI.setOffScreenSaver();
 };
 
 Log = function (msg) 
