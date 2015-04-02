@@ -2,6 +2,7 @@ var buff;
 var skipTime = 0;
 var timeoutS;
 var pluginAPI = new Common.API.Plugin();
+var fpPlugin;
 var ccTime = 0;
 var lastPos = 0;
 var videoUrl;
@@ -9,9 +10,9 @@ var startup = true;
 var smute = 0;
 var subtitles = [];
 var subtitlesEnabled = false;
-var currentSubTime = 0;
+var lastSetSubtitleTime = 0;
 var currentSubtitle = -1;
-var subtitleTimer = 0;
+var clrSubtitleTimer = 0;
 var seqNo = 0;
 
 var Player =
@@ -29,7 +30,12 @@ var Player =
     PLAYING : 1,
     PAUSED : 2,  
     FORWARD : 3,
-    REWIND : 4
+    REWIND : 4,
+
+    // BD-Player Front Display
+    FRONT_DISPLAY_PLAY:  100,
+    FRONT_DISPLAY_STOP:  101,
+    FRONT_DISPLAY_PAUSE: 102
 };
 
 Player.init = function()
@@ -38,6 +44,7 @@ Player.init = function()
     
     this.state = this.STOPPED;
     this.plugin = document.getElementById("pluginPlayer");
+    fpPlugin = document.getElementById("pluginFrontPanel");
     
     if (!this.plugin)
     {
@@ -74,10 +81,32 @@ Player.init = function()
     return success;
 };
 
+Player.setFrontPanelTime = function (hours, mins, secs) {
+    try {
+        if (Player.state == Player.PLAYING)
+            // Log("Setting frontPanelTime");
+            fpPlugin.DisplayVFD_Time(hours, mins, secs);
+    }
+    catch (err) {
+        // Log("setFrontPanelTime failed" + err);
+    }
+
+};
+
+Player.setFrontPanelText = function (text) {
+    try {
+        fpPlugin.DisplayVFD_Show(text);
+    }
+    catch (err) {
+        // Log("setFrontPanelText failed:" + err);
+    }
+};
+
 Player.deinit = function()
 {
         if (this.plugin)
             Player.plugin.Stop();
+        Player.disableScreenSaver();
         var mwPlugin = document.getElementById("pluginObjectTVMW");
         
         if (mwPlugin && (this.originalSource != null) )
@@ -132,8 +161,6 @@ Player.setNowPlaying = function (Name) {
         nowPlaying = 'Nu visas';
     }
     $('.topoverlaybig').html(nowPlaying+': ' + Name);
-    alert("name:" + Name);
-    alert("top:" + $('.topoverlaybig').html());
 };
 
 GetDigits = function(type, data)
@@ -157,6 +184,7 @@ Player.playVideo = function()
     }
     else
     {
+        Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.state = this.PLAYING;
  
@@ -179,7 +207,6 @@ Player.playVideo = function()
         // so I set SetUserMute(0) to get everything synced up again with what is really happening
         // once video has started to play I set it to the value that it should be.
         Audio.plugin.SetUserMute(0);
-        
        // Audio.showMute();
     }
 };
@@ -197,15 +224,17 @@ Player.pauseVideo = function()
 	}
 	$('.bottomoverlaybig').html(pp);
 
-    this.state = this.PAUSED;
     Player.enableScreenSaver();
+    this.state = this.PAUSED;
+    Player.setFrontPanelText(Player.FRONT_DISPLAY_PAUSE);
     this.plugin.Pause();
 };
 
 Player.stopVideo = function()
 {
-        widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+        widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
         this.plugin.Stop();
+        Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
         Player.enableScreenSaver();
         if (this.stopCallback)
         {
@@ -218,10 +247,8 @@ Player.stopVideoNoCallback = function()
 {
     if (this.state != this.STOPPED)
     {
-
+        Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
         this.plugin.Stop();
-        
-        
     }
     else
     {
@@ -232,10 +259,11 @@ Player.stopVideoNoCallback = function()
 Player.resumeVideo = function()
 {
     Player.disableScreenSaver();
+    Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
 	//this.plugin.ResumePlay(vurl, time);
     this.state = this.PLAYING;
     this.plugin.Resume();
-	this.hideControls();
+    this.hideControls();
 };
 
 Player.reloadVideo = function(time)
@@ -245,6 +273,7 @@ Player.reloadVideo = function(time)
             ccTime = time;
         lastPos = Math.floor((ccTime-Player.offset) / 1000.0);
         Player.disableScreenSaver();
+        Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
 	this.plugin.ResumePlay(videoUrl, lastPos);
 	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
     this.state = this.PLAYING;
@@ -270,7 +299,7 @@ Player.skipInVideo = function()
 
 Player.skipForward = function(time)
 {
-    widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), ""); //hide subs while we jump
+    widgetAPI.putInnerHTML(document.getElementById("srtId"), ""); //hide while jumping
     var duration = this.GetDuration();
     if(this.skipState == -1)
     {
@@ -305,7 +334,7 @@ Player.skipLongForwardVideo = function()
 
 Player.skipBackward = function(time)
 {
-    widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), ""); //hide subs while we jump
+    widgetAPI.putInnerHTML(document.getElementById("srtId"), ""); //hide subs while jumping
     window.clearTimeout(timeoutS);
     this.showControls();
     if(this.skipState == -1){
@@ -412,7 +441,7 @@ Player.setCurTime = function(time)
 	    this.updateSeekBar(ccTime);
 	}
 	if (this.state != this.PAUSED) { // because on 2010 device the device triggers this function even if video is paused
-	    this.onSubTitle(ccTime);
+	    this.setCurSubtitle(ccTime);
         }
 	
 };
@@ -441,6 +470,7 @@ Player.updateSeekBar = function(time){
 	}
 	
 	$('.currentTime').text(hours + ':' + smins + ':' + ssecs);
+        Player.setFrontPanelTime(hours, mins, secs);
 	
         var progressFactor = time / Player.GetDuration();
         if (progressFactor > 1)
@@ -545,6 +575,19 @@ Player.GetDuration = function()
         return this.sourceDuration;
 };
 
+Player.getDeviceYear = function () {
+    var pluginNNavi = document.getElementById("pluginObjectNNavi");
+    var firmwareVersion = pluginNNavi.GetFirmware();
+
+    if (firmwareVersion === "") {
+        // emulator
+        return 2011;
+    }
+
+    // Log("JTDEBUG getDeviceYear: " + Number(firmwareVersion.substr(10, 4)))
+    return Number(firmwareVersion.substr(10, 4));
+};
+
 Player.toggleAspectRatio = function() {
 
     if (this.getAspectMode() === 0) {
@@ -635,7 +678,7 @@ Player.startPlayer = function(url, isLive, starttime)
         var start_mins = starttime.match(/([0-9]+)[:.]/)[1]*60;
         start_mins = start_mins + starttime.match(/[:.]([0-9]+)/)[1]*1;
         var now = new Date();
-        var now_mins = now.getHours()*60 + now.getMinutes();
+        var now_mins = now.getHours()*60 + now.getMinutes() + Buttons.systemOffset*60;
 
         if (start_mins > now_mins)
             // Time passed midnight
@@ -679,7 +722,7 @@ Player.startPlayer = function(url, isLive, starttime)
 	};
         this.GetPlayUrl(url, isLive);
     } else
-        alert("INIT FAILED!!!!!");
+        Log("INIT FAILED!!!!!");
         
     
     
@@ -749,17 +792,13 @@ Player.toggleSubtitles = function () {
         subtitlesEnabled = true;
 
     this.setCookie("subEnabled",subtitlesEnabled*1, 100);
-    if (!subtitlesEnabled || $("#srtSubtitle").html() == "" || $("#srtSubtitle").html() == "<br />Subtitles Off") {
-        clearTimeout(subtitleTimer);
-        subtitleTimer = setTimeout(function () {
-            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
-        }, 2500);
+    if (!subtitlesEnabled || $("#srtId").html() == "" || $("#srtId").html() == "<br />Subtitles Off") {
         if (subtitlesEnabled && subtitles.length > 0) {
-            $("#srtSubtitle").html("<br />Subtitles On");
+            this.setSubtitleText("Subtitles On", 2500);
         } else if (subtitlesEnabled) {
-            $("#srtSubtitle").html("<br />Subtitles not available");
+            this.setSubtitleText("Subtitles not available", 2500);
         } else {
-            $("#srtSubtitle").html("<br />Subtitles Off");
+            this.setSubtitleText("Subtitles Off", 2500);
         }
     }
 };
@@ -816,16 +855,20 @@ Player.fetchSubtitle = function (srtUrl) {
 };
 
 Player.parseSubtitle = function (xhr) {
-    var srt;
-    var srtdata;
-    srtdata = xhr.responseText;
-    srt = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
-    var srtline = srt.split('\n\n');
-    if (srtline.length > 0) {
-        for (var s = 0; s < srtline.length; s++) {
-            var st = srtline[s].split('\n');
-            this.parseLine(st);
+    try {
+        var srtdata    = xhr.responseText;
+        var srtContent = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
+        srtContent     = srtContent.split('\n\n');
+        for (var i = 0; i < srtContent.length; i++) {
+            this.parseSrtRecord(srtContent[i]);
         }
+        // for (var i = 0; i < 10 && i < subtitles.length; i++) {
+        //     Log("start:" + subtitles[i].start + " stop:" + subtitles[i].stop + " text:" + subtitles[i].text);
+        //     // Log("srtContent[" + i + "]:" + srtContent[i]);
+        //     this.parseSrtRecord(srtContent[i]);
+        // }
+    } catch (err) {
+        Log("parseSubtitle failed:" + err);
     }
 };
 
@@ -833,137 +876,90 @@ Player.strip = function (s) {
     return s.replace(/^\s+|\s+$/g, "");
 };
 
-Player.timeToMS = function (t) {
-    var s = 0.0;
-    if (t) {
-        var p = t.split(':');
-        for (var i = 0; i < p.length; i++)
-            s = s * 60 + parseFloat(p[i].replace(',', '.'));
-    }
-    return Math.round(s * 1000);
+Player.srtTimeToMS = function (srtTime) {
+    var ts = srtTime.replace(',', '.').match('([0-9]+):([0-9]+):([0-9.]+)');
+    return Math.round((ts[1]*3600 + ts[2]*60 + ts[3]*1)*1000);
 };
 
-Player.parseLine = function (st) {
-    try {
-        if (st.length >= 2) {
-            var i = this.strip(st[1].split(' --> ')[0]);
-            var o = this.strip(st[1].split(' --> ')[1]);
-            var t = st[2];
-
-            if (isEmpty(i) || isEmpty(o) || isEmpty(t)) {
-                return false;
-            }
-
-            if (st.length > 2) {
-                for (var j = 3; j < st.length; j++) {
-                    t += '<br>' + st[j];
-                }
-            }
-
-            var start = this.timeToMS(i);
-            var end = this.timeToMS(o);
-
-            if (t.length > 0) {
-                var newsub = {
-                    start: start,
-                    end: end,
-                    text: t
-                };
-                subtitles.push(newsub);
-            }
+Player.parseSrtRecord = function (srtRecord) {
+    srtRecord = srtRecord.split("\n");
+    var start = srtRecord[1].match(/([^ 	]+)[ 	]+-->[ 	]+/)[1];
+    var stop  = srtRecord[1].match(/[ 	]+-->[ 	]+([^ 	]+)/)[1];
+    subtitles.push(
+        {
+            start: this.srtTimeToMS(start),
+            stop:  this.srtTimeToMS(stop),
+            text:  srtRecord.slice(2).join("<br />").replace(/<br \/>$/, "")
         }
-    }
-    catch (err) {
-        Log("parseLine on Subtitles failed: [" + err + "] in line : " + st);
-    }
+    );
 };
 
-Player.onSubTitle = function (time) {
+Player.setCurSubtitle = function (time) {
     try {
         if (subtitlesEnabled && this.state != this.STOPPED) {
-            var start;
-            var stop;
             var now = Number(time);
-
-            if (now === currentSubTime) {
+            if (now === lastSetSubtitleTime) {
+                // Seems we get multiple callback for same time...
                 now += 500;
             }
-
-            currentSubTime = now;
+            lastSetSubtitleTime = now;
 
             for (var i = currentSubtitle; i < subtitles.length; i++) {
-                if (subtitles[i]) {
-                    start = Number(subtitles[i].start);
-                    stop = Number(subtitles[i].end);
-                    // Log("i:" + i + " start:" + start + " stop:" + stop + " now:" + now);
-                    if ((start <= now) && (now < stop)) {
-                        if (currentSubtitle != i || currentSubtitle === 0) {
-                            this.OnSubtitleTimeHandler(subtitles[i].text, stop-now);
-                            currentSubtitle = i;
-                        }
-                        break;
-                    } else {
-                        stop = Number(subtitles[currentSubtitle].end);
-                        if (subtitles[i + 1] && subtitles[i + 1].start > now) {
-                            //do we need to hide the current subtitle?
-                            if (now > stop) {
-                                // Log("Clearing srt due to next, start:" + subtitles[i + 1].start);
-                                widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
-                            }
-                            break;
-                        } else if (now > stop) {
-                            // Log("Clearing srt due to end");
-                            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
-                        }
+                var thisStart = subtitles[i].start;
+                var thisStop  = subtitles[i].stop;
+                // Log("i:" + i + " start:" + thisStart + " stop:" + thisStop + " now:" + now);
+                if ((thisStart <= now) && (now < thisStop)) {
+                    // This Sub should be shown (if not already shown...)
+                    if (currentSubtitle != i || currentSubtitle === 0) {
+                        this.setSubtitleText(subtitles[i].text, thisStop-now);
+                        currentSubtitle = i;
                     }
+                    break;
+                } else if (now > subtitles[currentSubtitle].stop) {
+                    // Current sub is done.
+                    // Log("Clearing srt due to end");
+                    this.clearSrtUnlessConfiguring();
+                }
+                if (subtitles[i+1] && subtitles[i+1].start > now) {
+                    // Next isn't ready yet - we're done.
+                    break;
                 }
             }
         } else {
-            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
+            this.clearSrtUnlessConfiguring();
         }
     } catch (err) {
-        Log("Error displaying subtitle: " + err);
+        Log("setCurSubtitle failed: " + err);
     }
 };
 
-Player.OnSubtitleTimeHandler = function (subline, timeout) {
+Player.clearSrtUnlessConfiguring = function () {
+    if ($("#srtId").html().indexOf("Test subtitle") < 0) {
+        widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
+    }
+};
+
+Player.setSubtitleText = function (text, timeout) {
     try {
-        if (subtitlesEnabled === false || isEmpty(subline)) {
-            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
-            return false;
+        if (!text.match(/<br \/>/g)) {
+            // If only one liner we want it at bottom
+            text  = "<br />" + text;
         }
-
-        var t = subline;
-        t = t.replace(/\n\r/g, "<br />");
-        t = t.replace(/\r\n/g, "<br />");
-        t = t.replace(/\n/g, "<br />");
-        t = t.replace(/\r/g, "<br />");
-        t = t.replace(/<BR>/g, "<br />");
-        t = t.replace(/<BR \/>/g, "<br />");
-        t = t.replace(/<br>/g, "<br />");
-        t = t.replace(/<\/br>/g, "<br />");
-        t = t.replace(/<\/BR>/g, "<br />");
-        t = t.replace(/<br \/>$/, "");//remove last one
-
-        var lines = (t.match(/<br \/>/g) || []).length;
-        var i = 2 - lines;
-        var cs = "";
-        while (i > 0) {
-            cs += "<br />";
-            i--;
-        }
-        $("#srtSubtitle").html(cs + t);
-        // Log("Showing sub:" + cs + t);
-        clearTimeout(subtitleTimer);
-        subtitleTimer = setTimeout(function () {
-            // Log("Clearing srt due to timer");
-            widgetAPI.putInnerHTML(document.getElementById("srtSubtitle"), "");
-        }, timeout+100)
-
-    } catch (e) {
-        Log("Player.OnSubtitleTimeHandler error: " + e.message);
+        this.refreshClrSubtitleTimer(timeout+100)
+        $("#srtId").html(text);
+        // Log("Showing sub:" + text);
+    } catch (err) {
+        Log("setSubtitleText failed:" + err);
     }
 };
+
+Player.refreshClrSubtitleTimer = function(timeout) {
+    clearTimeout(clrSubtitleTimer);
+    clrSubtitleTimer = window.setTimeout(function () {
+        // Log("Clearing srt due to timer");
+        $("#srtId").html("");
+    }, timeout)
+}
 
 function isEmpty(obj) {
     if (typeof obj === 'undefined' || obj === null || obj === '') return true;
@@ -1023,7 +1019,7 @@ Player.moveSubtitles = function (moveUp) {
     var newValue = (moveUp) ? oldValue-2 : oldValue+2;
     Log("moveSubtitles new:" + newValue);
     if (newValue > 300 && newValue < 550) {
-        $("#srtSubtitle").css("top", newValue); // write value to CSS
+        $("#srtId").css("top", newValue); // write value to CSS
         this.saveSubtitlePos(newValue);
         this.showTestSubtitle();
     }
@@ -1035,7 +1031,7 @@ Player.sizeSubtitles = function(increase) {
     var newValue = (increase) ? oldValue+1 : oldValue-1;
     Log("sizeSubtitles new:" + newValue);
     if (newValue > 15 && newValue < 51) {
-        $("#srtSubtitle").css("font-size", newValue); // write value to CSS
+        $("#srtId").css("font-size", newValue); // write value to CSS
         this.saveSubtitleSize(newValue);
         this.showTestSubtitle();
     }
@@ -1048,9 +1044,9 @@ Player.separateSubtitles = function(increase) {
     Log("separateSubtitles new:" + newValue);
     if (newValue >= 100 && newValue < 200) {
         if (newValue == 100) {
-            $("#srtSubtitle").css("line-height", ""); // write value to CSS
+            $("#srtId").css("line-height", ""); // write value to CSS
         } else {
-            $("#srtSubtitle").css("line-height", newValue + "%"); // write value to CSS
+            $("#srtId").css("line-height", newValue + "%"); // write value to CSS
         }
         this.saveSubtitleLineHeight(newValue);
         this.showTestSubtitle();
@@ -1058,21 +1054,22 @@ Player.separateSubtitles = function(increase) {
 };
 
 Player.showTestSubtitle = function () {
-    if ($("#srtSubtitle").html() == "") 
+    var testText = "Test subtitle<br />Test subtitle";
+    if ($("#srtId").html() == "" || $("#srtId").html() == testText) 
     {
-        $("#srtSubtitle").html("<br />Test subtitle<br />Test subtitle");
+        this.setSubtitleText(testText, 2500);
     }
 }
 
 Player.setSubtitleProperties = function() {
-    $("#srtSubtitle").css("font-size", this.getSubtitleSize());
-    $("#srtSubtitle").css("top", this.getSubtitlePos());
+    $("#srtId").css("font-size", this.getSubtitleSize());
+    $("#srtId").css("top", this.getSubtitlePos());
 
     var lineHeight = this.getSubtitleLineHeight();
     if (lineHeight > 100)
-        $("#srtSubtitle").css("line-height", lineHeight + "%");
+        $("#srtId").css("line-height", lineHeight + "%");
     else
-        $("#srtSubtitle").css("line-height", "");
+        $("#srtId").css("line-height", "");
 };
 
 Player.enableScreenSaver = function() {

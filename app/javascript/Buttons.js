@@ -20,9 +20,10 @@ var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
 var reslButton = ["#resl1", "#resl2", "#resl3", "#resl4", "#resl5"];
 var langButton = ["#english", "#swedish"];
 var seqNo = 0;
+var columnCounter = 0;
 var Buttons =
 {
-    
+    systemOffset : 0    
 };
 Buttons.keyDown = function()
 {
@@ -197,6 +198,8 @@ Buttons.keyHandleForList = function()
                                                 break;
                                             } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
                                                 starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
+                                            } else if (Player.getDeviceYear() == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
+                                                starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/)[1];
                                             }
                                         }
                                         // Log("isLive:" + isLive + " starttime:" + starttime);
@@ -312,6 +315,9 @@ Buttons.keyHandleForDetails = function()
 	}
 	break;
 	
+    case tvKey.KEY_INFO:
+	this.goBack();
+	break;
     }
     this.handleMenuKeys(keyCode);
     
@@ -750,6 +756,8 @@ Buttons.keyHandleForPlayer = function(){
 	break;
     case tvKey.KEY_BLUE:
     case tvKey.KEY_ASPECT:
+    case tvKey.KEY_CALLER_ID:
+    case tvKey.KEY_D_VIEW_MODE:
 	Player.toggleAspectRatio();
 	break;
     case tvKey.KEY_YELLOW:
@@ -772,7 +780,8 @@ Buttons.keyHandleForPlayer = function(){
     case tvKey.KEY_6:
 	Player.separateSubtitles(keyCode == tvKey.KEY_6);
 	break;
-        
+    default:
+        Log("Unhandled key:" + keyCode);
     }
 };
 
@@ -995,6 +1004,23 @@ Buttons.getSavedRestorePos = function() {
     return this.getCookie("restore_pos");
 };
 
+Buttons.setSystemOffset = function() {
+    var timeXhr = new XMLHttpRequest();
+    timeXhr.open("GET", "http://www.timeanddate.com/worldclock/sweden/stockholm", false);
+    timeXhr.send();
+    if (timeXhr.status === 200) {
+        var timeMatch = timeXhr.responseText.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
+        var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
+        var now = new Date();
+        var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+        Buttons.systemOffset = Math.round((actualSeconds-nowSecs)/3600);
+        Log("System Offset hours:" + Buttons.systemOffset);
+    } else {
+        Log("setSystemOffset  failed: " + timeXhr.status);
+    }
+    timeXhr.destroy();
+    timeXhr = null;
+}
 function Log(msg) 
 {
     // var logXhr = new XMLHttpRequest();

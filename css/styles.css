@@ -10,7 +10,15 @@ body {
 	overflow:hidden;
 }
 
-#srtSubtitle {
+/*
+###############################
+#
+#       SUBTITLES
+#
+###############################
+*/
+
+#srtId {
     text-align: center;
     letter-spacing: -1px;
     color: white;
@@ -21,38 +29,22 @@ body {
     text-align: center;
 }
 
-/*
-###############################
-#
-#       SUBTITLES
-#
-###############################
-*/
-
-.subtitles {
+.srtClass {
     /*position: absolute;*/
     position: relative;
     overflow: hidden;
     top: 405px;
-    left: 0px;
+    left: 0;
     width: 958px;
     height: 80px;
     text-align: center;
     font-size: 30px;
     color: white;
     opacity: 0.9;
-    border: 0px solid red;
+    border: 0 solid red;
     text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
     z-index: 3;
     background-color:rgba(0, 0, 0, 0.5);
-}
-
-.subtitles i {
-    color: white;
-}
-
-.subtitles b {
-    color: white;
 }
 
 .topmenu a:hover, .topmenu a.active, .news-name a, .scroll-item-name a:hover, a.link-view, .column h2, .news-name h2, a.link-button.selected, 
@@ -88,7 +80,7 @@ a.link-button2, a.link-button4.selected, .btn-submit, .short-title a:hover, a:ho
 	left: 0; 
 	right: 0; 
 	bottom: 0; 
-	top: 0px;
+	top: 0;
 	display:none; 
 }
 
@@ -193,7 +185,7 @@ h4 {
 	background:url(../images/body_bg2.jpg) center no-repeat;
 	height:100%;
 	width:100%;
-	top:0px;
+	top:0;
         position:absolute;
 }
 
@@ -224,7 +216,7 @@ h4 {
 /* header */
 .logo {
 	position:absolute;
-	padding-top:0px;
+	padding-top:0;
 	float:left}
 
 .socials {
@@ -557,7 +549,7 @@ ul.dropdown .root-item {
 	font-size:10px;
 	font-weight:bold;
 	display:block;
-	padding:0px 0;
+	padding:0 0;
 	text-transform:uppercase}
 	
 
@@ -565,7 +557,7 @@ ul.dropdown .root-item {
 
 /* footer */
 .footer-content {
-	margin-top:0px;
+	margin-top:0;
 	height:38px;
 	color:#5b5e5f;}
 
@@ -612,7 +604,7 @@ ul.dropdown .root-item {
 	
 .footer-box-r img {
 	float:left;
-	margin-top:0px;
+	margin-top:0;
 	margin-left:-6px;}
 	
 
@@ -632,7 +624,7 @@ ul.dropdown .root-item {
 	width:996px;
 	height:417px;
 	padding:10px 0;
-	margin:0px auto;
+	margin:0 auto;
 	text-align:left;
 }
 
@@ -721,7 +713,7 @@ margin-top:30px;
 	
 .bottom-buttons {
 	position:absolute;
-	bottom:0px;}
+	bottom:0;}
 
 .project-text h1 {
 	font-family:Arial,sans-serif;
@@ -750,7 +742,7 @@ margin-top:30px;
 }
 
 .project-view .project-meta {
-	padding:0px 0 10px 0}
+	padding:0 0 10px 0}
 
 .project-meta span {
 	color:#dfe6e9;}
@@ -779,7 +771,7 @@ margin-top:30px;
 
 .tipMiddle {
 	background:url(../images/tooltip_middle.png) repeat-y;
-	padding:0px 7px}
+	padding:0 7px}
 	
 .tipTop {
 	background:url(../images/tooltip_top.png) bottom no-repeat;
@@ -797,8 +789,9 @@ margin-top:30px;
 	background:url(../images/line.gif) bottom repeat-x}
 
 .project-desc {
-	max-height: 180px;
-	overflow:hidden;}
+	max-height: 176px;
+	overflow:hidden;
+}
 
 .project-descr {
 	width:504px;
@@ -1040,17 +1033,24 @@ small {
 .video-footer {
 	display:none;
 	background:url(../images/u2.png) center repeat;
+        width:100%;
+        bottom:0;
+        position:absolute;
 }
 .video-header {
-	margin-top:0px;
-	height: 40px;
 	background:url(../images/u3.png) center repeat;
+	height:40px;
+        width:100%;
+        top:0;
+        position:absolute;
+        
+
 }
 .progressfull
 {
 	background-color:#5FB932;
 	height:3px;
-	width:0px;
+	width:0;
 	float:left;
 	margin-top:32px;
 }
@@ -1116,32 +1116,31 @@ small {
 					  
 .topoverlayresolution { position: absolute; top: 35px; left: 0; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; letter-spacing: -1px;  width: inherit; height: inherit; display: block; vertical-align: middle;
                       background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px;}
-.topoverlaybig         { position: absolute; top: 340px; left: 0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px; width: inherit; height: inherit; display: block; vertical-align: middle;
-                      background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px; }
+.topoverlaybig         { position: absolute; top: 340px; left:0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px; width:inherit; height: inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display: inline-block; vertical-align: middle;background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px;}
 .bottomoverlaybig      {display:none; position: absolute; top: 400px; left: 0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px;  
                       background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px; }
-.muteoverlay      	{display:none; position: absolute; top: 0px; left: 0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px;  
+.muteoverlay      	{display:none; position: absolute; top: 0; left: 0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px;  
                       background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px; }
 #pluginPlayer{
 	position: absolute; 
-	left: 0px; 
-	top: 0px;
-	width: 0px; 
-	height: 0px;
+	left: 0; 
+	top: 0;
+	width: 0; 
+	height: 0;
 }
 #pluginAudio{
 	position: absolute; 
-	left: 0px; 
-	top: 0px;
-	width: 0px; 
-	height: 0px;
+	left: 0; 
+	top: 0;
+	width: 0; 
+	height: 0;
 }
 #pluginTVMW{
 	position: absolute; 
-	left: 0px; 
-	top: 0px;
-	width: 0px; 
-	height: 0px;
+	left: 0; 
+	top: 0;
+	width: 0; 
+	height: 0;
 }
 /* slider filter */
 .slider-search {
@@ -1204,7 +1203,7 @@ small {
     width: 560px;
     float:left;
     height: 43px;
-    border: 0px;
+    border: 0;
     font: bold 18px/43px 'tahoma','Apple Gothic';
     color: #528cd3;
     padding: 0 10px;
@@ -1275,7 +1274,7 @@ display:none;
 display:none;
 	}
 .keyboard {
-margin: 0px auto;
+margin: 0 auto;
 width:688px;
 padding-left: 4px;
 list-style: none;

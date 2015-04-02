@@ -17,6 +17,7 @@ live.onLoad = function()
 	ConnectionError.init();
 	Language.setLang();
 	Resolution.displayRes();
+        Buttons.setSystemOffset();
         this.getChannelsJson();
 	// Enable key event processing
 	Buttons.enableKeys();
@@ -219,7 +220,7 @@ function tsToClock(ts)
     var hour;
     var minutes;
 
-    time = new Date(ts *1);
+    time = new Date(+ts + (Buttons.systemOffset*3600*1000));
     hour = time.getHours();
     minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;

@@ -31,10 +31,9 @@ Details.onLoad = function()
 	// Enable key event processing
 	Language.setLang();
 	Resolution.displayRes();
+        Buttons.setSystemOffset();
 	Buttons.setKeyHandleID(1);					
 	Buttons.enableKeys();
-
-	
 	this.loadXml();
 };
 
@@ -271,14 +270,14 @@ Details.loadXml = function(){
                         Name = Name + " - " + $($info.children()[0]).text();
                         VideoLength = $($($info.find('p')[1]).children()[1]).text();
 		        Description = $($info.find('p')[0]).text();
-                        var timeData = $info.find('div').filter(function() {
+                        var timeData = $info.find('div').find('div').find('div').filter(function() {
                             if ($(this).attr('data-starttime'))
                                 return true;
                             else 
                                 return false;
                         });
-                        DetailsPlayTime = tsToClock(timeData.attr('data-starttime')*1) + "-" +
-                            tsToClock(timeData.attr('data-endtime')*1);
+                        DetailsPlayTime = tsToClock(+timeData.attr('data-starttime')) + "-" +
+                            tsToClock(timeData.attr('data-endtime'));
                         isLive = true;
 
                     } else if (url.indexOf("oppetarkiv") > -1) {
@@ -320,27 +319,17 @@ Details.loadXml = function(){
                             DetailsPlayTime  = DetailsPlayTime + " " + DetailsClock;
                         
                         if (isLive) {
-                            var duration = $video.find('section').find('a').attr('data-length');
                             notAvailable = +($video.find('section').find('a').attr('data-livestart')) < 0;
-                            var hours = Math.floor(duration/3600);
-                            if (hours > 0) {
-                                VideoLength = hours + " h "
-                                duration = duration - (hours*3600)
-                            }
-                            var minutes = Math.floor(duration/60);
-                            if (minutes > 0) {
-                                VideoLength = VideoLength + minutes + " min "
-                                duration = duration - (minutes*60)
-                            }
-                            var seconds = Math.floor(duration/60);
-                            if (seconds > 0) {
-                                VideoLength = VideoLength + seconds + " sek"
-                            }                        
+                            VideoLength = dataLengthToVideoLength($video);
                         } else {
 		            AvailDate  = $video.find('p').filter(function() {
                                 return $(this).text().indexOf("Kan ses till") > -1;
                             }).text().replace(/.*Kan ses till /, "");
-                            VideoLength = $video.find('h2').html().replace(/.+span> /,"");
+                            VideoLength = dataLengthToVideoLength($video);
+                            if (VideoLength.length == 0)
+                            {
+                                VideoLength = $video.find('h2').html().replace(/.+span> /,"");
+                            }
                         }
 		        Description = $($video.find('p')[0]).text();
 		        onlySweden = $video.find('section').find('a').attr('data-only-available-in-sweden');
@@ -361,7 +350,7 @@ Details.loadXml = function(){
 
                     airTime = DetailsPlayTime;
                     Details.starttime = DetailsPlayTime.match(/([0-9]+[:.][0-9]+)/);
-                    if (isChannel && Details.starttime.length > 1)
+                    if ((isChannel || (isLive && Player.getDeviceYear() == 2013)) && Details.starttime.length > 1)
                         Details.starttime = Details.starttime[1];
                     else 
                         Details.starttime = 0;
@@ -442,11 +431,34 @@ Details.startPlayer = function()
     
 };
 
+function dataLengthToVideoLength($video)
+{
+    VideoLength = "";
+    var duration = $video.find('section').find('a').attr('data-length');
+
+    if (!duration)
+        return VideoLength;
+
+    var hours = Math.floor(duration/3600);
+    if (hours > 0) {
+        VideoLength = hours + " h "
+        duration = duration - (hours*3600)
+    }
+    var minutes = Math.floor(duration/60);
+    if (minutes > 0) {
+        VideoLength = VideoLength + minutes + " min "
+        duration = duration - (minutes*60)
+    }
+    var seconds = Math.floor(duration/60);
+    if (seconds > 0) {
+        VideoLength = VideoLength + seconds + " sek"
+    }                      
+    return VideoLength;
+}
+
 function tsToClock(ts)
 {
-    if ((ts*1) == ts)
-        ts = ts*1;
-    var time = new Date(ts);
+    var time = new Date(+ts + (Buttons.systemOffset*3600*1000));
     var hour = time.getHours();
     var minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;

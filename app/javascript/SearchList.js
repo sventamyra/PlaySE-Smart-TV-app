@@ -18,6 +18,7 @@ SearchList.onLoad = function()
 	ConnectionError.init();
 	Language.setLang();
 	Resolution.displayRes();
+        Buttons.setSystemOffset();
         this.setPath(this.Geturl());
 	this.loadXml();
 	// Enable key event processing
