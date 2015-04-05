@@ -1,5 +1,5 @@
 var tvKey = new Common.API.TVKeyValue();
-var isTopRowSelected = true;
+
 
 var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, search = 4, player2 = 5, language = 6, imeSearch = 7, blocked = 8, connection error = 9
 var keyHeld = false;
@@ -19,11 +19,9 @@ var menuId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
 var reslButton = ["#resl1", "#resl2", "#resl3", "#resl4", "#resl5"];
 var langButton = ["#english", "#swedish"];
-var seqNo = 0;
-var columnCounter = 0;
+
 var Buttons =
 {
-    systemOffset : 0    
 };
 Buttons.keyDown = function()
 {
@@ -198,7 +196,7 @@ Buttons.keyHandleForList = function()
                                                 break;
                                             } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
                                                 starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
-                                            } else if (Player.getDeviceYear() == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
+                                            } else if (getDeviceYear() == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
                                                 starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/)[1];
                                             }
                                         }
@@ -216,7 +214,7 @@ Buttons.keyHandleForList = function()
                                         break;
                                     }
                                     
-	                            this.setLocation(ilink);
+	                            setLocation(ilink);
                                 }
                                 else {
 	                            itemSelected.removeClass('selected');
@@ -308,7 +306,7 @@ Buttons.keyHandleForDetails = function()
     case tvKey.KEY_PANEL_ENTER:
 	Log("enter");
 	if(isLeft == 0 || !$('#playButton').is(':visible')) {
-	    this.goBack();
+	    goBack();
 	}
 	else {
 	    Details.startPlayer();
@@ -316,7 +314,7 @@ Buttons.keyHandleForDetails = function()
 	break;
 	
     case tvKey.KEY_INFO:
-	this.goBack();
+	goBack();
 	break;
     }
     this.handleMenuKeys(keyCode);
@@ -562,7 +560,7 @@ Buttons.keyHandleForSearch = function()
         if ($this.hasClass('space')) character = ' ';
         if ($this.hasClass('tab')) character = "\t";
         if ($this.hasClass('return')) {
-			this.setLocation('SearchList.html?sok=' + $('#write').val());
+			setLocation('SearchList.html?sok=' + $('#write').val());
 			return false;
 		}
 
@@ -611,7 +609,7 @@ Buttons.keyHandleForKanaler = function()
 		case tvKey.KEY_PANEL_ENTER:
 			Log("enter");
 			if(isLeft == 0){
-			        this.goBack();
+			        goBack();
 			}
 			else{
 				Kanaler.startPlayer();
@@ -660,7 +658,7 @@ Buttons.keyHandleForPlayer2 = function(){
 				Player.stopVideoNoCallback();
 				if(channelId < channels.length - 1){
 					channelId = channelId + 1;
-					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
+					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_PANEL_CH_UP:
@@ -668,21 +666,21 @@ Buttons.keyHandleForPlayer2 = function(){
 				Player.stopVideoNoCallback();
 				if(channelId < channels.length - 1){
 					channelId = channelId + 1;
-					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
+					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_CH_DOWN:
 				Player.stopVideoNoCallback();
 				if(channelId > 0){
 					channelId--;
-					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
+					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_PANEL_CH_DOWN:
 				Player.stopVideoNoCallback();
 				if(channelId > 0){
 					channelId--;
-					this.setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
+					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
 				}
 				break;
 			case tvKey.KEY_INFO:
@@ -822,35 +820,20 @@ Buttons.handleMenuKeys = function(keyCode){
 	switch(keyCode)
 		{
 			case tvKey.KEY_RED: 
-                                // Use history to be able to use IME
-                                var myHistoryLength = this.getSavedPosValue();
-                                if (myHistoryLength)
-                                    myHistoryLength = myHistoryLength.split('n').length;
-                                else
-                                    myHistoryLength = history.length-1;
-                                this.savePosValue("");
-                                history.go(-myHistoryLength);
-				// this.setLocation('index.html');
+				setLocation('index.html');
 				break;
 			case tvKey.KEY_GREEN: 
-				this.setLocation('categories.html');
+				setLocation('categories.html');
 				break;
 			case tvKey.KEY_YELLOW:
-				this.setLocation('live.html');
+				setLocation('live.html');
 				break;
 			case tvKey.KEY_BLUE:
 				Language.hide();
-                                if (window.location.href.search('/index.html') != -1) {
-                                    Log("Search in index.html");
-                                    Search.imeShow();
-                                }
-                                else {
-                                    Log("Search in other" + window.location.href);
-	                            Search.show();
-                                }
+                                Search.imeShow();
 				break;
 			case tvKey.KEY_RETURN:
-				var urlpath = window.location.href;
+				var urlpath = myLocation;
 				var ifound = urlpath.indexOf('index.html');
 				if(index == 6){
 					widgetAPI.blockNavigation(event); 
@@ -860,9 +843,10 @@ Buttons.handleMenuKeys = function(keyCode){
 					widgetAPI.blockNavigation(event); 
 					Search.hide();
 				}
-				else if(ifound < 0){
+				else if(myHistory.length > 0) {
+				// else if(ifound < 0){
 					widgetAPI.blockNavigation(event); 
-					this.goBack();
+					goBack();
 				}
 				else{
 					//terminate app
@@ -888,150 +872,3 @@ Buttons.handleMenuKeys = function(keyCode){
 			 break;
 		}
 };
-
-Buttons.getCookie = function(cName){
-    var i,x,y,ARRcookies=document.cookie.split(";");
-    for (i=0;i<ARRcookies.length;i++)
-    {
-        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-        x=x.replace(/^\s+|\s+$/g,"");
-        if (x==cName)
-        {
-            return unescape(y);
-        }
-    }
-    return null;
-};
-
-// Methods for "restoring" item position during "history.back"
-
-Buttons.setCookie = function(cName,value,exdays)
-{
-    var exdate=new Date();
-    exdate.setDate(exdate.getDate() + exdays);
-    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-    document.cookie=cName + "=" + c_value;
-};
-
-Buttons.setLocation = function(location)
-{
-    this.addPos();
-    window.location = location;
-};
-
-Buttons.goBack = function(location)
-{
-    // history.length doesn't seem to get updated by history.go(-1) really... Or was it only in emulator...
-    this.saveRestorePos(this.popPos());
-    history.go(-1);
-};
-
-Buttons.restorePosition = function() 
-{
-    var pos = Buttons.popRestorePos();
-    if (pos) {
-        Buttons.setPosition(pos[0], pos[1]);
-    }
-};
-
-Buttons.setPosition = function(oldColumnCounter, top)
-{
-    if (itemSelected) {
-        itemSelected.removeClass('selected');
-    } else {
-        $('.topitem').eq(0).removeClass('selected');
-    }
-    if (top) itemSelected = $('.topitem').eq(oldColumnCounter).addClass('selected');
-    else     itemSelected = $('.bottomitem').eq(oldColumnCounter).addClass('selected');
-    columnCounter = oldColumnCounter;
-    isTopRowSelected = top;
-    // Log("Position set to "  + oldColumnCounter + " " + top);
-    this.sscroll();
-};
-
-Buttons.addPos = function() {
-    var oldPosition = this.getSavedPosValue();
-    
-    if (oldPosition && oldPosition.split('n').length > 0 && history.length > 1)
-        this.savePosValue(oldPosition + "n" + columnCounter + "," + isTopRowSelected*1);
-    else
-        this.savePosValue(columnCounter + "," + isTopRowSelected*1);
-};
-
-Buttons.savePosValue = function(posValue) {
-    this.setCookie("history_pos", posValue);
-    // Log("history_pos saved:" + posValue);
-};  
-
-Buttons.popPos = function() {
-    var oldPosition = this.getSavedPosValue();
-    if (oldPosition) {
-        oldPosition = oldPosition.split('n');
-        // Log("oldPosition: " + oldPosition);
-        var pos = oldPosition.pop();
-        this.savePosValue(oldPosition.join('n'));
-        if (pos.length > 2) {
-            return pos.match(/([0-9]+,[0-9])/)[1];
-        }
-    }
-    return null
-};
-
-Buttons.getSavedPosValue = function() {
-    return this.getCookie("history_pos");
-};
-
-Buttons.saveRestorePos = function(posValue) {
-    this.setCookie("restore_pos", posValue);
-    // Log("restore_pos saved:" + posValue);
-};
-
-Buttons.popRestorePos = function() {
-    var pos = this.getSavedRestorePos();
-
-    if (pos) {
-        this.saveRestorePos("");
-        if (pos.length > 2) {
-            pos = pos.match(/([0-9]+),([0-9])/);
-            return [pos[1]*1, pos[2] == 1];
-        }
-    }
-    return null
-};
-
-Buttons.getSavedRestorePos = function() {
-    return this.getCookie("restore_pos");
-};
-
-Buttons.setSystemOffset = function() {
-    var timeXhr = new XMLHttpRequest();
-    timeXhr.open("GET", "http://www.timeanddate.com/worldclock/sweden/stockholm", false);
-    timeXhr.send();
-    if (timeXhr.status === 200) {
-        var timeMatch = timeXhr.responseText.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
-        var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
-        var now = new Date();
-        var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
-        Buttons.systemOffset = Math.round((actualSeconds-nowSecs)/3600);
-        Log("System Offset hours:" + Buttons.systemOffset);
-    } else {
-        Log("setSystemOffset  failed: " + timeXhr.status);
-    }
-    timeXhr.destroy();
-    timeXhr = null;
-}
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
-};
-

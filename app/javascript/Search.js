@@ -1,5 +1,6 @@
 var tvKey = new Common.API.TVKeyValue();
 var input = null;
+var search_text = "";
 
 var timeout;
 var oldKeyHandle = 0;
@@ -42,13 +43,11 @@ function Input(/**Object*/id)
     var onEnter = function(string)
     {
         Search.imeShow(0);
-        Search.setCookie("search_text", $('#ime_write').val(),1);
-	Buttons.setLocation('SearchList.html?sok=' + $('#ime_write').val());
+	setLocation('SearchList.html?sok=' + $('#ime_write').val());
 	return true;
     };
 
     var onReturn = function() {
-        Search.setCookie("search_text", $('#ime_write').val(),1);
         Search.imeShow();
 	return true;
     };
@@ -61,77 +60,6 @@ function Input(/**Object*/id)
 
 Search.init = function()
 {
-	var html = '<div class="search-content">';
-	html += '<div class="input_bg">';
-	html += '<input id="write" class="footer_input" type="text" value="Sök programtitlar..." />';
-	html += '</div>';
-	html += '<ul class="keyboard">';
-	html += '<li class="symbol row1 selected">!</li>';
-	html += '<li class="symbol row1">1</li>';
-	html += '<li class="symbol row1">2</li>';
-	html += '<li class="symbol row1">3</li>';
-	html += '<li class="symbol row1">4</li>';
-	html += '<li class="symbol row1">5</li>';
-	html += '<li class="symbol row1">6</li>';
-	html += '<li class="symbol row1">7</li>';
-	html += '<li class="symbol row1">8</li>';
-	html += '<li class="symbol row1">9</li>';
-	html += '<li class="symbol row1">0</li>';
-	html += '<li class="symbol row1">-</li>';
-	html += '<li class="symbol row1">+</li>';
-	html += '<li class="delete row1 lastitem" id="delete">Ta Bort</li>';
-	html += '</ul>';
-	html += '<ul class="keyboard">';
-	html += '<li class="tab row2">Tab</li>';
-	html += '<li class="letter row2">q</li>';
-	html += '<li class="letter row2">w</li>';
-	html += '<li class="letter row2">e</li>';
-	html += '<li class="letter row2">r</li>';
-	html += '<li class="letter row2">t</li>';
-	html += '<li class="letter row2">y</li>';
-	html += '<li class="letter row2">u</li>';
-	html += '<li class="letter row2">i</li>';
-	html += '<li class="letter row2">o</li>';
-	html += '<li class="letter row2">p</li>';
-	html += '<li class="letter row2">å</li>';
-	html += '<li class="symbol row2">:</li>';
-	html += '<li class="symbol row2 lastitem">?</li>';
-	html += '</ul>';
-	html += '<ul class="keyboard">';
-	html += '<li class="capslock row3">Caps Lock</li>';
-	html += '<li class="letter row3">a</li>';
-	html += '<li class="letter row3">s</li>';
-	html += '<li class="letter row3">d</li>';
-	html += '<li class="letter row3">f</li>';
-	html += '<li class="letter row3">g</li>';
-	html += '<li class="letter row3">h</li>';
-	html += '<li class="letter row3">j</li>';
-	html += '<li class="letter row3">k</li>';
-	html += '<li class="letter row3">l</li>';
-	html += '<li class="letter row3">ö</li>';
-	html += '<li class="letter row3">ä</li>';
-	html += '<li class="return row3 lastitem" id="search">Sök</li>';
-	html += '</ul>';
-	html += '<ul class="keyboard">';
-	html += '<li class="left-shift row4">Shift</li>';
-	html += '<li class="letter row4">z</li>';
-	html += '<li class="letter row4">x</li>';
-	html += '<li class="letter row4">c</li>';
-	html += '<li class="letter row4">v</li>';
-	html += '<li class="letter row4">b</li>';
-	html += '<li class="letter row4">n</li>';
-	html += '<li class="letter row4">m</li>';
-	html += '<li class="symbol row4">,</li>';
-	html += '<li class="symbol row4">.</li>';
-	html += '<li class="symbol row4">/</li>';
-	html += '<li class="right-shift row4 lastitem">Shift</li>';
-	html += '</ul>';
-	html += '<ul class="keyboard">';
-	html += '<li class="space row5 lastitem">&nbsp;</li>';
-	html += '</ul>';
-	html += '</div>';
-	$('.slider-search').html(html);
-
 	var ime_html = '<div class="imesearch-content">';
 	ime_html += '<div class="input_bg">';
         ime_html += '    <form id="searchForm" onSubmit="return false;">';
@@ -141,20 +69,6 @@ Search.init = function()
 	ime_html += '</div>';
 	$('.slider-imesearch').html(ime_html);
     return true;
-};
-
-Search.show = function()
-{
-	
-	if(Buttons.getKeyHandleID()!=4){
-		oldKeyHandle = Buttons.getKeyHandleID();
-		Buttons.setKeyHandleID(4);
-	}
-	else{
-		Buttons.setKeyHandleID(oldKeyHandle);
-	}
-	$(".slider-search").slideToggle(500, function() {});	
-
 };
 
 Search.imeShow = function(slideDuration)
@@ -174,7 +88,6 @@ Search.imeShow = function(slideDuration)
         });
 
         // pluginAPI.registIMEKey()
-        var search_text = Search.getCookie("search_text");
         if(input == null)
         {
             if (search_text) {
@@ -216,26 +129,4 @@ Search.hide = function()
         else if (Buttons.getKeyHandleID()==7){
             Search.imeShow();
         }
-};
-
-Search.getCookie = function(cName){
-    var i,x,y,ARRcookies=document.cookie.split(";");
-    for (i=0;i<ARRcookies.length;i++)
-    {
-        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-        x=x.replace(/^\s+|\s+$/g,"");
-        if (x==cName)
-        {
-            return unescape(y);
-        }
-    }
-};
-
-Search.setCookie = function(cName,value,exdays)
-{
-    var exdate=new Date();
-    exdate.setDate(exdate.getDate() + exdays);
-    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-    document.cookie=cName + "=" + c_value;
 };

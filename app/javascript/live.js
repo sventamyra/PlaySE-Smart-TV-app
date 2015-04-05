@@ -1,26 +1,12 @@
-var widgetAPI = new Common.API.Widget();
-var itemSelected;
-var itemCounter = 0;
-var seqNo = 0;
 var live =
 {
-
 };
 
 live.onLoad = function()
 {
-	Header.display('Kanaler & livesändningar');
-	Audio.init();
-	Audio.showMuteFooter();
-	Search.init();
-	Language.init();
-	ConnectionError.init();
-	Language.setLang();
-	Resolution.displayRes();
-        Buttons.setSystemOffset();
+        document.title = 'Kanaler & livesändningar'
+	Header.display(document.title);
         this.getChannelsJson();
-	// Enable key event processing
-	Buttons.enableKeys();
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -192,7 +178,7 @@ live.getLiveJson = function() {
                 decode_live(data);
                 data = null;
                 Log("itemCounter:" + itemCounter);
-                Buttons.restorePosition();
+                restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -212,20 +198,6 @@ live.getLiveJson = function() {
                 
             }
         });
-};
-
-function tsToClock(ts)
-{
-    var time;
-    var hour;
-    var minutes;
-
-    time = new Date(+ts + (Buttons.systemOffset*3600*1000));
-    hour = time.getHours();
-    minutes = time.getMinutes();
-    if (hour < 10) hour = "0" + hour;
-    if (minutes < 10) minutes = "0" + minutes;
-    return hour + ":" + minutes;
 };
 
 function GetChannelThumb(url, Name) 
@@ -309,19 +281,5 @@ function decode_live(liveData) {
     } catch(err) {
         Log("decode_live Exception:" + err.message + " data[" + k + "]:" + liveData[k]);
     }
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
 };
 //window.location = 'project.html?ilink=' + ilink;

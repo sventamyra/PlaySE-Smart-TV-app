@@ -13,7 +13,6 @@ var subtitlesEnabled = false;
 var lastSetSubtitleTime = 0;
 var currentSubtitle = -1;
 var clrSubtitleTimer = 0;
-var seqNo = 0;
 
 var Player =
 {
@@ -25,6 +24,10 @@ var Player =
     sourceDuration: 0,
     infoActive:false,
     offset:0,
+
+    aspectMode: 0,
+    ASPECT_NORMAL : 0,
+    ASPECT_H_FIT : 1,
     
     STOPPED : 0,
     PLAYING : 1,
@@ -142,9 +145,9 @@ Player.setDuration = function(duration)
 {
     if (duration.length > 0) 
     {
-        var h = GetDigits("h", duration);
-        var m = GetDigits("min", duration);
-        var s = GetDigits("sek", duration);
+        var h = this.GetDigits("h", duration);
+        var m = this.GetDigits("min", duration);
+        var s = this.GetDigits("sek", duration);
         // Log("decoded duration " + h + ":" + m + ":" + s);
         this.sourceDuration = (h*3600 + m*60 + s*1) * 1000;
     }
@@ -163,7 +166,7 @@ Player.setNowPlaying = function (Name) {
     $('.topoverlaybig').html(nowPlaying+': ' + Name);
 };
 
-GetDigits = function(type, data)
+Player.GetDigits = function(type, data)
 {
 
     var regexp1 = new RegExp("^(\\d+) " + type + ".*");
@@ -575,27 +578,14 @@ Player.GetDuration = function()
         return this.sourceDuration;
 };
 
-Player.getDeviceYear = function () {
-    var pluginNNavi = document.getElementById("pluginObjectNNavi");
-    var firmwareVersion = pluginNNavi.GetFirmware();
-
-    if (firmwareVersion === "") {
-        // emulator
-        return 2011;
-    }
-
-    // Log("JTDEBUG getDeviceYear: " + Number(firmwareVersion.substr(10, 4)))
-    return Number(firmwareVersion.substr(10, 4));
-};
-
 Player.toggleAspectRatio = function() {
 
-    if (this.getAspectMode() === 0) {
-        this.setAspectMode(1);
+    if (this.aspectMode === Player.ASPECT_NORMAL) {
+        this.aspectMode = Player.ASPECT_H_FIT;
     }
     else 
     {
-        this.setAspectMode(0);
+        this.aspectMode = Player.ASPECT_NORMAL;
     }
     this.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
 
@@ -628,7 +618,7 @@ Player.setResolution = function (videoWidth, videoHeight) {
 Player.setAspectRatio = function(videoWidth, videoHeight) {
 
     if (videoWidth > 0 && videoHeight > 0) {
-        if (Player.getAspectMode() === 1 && videoWidth/videoHeight > 4/3)
+        if (Player.aspectMode === Player.ASPECT_H_FIT && videoWidth/videoHeight > 4/3)
         {
             var cropX     = Math.round(videoWidth/960*120);
             var cropWidth = videoWidth-(2*cropX);
@@ -641,23 +631,9 @@ Player.setAspectRatio = function(videoWidth, videoHeight) {
     }
 };
 
-Player.setAspectMode = function(value)
-{
-    this.setCookie("aspectMode",value);
-};
-
-
-Player.getAspectMode = function(){
-    var savedValue = this.getCookie("aspectMode");
-    if (savedValue)
-        return savedValue*1;
-    else
-        return 0;
-};
-
 Player.getAspectModeText = function()
 {
-    if (this.getAspectMode() === 1) {
+    if (this.aspectMode === Player.ASPECT_H_FIT) {
         return " H-FIT";
     }
     else 
@@ -678,7 +654,7 @@ Player.startPlayer = function(url, isLive, starttime)
         var start_mins = starttime.match(/([0-9]+)[:.]/)[1]*60;
         start_mins = start_mins + starttime.match(/[:.]([0-9]+)/)[1]*1;
         var now = new Date();
-        var now_mins = now.getHours()*60 + now.getMinutes() + Buttons.systemOffset*60;
+        var now_mins = now.getHours()*60 + now.getMinutes() + systemOffset*60;
 
         if (start_mins > now_mins)
             // Time passed midnight
@@ -791,7 +767,7 @@ Player.toggleSubtitles = function () {
     else 
         subtitlesEnabled = true;
 
-    this.setCookie("subEnabled",subtitlesEnabled*1, 100);
+    setCookie("subEnabled",subtitlesEnabled*1, 100);
     if (!subtitlesEnabled || $("#srtId").html() == "" || $("#srtId").html() == "<br />Subtitles Off") {
         if (subtitlesEnabled && subtitles.length > 0) {
             this.setSubtitleText("Subtitles On", 2500);
@@ -804,39 +780,15 @@ Player.toggleSubtitles = function () {
 };
 
 Player.getSubtitlesEnabled = function () {
-    var savedValue = this.getCookie("subEnabled");
+    var savedValue = getCookie("subEnabled");
     if (savedValue) {
         // To reduce risk of setting being cleared
-        this.setCookie("subEnabled",(savedValue == "1")*1, 100);
+        setCookie("subEnabled",(savedValue == "1")*1, 100);
         return savedValue == "1";
     } else {
         return false;
     }
 };
-
-Player.getCookie = function(cName){
-    var i,x,y,ARRcookies=document.cookie.split(";");
-    for (i=0;i<ARRcookies.length;i++)
-    {
-        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-        x=x.replace(/^\s+|\s+$/g,"");
-        if (x==cName)
-        {
-            return unescape(y);
-        }
-    }
-    return null;
-};
-
-Player.setCookie = function(cName,value,exdays)
-{
-    var exdate=new Date();
-    exdate.setDate(exdate.getDate() + exdays);
-    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-    document.cookie=cName + "=" + c_value;
-};
-
 
 Player.fetchSubtitle = function (srtUrl) {
     var subtitleXhr = new XMLHttpRequest();
@@ -959,20 +911,13 @@ Player.refreshClrSubtitleTimer = function(timeout) {
         // Log("Clearing srt due to timer");
         $("#srtId").html("");
     }, timeout)
-}
-
-function isEmpty(obj) {
-    if (typeof obj === 'undefined' || obj === null || obj === '') return true;
-    if (typeof obj === 'number' && isNaN(obj)) return true;
-    if (obj instanceof Date && isNaN(Number(obj))) return true;
-    return false;
 };
 
 Player.getSubtitleSize = function () {
-    var savedValue = this.getCookie("subSize");
+    var savedValue = getCookie("subSize");
     if (savedValue) {
         // To avoid it ever beeing cleared
-        this.setCookie("subSize", savedValue, 100);
+        setCookie("subSize", savedValue, 100);
         return Number(savedValue);
     } else {
         return 30;
@@ -980,10 +925,10 @@ Player.getSubtitleSize = function () {
 };
 
 Player.getSubtitlePos = function () {
-    var savedValue = this.getCookie("subPos");
+    var savedValue = getCookie("subPos");
     if (savedValue) {
         // To avoid it ever beeing cleared
-        this.setCookie("subPos", savedValue, 100);
+        setCookie("subPos", savedValue, 100);
         return Number(savedValue);
     } else {
         return 405;
@@ -991,10 +936,10 @@ Player.getSubtitlePos = function () {
 };
 
 Player.getSubtitleLineHeight = function () {
-    var savedValue = this.getCookie("subHeight");
+    var savedValue = getCookie("subHeight");
     if (savedValue) {
         // To avoid it ever beeing cleared
-        this.setCookie("subHeight", savedValue, 100);
+        setCookie("subHeight", savedValue, 100);
         return Number(savedValue);
     } else {
         return 100;
@@ -1002,15 +947,15 @@ Player.getSubtitleLineHeight = function () {
 };
 
 Player.saveSubtitleSize = function (value) {
-    this.setCookie("subSize", value, 100); 
+    setCookie("subSize", value, 100); 
 };
 
 Player.saveSubtitlePos = function (value) {
-    this.setCookie("subPos", value, 100);
+    setCookie("subPos", value, 100);
 };
 
 Player.saveSubtitleLineHeight = function (value) {
-    this.setCookie("subHeight", value, 100);
+    setCookie("subHeight", value, 100);
 };
 
 Player.moveSubtitles = function (moveUp) {
@@ -1078,18 +1023,4 @@ Player.enableScreenSaver = function() {
 
 Player.disableScreenSaver = function() {
     pluginAPI.setOffScreenSaver();
-};
-
-Log = function (msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
 };

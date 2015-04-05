@@ -1,6 +1,3 @@
-var widgetAPI = new Common.API.Widget();
-var itemCounter = 0;
-var seqNo = 0;
 var Categories =
 {
 
@@ -9,17 +6,7 @@ var Categories =
 Categories.onLoad = function()
 {
 	Header.display('Kategorier');
-	Audio.init();
-	Audio.showMuteFooter();
-	Search.init();
-	Language.init();
-	ConnectionError.init();
-	Language.setLang();
-	Resolution.displayRes();
 	this.loadXml();
-
-	Buttons.enableKeys();
-
 };
 
 Categories.onUnload = function()
@@ -92,7 +79,7 @@ Categories.loadXml = function(){
 		    //
                 });
                 data = null;
-                Buttons.restorePosition();
+                restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -113,20 +100,6 @@ Categories.loadXml = function(){
             }
         });
 
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
 };
 //window.location = 'categoryDetail.html?category=' + ilink + '&history=Kategorier/' + iname +'/';
 

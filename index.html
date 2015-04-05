@@ -12,24 +12,32 @@
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/jquery.js"></script>
     <!-- <script type="text/javascript" src="$MANAGER_WIDGET/Common/OpenSrc/jquery-1.4.2.min.js"></script> -->
     <!-- js/jquery.min.js -->
-    <!-- TODO : Javascript code -->
+    <script type="text/javascript" src="app/javascript/Audio.js"></script>
     <script type="text/javascript" src="app/javascript/Buttons.js"></script>
+    <script type="text/javascript" src="app/javascript/Categories.js"></script>
+    <script type="text/javascript" src="app/javascript/categoryDetail.js"></script>
+    <script type="text/javascript" src="app/javascript/ConnectionError.js"></script>
+    <script type="text/javascript" src="app/javascript/Details.js"></script>
+    <script type="text/javascript" src="app/javascript/Footer.js"></script>
+    <script type="text/javascript" src="app/javascript/Geofilter.js"></script>
+    <script type="text/javascript" src="app/javascript/Header.js"></script>
+    <script type="text/javascript" src="app/javascript/Language.js"></script>
+    <script type="text/javascript" src="app/javascript/live.js"></script>
+    <script type="text/javascript" src="app/javascript/Main.js"></script>
+    <script type="text/javascript" src="app/javascript/PathHistory.js"></script>
+    <script type="text/javascript" src="app/javascript/Player.js"></script>
+    <script type="text/javascript" src="app/javascript/Resolution.js"></script>
     <script type="text/javascript" src="app/javascript/Search.js"></script>
-	<script type="text/javascript" src="app/javascript/Language.js"></script>
-	<script type="text/javascript" src="app/javascript/Resolution.js"></script>
-	<script type="text/javascript" src="app/javascript/ConnectionError.js"></script>
-	<script type="text/javascript" src="app/javascript/Main.js"></script>
-	<script type="text/javascript" src="app/javascript/Audio.js"></script>
-	<script type="text/javascript" src="app/javascript/Player.js"></script>
-	<script type="text/javascript" src="app/javascript/Header.js"></script>
-	<script type="text/javascript" src="app/javascript/Footer.js"></script>
+    <script type="text/javascript" src="app/javascript/SearchList.js"></script>
+    <script type="text/javascript" src="app/javascript/showList.js"></script>
+    <script type="text/javascript" src="app/javascript/Utils.js"></script>
 
-        <object id="pluginPlayer"      border="0" classid="clsid:SAMSUNG-INFOLINK-PLAYER" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
-        <object id="pluginAudio"       border="0" classid="clsid:SAMSUNG-INFOLINK-AUDIO" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
-        <object id="pluginObjectTVMW"  border="0" classid="clsid:SAMSUNG-INFOLINK-TVMW" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
-        <object id="pluginObjectNNavi" border="0" classid="clsid:SAMSUNG-INFOLINK-NNAVI" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
-        <object id="pluginFrontPanel"  border="0" classid="clsid:SAMSUNG-INFOLINK-FRONTPANEL" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
-        <!-- <object id="pluginIME"  border="0" classid="clsid:SAMSUNG-INFOLINK-IME"></object> -->
+    <object id="pluginPlayer"      border="0" classid="clsid:SAMSUNG-INFOLINK-PLAYER" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
+    <object id="pluginAudio"       border="0" classid="clsid:SAMSUNG-INFOLINK-AUDIO" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
+    <object id="pluginObjectTVMW"  border="0" classid="clsid:SAMSUNG-INFOLINK-TVMW" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
+    <object id="pluginObjectNNavi" border="0" classid="clsid:SAMSUNG-INFOLINK-NNAVI" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
+    <object id="pluginFrontPanel"  border="0" classid="clsid:SAMSUNG-INFOLINK-FRONTPANEL" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
+    <!-- <object id="pluginIME"  border="0" classid="clsid:SAMSUNG-INFOLINK-IME"></object> -->
 </head>
 <body onload="Main.onLoad();" onunload="Main.onUnload();">
     <script language="javascript" type="text/javascript" src="$MANAGER_WIDGET/Common/IME/ime2.js"></script>
@@ -73,9 +81,15 @@
             <!--/ header -->
 	    <div class="slider-language"></div>
 	    <div class="slider-error"></div>
-            <div class="slider-search"></div>
+	    <div class="slider-blocked">
+	      <div class="blocked-content">
+	        <ul>
+	          <li class="btext"><a href="#">Sorry, this video has been blocked from users outside Sweden.</a></li>
+	          <li id="breturn" class="selected"><a href="#">Return</a></li>
+	        </ul>
+	      </div>
+	    </div>
             <div class="slider-imesearch"></div>
-            
             <!-- body slider -->
             <div class="slider-body">
                 <div id="content-scroll">
@@ -85,10 +99,12 @@
                     </div>
                 </div>     
             </div>  
-			<!--/ body slider -->
-        
-	        <div class="footer"><div class="footer-content" align="center"></div></div>
-
+	    <!--/ body slider -->
+            <div class="content">
+              <div class="project-details" id="projdetails">
+              </div>
+            </div>
+	    <div class="footer"><div class="footer-content" align="center"></div></div>
     	</div>
 	</div>
 </body>

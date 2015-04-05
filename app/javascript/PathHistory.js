@@ -8,10 +8,10 @@ PathHistory.urldecode = function(str) {
 };
 
 PathHistory.GetPath = function(){
-    var url = document.location.href;
+    var url = myLocation;
 
 	var parse;
-	alert(url);
+	// Log(url);
 	if (url.indexOf("&")>0)
 	{
 		parse = url.substring(url.indexOf("=") + 1 , url.length);

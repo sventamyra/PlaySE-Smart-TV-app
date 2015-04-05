@@ -621,6 +621,7 @@ ul.dropdown .root-item {
 
 /* content */
 .content {
+        display:none;
 	width:996px;
 	height:417px;
 	padding:10px 0;

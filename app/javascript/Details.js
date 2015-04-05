@@ -1,17 +1,8 @@
 var widgetAPI = new Common.API.Widget();
-var videoUrl = '';
-var isPlaying = 0;
-var spinner;
-var buff;
-var language;
-var gurl = "";
 var isLive = false;
-var airTime = 0;
 var currentTime = 0;
 var countd=0;
 var downCounter;
-var proxy = "";
-var seqNo = 0;
 
 var Details =
 {
@@ -21,19 +12,14 @@ var Details =
 
 Details.onLoad = function()
 {
+        $(".slider-body").hide();
+        $(".content").show();
+        isLive = false;
+        Details.duration = null;
+        Details.starttime = 0;
 	Header.display('');
-	Audio.init();
-	Audio.showMuteFooter();
-	Search.init();
-	Language.init();
-	ConnectionError.init();
 	PathHistory.GetPath();
-	// Enable key event processing
-	Language.setLang();
-	Resolution.displayRes();
-        Buttons.setSystemOffset();
 	Buttons.setKeyHandleID(1);					
-	Buttons.enableKeys();
 	this.loadXml();
 };
 
@@ -44,7 +30,7 @@ Details.onUnload = function()
 
 
 Details.Geturl=function(){
-    var url = document.location.href;
+    var url = myLocation;
 	var parse;
     var name="";
     if (url.indexOf("ilink=")>0)
@@ -162,17 +148,17 @@ Details.CountDown = function()
 
 Details.GetPlayUrl = function(){
         var url_param = '?output=json';
-	gurl = this.Geturl();
+        var gurl = this.Geturl();
 	if(gurl.indexOf("http://") < 0){
 		gurl = 'http://www.svtplay.se' + gurl;
 	}
         if (gurl.indexOf('?') != -1)
                 url_param = '&output=json'; 
-	$.getJSON(proxy + gurl + url_param, function(data) {
+	$.getJSON(gurl + url_param, function(data) {
 		
 		$.each(data, function(key, val) {
 			if(key == 'video'){
-				
+				var videoUrl = '';
 				for (var i = 0; i < val.videoReferences.length; i++) {
 				    Log(val.videoReferences[i].url);
 				    videoUrl = val.videoReferences[i].url;
@@ -348,15 +334,13 @@ Details.loadXml = function(){
 
                     Details.duration = VideoLength;
 
-                    airTime = DetailsPlayTime;
                     Details.starttime = DetailsPlayTime.match(/([0-9]+[:.][0-9]+)/);
-                    if ((isChannel || (isLive && Player.getDeviceYear() == 2013)) && Details.starttime.length > 1)
+                    if ((isChannel || (isLive && getDeviceYear() == 2013)) && Details.starttime.length > 1)
                         Details.starttime = Details.starttime[1];
                     else 
                         Details.starttime = 0;
                         
 		    // Log("isLive=" + isLive);
-		    // Log("airTime=" + airTime);
 		    if (onlySweden != "false" && onlySweden != false) {
 		        //proxy = 'http://playse.kantaris.net/?mode=native&url=';
 		        $.getJSON( "http://smart-ip.net/geoip-json?callback=?",
@@ -427,6 +411,7 @@ Details.loadXml = function(){
 Details.startPlayer = function()
 {
     Player.setDuration(Details.duration);
+    // Log("isLive:" + isLive + " starttime:" + Details.starttime);
     Player.startPlayer(this.Geturl(), isLive, this.starttime);
     
 };
@@ -455,31 +440,3 @@ function dataLengthToVideoLength($video)
     }                      
     return VideoLength;
 }
-
-function tsToClock(ts)
-{
-    var time = new Date(+ts + (Buttons.systemOffset*3600*1000));
-    var hour = time.getHours();
-    var minutes = time.getMinutes();
-    if (hour < 10) hour = "0" + hour;
-    if (minutes < 10) minutes = "0" + minutes;
-    return hour + ":" + minutes;
-};
-
-String.prototype.trim = function () {
-    return this.replace(/^\s*/, "").replace(/\s*$/, "");
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
-};

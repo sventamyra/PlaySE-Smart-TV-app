@@ -1,15 +1,15 @@
 var widgetAPI = new Common.API.Widget();
 var pluginAPI = new Common.API.Plugin();
-var itemCounter = 0;
-var seqNo = 0;
 var Main =
 {
-
+    loaded: false
 };
 
 Main.onLoad = function()
 {
-	Header.display('Populärt');
+    Header.display('Populärt');
+    if (!this.loaded) {
+        this.loaded = true;
 	Audio.init();
 	Audio.showMuteFooter();
 	Search.init();
@@ -19,9 +19,13 @@ Main.onLoad = function()
         pluginAPI.registIMEKey();
 	Language.setLang();
 	Resolution.displayRes();
+        setSystemOffset();
 	this.loadXml();	
 	// Enable key event processing
 	Buttons.enableKeys();
+    } else {
+	this.loadXml();	
+    }
 	
 };
 
@@ -50,13 +54,10 @@ Main.loadXml = function(){
             data.pop();
             xhr.destroy();
             xhr = null;
-            decode_data(data);
+            Main.decode_data(data);
             data = null;
             Log("itemCounter:" + itemCounter);
-            Buttons.restorePosition();
-            // RestoreAspectMode
-            if (history.length == 1)
-                Player.setAspectMode(0);
+            restorePosition();
         },
         error: function(XMLHttpRequest, textStatus, errorThrown)
         {
@@ -78,7 +79,7 @@ Main.loadXml = function(){
     });
 };
 
-function decode_data(mainData) {
+Main.decode_data = function(mainData) {
     try {
         var html; 
         var Name;
@@ -142,18 +143,4 @@ function decode_data(mainData) {
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + mainData[k]);
     }
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
 };

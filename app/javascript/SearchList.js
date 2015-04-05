@@ -1,8 +1,4 @@
-var widgetAPI = new Common.API.Widget();
 var fired = false;
-var itemCounter = 0;
-var columnCounter = 0;
-var seqNo = 0;
 var SearchList =
 {
 
@@ -10,19 +6,8 @@ var SearchList =
 
 SearchList.onLoad = function()
 {
-	Header.display('Populärt');
-	Audio.init();
-	Audio.showMuteFooter();
-	Search.init();
-	Language.init();
-	ConnectionError.init();
-	Language.setLang();
-	Resolution.displayRes();
-        Buttons.setSystemOffset();
         this.setPath(this.Geturl());
 	this.loadXml();
-	// Enable key event processing
-	this.enableKeys();
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -46,7 +31,7 @@ SearchList.urldecode = function(str) {
 };
 
 SearchList.Geturl=function(){
-    var url = document.location.href;
+    var url = myLocation;
     var name="";
     if (url.indexOf("=")>0)
     {
@@ -64,17 +49,6 @@ SearchList.setPath = function(name, count) {
     if (count != undefined)
         html += '<li class="root-item"><a href="index.html" class="active"> ' + count + '</a></li>';
     $('.dropdown').html($(html));
-};
-
-SearchList.sscroll = function(param) 
-{
-	var xaxis = 0;
-	if(columnCounter > 0){
-		xaxis = columnCounter - 1;
-	}
-	xaxis = -xaxis * 240;
-	$('.content-holder').animate({ marginLeft: xaxis});
-	 
 };
 
 SearchList.loadXml = function(){
@@ -99,10 +73,10 @@ SearchList.loadXml = function(){
                 data.pop();
                 xhr.destroy();
                 xhr = null;
-                decode_data(data);
+                SearchList.decode_data(data);
                 data = null;
                 Log("itemCounter:" + itemCounter);
-                Buttons.restorePosition();
+                restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -127,7 +101,7 @@ SearchList.loadXml = function(){
         });
 };
 
-function decode_data(searchData) {
+SearchList.decode_data = function(searchData) {
     try {
         var html;
         var Name;
@@ -211,18 +185,4 @@ function decode_data(searchData) {
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + searchData[k]);
     }
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
 };

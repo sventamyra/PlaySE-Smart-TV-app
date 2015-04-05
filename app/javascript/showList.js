@@ -1,24 +1,11 @@
-var widgetAPI = new Common.API.Widget();
-var itemCounter = 0;
-var seqNo = 0;
 var showList =
 {
 };
 
 showList.onLoad = function()
 {
-	Header.display('Populärt');
-	Audio.init();
-	Audio.showMuteFooter();
-	Search.init();
-	Language.init();
-	ConnectionError.init();
-	Language.setLang();
-	Resolution.displayRes();
 	this.loadXml();
 	PathHistory.GetPath();
-	// Enable key event processing
-	Buttons.enableKeys();
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -29,7 +16,7 @@ showList.onUnload = function()
 
 
 showList.Geturl=function(){
-    var url = document.location.href;
+    var url = myLocation;
     var name="";
     if (url.indexOf("=")>0)
     {
@@ -62,10 +49,10 @@ showList.loadXml = function(){
                 data.pop();
                 xhr.destroy();
                 xhr = null;
-                decode_data(data);
+                showList.decode_data(data);
                 data = null;
                 Log("itemCounter:" + itemCounter);
-                Buttons.restorePosition();
+                restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -88,7 +75,7 @@ showList.loadXml = function(){
 
 };
 
-function decode_data(showData) {
+showList.decode_data = function(showData) {
     try {
         var html; 
         var Name;
@@ -144,24 +131,6 @@ function decode_data(showData) {
     } catch(err) {
         Log("decode_data Exception:" + err.message + ". showData[" + k + "]:" + showData[k]);
     }
-};
-
-String.prototype.trim = function () {
-    return this.replace(/^\s*/, "").replace(/\s*$/, "").replace(/[ 	]*\n[	 ]*/g, "");
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send();
-    alert(msg);
 };
 
 //window.location = 'project.html?ilink=' + ilink + '&history=' + historyPath + iname + '/';

@@ -100,33 +100,9 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl){
 
 };
 
-
-
-Resolution.getCookie = function(cName){
-var i,x,y,ARRcookies=document.cookie.split(";");
-for (i=0;i<ARRcookies.length;i++)
-  {
-  x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-  y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-  x=x.replace(/^\s+|\s+$/g,"");
-  if (x==cName)
-    {
-    return unescape(y);
-    }
-  }
-};
-
-Resolution.setCookie = function(cName,value,exdays)
-{
-var exdate=new Date();
-exdate.setDate(exdate.getDate() + exdays);
-var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-document.cookie=cName + "=" + c_value;
-};
-
 Resolution.checkRes = function()
 {
-var res=this.getCookie("res");
+var res=getCookie("res");
 var defa = 5;
 if (res!=null && res!="")
   {
@@ -140,13 +116,13 @@ else
 
 Resolution.setRes = function(value)
 {
-	this.setCookie('res', value, 1000);
+	setCookie('res', value, 1000);
 	target = bwidths[value];
 };
 
 Resolution.checkLiveRes = function()
 {
-var res=this.getCookie("liveres");
+var res=getCookie("liveres");
 var defa = 4;
 if (res!=null && res!="")
   {
@@ -160,7 +136,7 @@ else
 
 Resolution.setLiveRes = function(value)
 {
-	this.setCookie('liveres', value, 1000);
+	setCookie('liveres', value, 1000);
 	target = bwidths[value];
 };
 

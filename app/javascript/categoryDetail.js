@@ -1,6 +1,3 @@
-var widgetAPI = new Common.API.Widget();
-var itemCounter = 0;
-var seqNo = 0;
 var categoryDetail =
 {
 
@@ -8,18 +5,8 @@ var categoryDetail =
 
 categoryDetail.onLoad = function()
 {
-	Header.display('Populärt');
-	Audio.init();
-	Audio.showMuteFooter();
-	Search.init();
-	Language.init();
-	ConnectionError.init();
-	Language.setLang();
-	Resolution.displayRes();
 	this.loadXml();
 	PathHistory.GetPath();
-	// Enable key event processing
-	Buttons.enableKeys();
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -29,8 +16,8 @@ categoryDetail.onUnload = function()
 };
 // categoryDetail.html?category=/barn&history=Kategorier/Barn
 categoryDetail.Geturl=function(){
-    var url = document.location.href;
-	var parse;
+    var url = myLocation;
+    var parse;
     var name="";
     if (url.indexOf("category=")>0)
     {
@@ -64,7 +51,7 @@ categoryDetail.loadXml = function(){
                 Log('Success:' + this.url);
                 // Log("xhr.responseText.length:"+ xhr.responseText.length);
                 // Log("org items:" + $(data).find('article').length);
-                data = xhr.responseText.split("a id=\"play-navigation-tabs")[1];
+                data = xhr.responseText.split("a id=\"play_navigation-tab-list")[1];
                 data = data.split("div id=\"playJs-alphabetic-list")[1];
                 data = data.split("div class=\"play_js-videolist__item-container")[1];
                 data = data.split("</article>");
@@ -73,10 +60,10 @@ categoryDetail.loadXml = function(){
                 xhr.destroy();
                 xhr = null;
                 itemCounter = 0;
-                decode_data(data);
+                categoryDetail.decode_data(data);
                 data = null;
                 Log("itemCounter:" + itemCounter);
-                Buttons.restorePosition();
+                restorePosition();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
@@ -99,7 +86,7 @@ categoryDetail.loadXml = function(){
 
 };
 
-function decode_data(categoryData) {
+categoryDetail.decode_data = function (categoryData) {
 
     try {
         var html;
@@ -148,19 +135,5 @@ function decode_data(categoryData) {
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + categoryData[k]);
     }
-};
-
-function Log(msg) 
-{
-    // var logXhr = new XMLHttpRequest();
-    // logXhr.onreadystatechange = function () {
-    //     if (logXhr.readyState == 4) {
-    //         logXhr.destroy();
-    //         logXhr = null;
-    //     }
-    // };
-    // logXhr.open("GET", "http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'");
-    // logXhr.send(); 
-    alert(msg);
 };
 //window.location = 'showList.html?name=' + ilink + '&history=' + historyPath + iname + '/';
