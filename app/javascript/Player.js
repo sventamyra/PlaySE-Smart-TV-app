@@ -13,6 +13,7 @@ var subtitlesEnabled = false;
 var lastSetSubtitleTime = 0;
 var currentSubtitle = -1;
 var clrSubtitleTimer = 0;
+var subtitleStatusPrinted = false;
 
 var Player =
 {
@@ -757,25 +758,39 @@ Player.GetPlayUrl = function(gurl, isLive) {
     });
 };
 
-
-
 // Subtitles support
-
 Player.toggleSubtitles = function () {
-    if (subtitles.length > 0)
-        subtitlesEnabled = !subtitlesEnabled;
-    else 
-        subtitlesEnabled = true;
 
-    setCookie("subEnabled",subtitlesEnabled*1, 100);
-    if (!subtitlesEnabled || $("#srtId").html() == "" || $("#srtId").html() == "<br />Subtitles Off") {
+    if (subtitleStatusPrinted) {
         if (subtitlesEnabled && subtitles.length > 0) {
-            this.setSubtitleText("Subtitles On", 2500);
-        } else if (subtitlesEnabled) {
-            this.setSubtitleText("Subtitles not available", 2500);
+            if (this.getSubtitleBackground()) {
+                // Toggle background
+                this.setSubtitleBackground(false)
+            } else {
+                this.setSubtitleBackground(true)
+                subtitlesEnabled = false;
+            }
         } else {
-            this.setSubtitleText("Subtitles Off", 2500);
+            subtitlesEnabled = true;
         }
+        setCookie("subEnabled",subtitlesEnabled*1, 100);
+    } else {
+        // Only show status the first time
+        subtitleStatusPrinted = true;
+    }
+
+    if (!subtitlesEnabled || $("#srtId").html() == "" || $("#srtId").html().match(/Subtitle/i)) {
+        this.printSubtitleStatus();
+    }
+};
+
+Player.printSubtitleStatus = function () {
+    if (subtitlesEnabled && subtitles.length > 0) {
+        this.setSubtitleText("Subtitles On", 2500);
+    } else if (subtitlesEnabled) {
+        this.setSubtitleText("Subtitles not available", 2500);
+    } else {
+        this.setSubtitleText("Subtitles Off", 2500);
     }
 };
 
@@ -886,7 +901,7 @@ Player.setCurSubtitle = function (time) {
 };
 
 Player.clearSrtUnlessConfiguring = function () {
-    if ($("#srtId").html().indexOf("Test subtitle") < 0) {
+    if (!$("#srtId").html().match(/Subtitle/i)) {
         widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
     }
 };
@@ -931,7 +946,7 @@ Player.getSubtitlePos = function () {
         setCookie("subPos", savedValue, 100);
         return Number(savedValue);
     } else {
-        return 405;
+        return 420;
     }
 };
 
@@ -944,6 +959,22 @@ Player.getSubtitleLineHeight = function () {
     } else {
         return 100;
     }
+};
+
+Player.getSubtitleBackground = function () {
+    var savedValue = getCookie("subBack");
+    if (savedValue) {
+        // To avoid it ever beeing cleared
+        setCookie("subBack", savedValue, 100);
+        return (savedValue == "true");
+    } else {
+        return true;
+    }
+};
+
+Player.setSubtitleBackground = function (value) {
+    setCookie("subBack", value, 100); 
+    this.setSubtitleProperties();
 };
 
 Player.saveSubtitleSize = function (value) {
@@ -1009,12 +1040,16 @@ Player.showTestSubtitle = function () {
 Player.setSubtitleProperties = function() {
     $("#srtId").css("font-size", this.getSubtitleSize());
     $("#srtId").css("top", this.getSubtitlePos());
-
+    var subBack = this.getSubtitleBackground();
     var lineHeight = this.getSubtitleLineHeight();
-    if (lineHeight > 100)
+    if (lineHeight > 100 && subBack)
         $("#srtId").css("line-height", lineHeight + "%");
     else
         $("#srtId").css("line-height", "");
+    if (subBack)
+        $("#srtId").css("background-color", "rgba(0, 0, 0, 0.5)");
+    else
+        $("#srtId").css("background-color", "");
 };
 
 Player.enableScreenSaver = function() {

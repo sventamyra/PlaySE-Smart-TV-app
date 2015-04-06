@@ -73,7 +73,7 @@ setLocation = function(location, oldPos)
     isTopRowSelected = true;
     myLocation = location;
     Buttons.setKeyHandleID(0); // default
-    resetHtml();
+    resetHtml(oldPos);
 
     switch (myLocation.match(/([a-zA-Z]+)\.html/)[1])
     {
@@ -112,16 +112,20 @@ setLocation = function(location, oldPos)
     // window.location = location;
 };
 
-resetHtml = function()
+resetHtml = function(oldPos)
 {
-    // Delete/hide details
+    // Delete and hide details
     $(".content").hide();
     $('#projdetails').html("");
-    // Delete/show list
-    $(".slider-body").show();
+    // Delete and show list
     $('#topRow').html("");
     $('#bottomRow').html("");
-    $('.content-holder').animate({ marginLeft: 0});
+    $('.content-holder').css("marginLeft", "0");
+    $(".slider-body").show();
+    if (oldPos)
+        $("#content-scroll").hide();
+    else
+        $("#content-scroll").show();
 };
 
 goBack = function(location)

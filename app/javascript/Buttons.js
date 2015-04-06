@@ -1,6 +1,5 @@
 var tvKey = new Common.API.TVKeyValue();
 
-
 var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, search = 4, player2 = 5, language = 6, imeSearch = 7, blocked = 8, connection error = 9
 var keyHeld = false;
 var keyTimer;
@@ -19,6 +18,7 @@ var menuId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
 var reslButton = ["#resl1", "#resl2", "#resl3", "#resl4", "#resl5"];
 var langButton = ["#english", "#swedish"];
+var animateCallbacked = 0;
 
 var Buttons =
 {
@@ -87,20 +87,30 @@ Buttons.enableKeys = function()
 
 Buttons.clearKey = function() 
 {
-    Log("clearKey");
+    // Log("clearKey");
     lastKey = 0;
     keyHeld = false;
 };
 
-Buttons.sscroll = function(param) 
+Buttons.sscroll = function() 
 {
-	var xaxis = 0;
-	if(columnCounter > 0){
-		xaxis = columnCounter - 1;
-	}
-	xaxis = -xaxis * 260;
-	$('.content-holder').animate({ marginLeft: xaxis});
-	 
+    var xaxis = 0;
+    if(columnCounter > 0){
+	xaxis = columnCounter - 1;
+    }
+    xaxis = -xaxis * 260;
+    animateCallbacked = 0;
+    $('.content-holder').animate(
+        {marginLeft: xaxis},
+        {complete: function() 
+         {
+             animateCallbacked = animateCallbacked+1;
+             if (animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
+                 $("#content-scroll").show();
+             }
+         }
+        }
+    );
 };
 
 Buttons.keyHandleForList = function()
@@ -221,9 +231,12 @@ Buttons.keyHandleForList = function()
                                     itemSelected = false;
                                 }
 				break;
+                default:
+                    this.handleMenuKeys(keyCode);
+                    return;
+                    
 		}
-		this.handleMenuKeys(keyCode);
-		this.sscroll(itemSelected);
+		this.sscroll();
         }
         else {
             Log("Key repeated, first time is ignored: " + keyCode + " KeyHeld:" + keyHeld);

@@ -33,7 +33,7 @@ body {
     /*position: absolute;*/
     position: relative;
     overflow: hidden;
-    top: 405px;
+    top: 420px;
     left: 0;
     width: 958px;
     height: 80px;
@@ -44,7 +44,6 @@ body {
     border: 0 solid red;
     text-shadow: -2px 0 black, 0 2px black, 2px 0 black, 0 -2px black;
     z-index: 3;
-    background-color:rgba(0, 0, 0, 0.5);
 }
 
 .topmenu a:hover, .topmenu a.active, .news-name a, .scroll-item-name a:hover, a.link-view, .column h2, .news-name h2, a.link-button.selected, 
