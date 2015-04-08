@@ -51,7 +51,7 @@ categoryDetail.loadXml = function(){
                 Log('Success:' + this.url);
                 // Log("xhr.responseText.length:"+ xhr.responseText.length);
                 // Log("org items:" + $(data).find('article').length);
-                data = xhr.responseText.split("a id=\"play_navigation-tab-list")[1];
+                data = xhr.responseText.split("ul class=\"play_category__tab")[1];
                 data = data.split("div id=\"playJs-alphabetic-list")[1];
                 data = data.split("div class=\"play_js-videolist__item-container")[1];
                 data = data.split("</article>");
