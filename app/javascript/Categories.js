@@ -38,7 +38,7 @@ Categories.loadXml = function(){
                     return $(this).attr('class') == "play_category-grid__link";
                 }).each(function(){
                     var $video = $(this); 
-                    var Name = $($video.find('span')[0]).text();
+                    var Name = $($video.find('span')[0]).text().trim();
 		    var Link = "http://www.svtplay.se"+$video.attr('href');
 		    //Log(Link);
 		    //var Description = $video.find('Description').text();
