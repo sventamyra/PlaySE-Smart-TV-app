@@ -232,8 +232,8 @@ function decode_live(liveData) {
                 continue;
             Name = liveData[k].match(/data-title="([^"]+)"/)[1];
             Duration = liveData[k].match(/data-length="([^"]+)"/)[1];
-            Link = liveData[k].match(/href="([^#][^#"]+)"/)[1];
-            ImgLink = liveData[k].match(/data-imagename="([^"]+)"/)[1];
+            Link = fixLink(liveData[k].match(/href="([^#][^#"]+)"/)[1]);
+            ImgLink = fixLink(liveData[k].match(/data-imagename="([^"]+)"/)[1]);
             running = liveData[k].search(/play_graphics-live--inactive/) == -1;
             starttime = liveData[k].match(/alt="([^"]+)"/)[1].replace(/([^:]+):.+/, "$1");
             liveData[k] = "";

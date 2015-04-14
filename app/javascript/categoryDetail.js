@@ -96,13 +96,14 @@ categoryDetail.decode_data = function (categoryData) {
         for (var k=0; k < categoryData.length; k++) {
             categoryData[k] = "<article" + categoryData[k].split("<article")[1];
             Name = categoryData[k].match(/data-title="([^"]+)"/)[1];
-            Link = "http://www.svtplay.se"+ categoryData[k].match(/href="([^"]+)"/)[1];
+            Link = fixLink(categoryData[k].match(/href="([^"]+)"/)[1]);
             ImgLink = categoryData[k].match(/data-imagename="([^"]+)"/);
             if (!ImgLink) {
                 ImgLink = categoryData[k].match(/src="([^"]+)"/)[1];
             } else {
                 ImgLink = ImgLink[1];
             }
+            ImgLink = fixLink(ImgLink);
             categoryData[k] = "";
 
             if(itemCounter % 2 == 0){

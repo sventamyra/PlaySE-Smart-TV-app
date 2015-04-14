@@ -148,10 +148,7 @@ Details.CountDown = function()
 
 Details.GetPlayUrl = function(){
         var url_param = '?output=json';
-        var gurl = this.Geturl();
-	if(gurl.indexOf("http://") < 0){
-		gurl = 'http://www.svtplay.se' + gurl;
-	}
+        var gurl = fixLink(this.Geturl());
         if (gurl.indexOf('?') != -1)
                 url_param = '&output=json'; 
 	$.getJSON(gurl + url_param, function(data) {
@@ -203,11 +200,8 @@ Details.GetPlayUrl = function(){
 };
 
 Details.loadXml = function(){
-    var url = this.Geturl();
+    var url = fixLink(this.Geturl());
     var html;
-    if (url.indexOf("http://") == -1)
-        url = "http://www.svtplay.se" + url
-
 
     $.support.cors = true;
     $.ajax(
@@ -244,9 +238,7 @@ Details.loadXml = function(){
                         isChannel = true;
 
                         Name = $video.find('a').attr('data-title');
-		        DetailsImgLink = $video.find('img').attr('data-imagename');
-                        if (DetailsImgLink.indexOf("http") == -1)
-                            DetailsImgLink = "http://www.svtplay.se" + DetailsImgLink;
+		        DetailsImgLink = fixLink($video.find('img').attr('data-imagename'));
                         pattern = new RegExp("\\b" + Name + "\\b", "i");
 	                var $info = $(data).find('div').filter(function() {
                             
@@ -269,7 +261,7 @@ Details.loadXml = function(){
                     } else if (url.indexOf("oppetarkiv") > -1) {
                         Name = $($(data).find('img')[1]).attr('alt');
                         // Log("Name:" + Name);
-		        DetailsImgLink = $($(data).find('img')[1]).attr('data-imagename');
+		        DetailsImgLink = fixLink($($(data).find('img')[1]).attr('data-imagename'));
 		        DetailsPlayTime = $($(data).find('strong')[0]).text();
                         VideoLength = $($(data).find('strong')[1]).text();
 
@@ -290,7 +282,7 @@ Details.loadXml = function(){
 		            isLive = true;
 
                         Name = $video.find('a').attr('data-title');
-		        DetailsImgLink = $video.find('img').attr('data-imagename');
+		        DetailsImgLink = fixLink($video.find('img').attr('data-imagename'));
                         // Log(DetailsImgLink);
                         var DetailsClock = "";
                         try {
@@ -398,7 +390,7 @@ Details.loadXml = function(){
                     return;
                 }
         	else{
-        	    Log('Failure');
+        	    Log('Failure:' + textStatus);
         	    ConnectionError.show();
         	}
                 

@@ -187,6 +187,19 @@ tsToClock = function (ts)
     return hour + ":" + minutes;
 };
 
+fixLink = function (ImgLink) 
+{
+    if (ImgLink.match(/^\/\//)) {
+        return "http:" + ImgLink;
+    } else if (!ImgLink.match("https*:")) {
+        if (!ImgLink.match(/^\//))
+            ImgLink = "/" + ImgLink;
+        return "http://www.svtplay.se" + ImgLink
+    } else {
+        return ImgLink
+    }
+};
+
 Log = function (msg) 
 {
     // var logXhr = new XMLHttpRequest();

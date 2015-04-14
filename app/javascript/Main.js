@@ -95,10 +95,10 @@ Main.decode_data = function(mainData) {
                 continue;
             Name = mainData[k].match(/data-title="([^"]+)"/)[1];
             Duration = mainData[k].match(/data-length="([^"]+)"/)[1];
-            Link = mainData[k].match(/href="([^#][^#"]+)"/)[1];
+            Link = fixLink(mainData[k].match(/href="([^#][^#"]+)"/)[1]);
             Description = mainData[k].match(/data-description="([^"]+)"/);
             Description = (!Description) ? "" : Description[1];
-            ImgLink = mainData[k].match(/data-imagename="([^"]+)"/)[1];
+            ImgLink = fixLink(mainData[k].match(/data-imagename="([^"]+)"/)[1]);
             mainData[k] = "";
 
 	    if(Description.length > 55){

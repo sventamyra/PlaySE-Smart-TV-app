@@ -39,15 +39,12 @@ Categories.loadXml = function(){
                 }).each(function(){
                     var $video = $(this); 
                     var Name = $($video.find('span')[0]).text().trim();
-		    var Link = "http://www.svtplay.se"+$video.attr('href');
+		    var Link = fixLink($video.attr('href'));
 		    //Log(Link);
 		    //var Description = $video.find('Description').text();
 	            var ImgLink  = $video.find('img').attr('data-imagename');
                     if (!ImgLink) ImgLink = $video.find('img').attr('src');
-                    if (ImgLink.match(/^\/\//))
-                        ImgLink = "http:"+ImgLink;
-                    else
-		        ImgLink  = "http://www.svtplay.se"+ImgLink;
+                    ImgLink = fixLink(ImgLink);
 		    if(itemCounter % 2 == 0){
 		        if(itemCounter > 0){
 			    html = '<div class="scroll-content-item topitem">';

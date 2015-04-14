@@ -92,9 +92,10 @@ showList.decode_data = function(showData) {
 
             // Duration = showData[k].match(/data-length="([^"]+)"/)[1];
             Duration = showData[k].match(/time>([^<]+)/)[1];
-            Link = showData[k].match(/href="([^#][^#"]+)"/)[1];
+            Link = fixLink(showData[k].match(/href="([^#][^#"]+)"/)[1]);
             ImgLink = showData[k].match(/data-imagename="([^"]+)"/);
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
+            ImgLink = fixLink(ImgLink);
             showData[k] = "";
 	    // if(Description.length > 55){
 	    //     Description = Description.substring(0, 52)+ "...";

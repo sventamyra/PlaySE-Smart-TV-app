@@ -708,9 +708,7 @@ Player.startPlayer = function(url, isLive, starttime)
 Player.GetPlayUrl = function(gurl, isLive) {
     var url_param = '?output=json';
 
-    if(gurl.indexOf("http://") < 0){
-	gurl = 'http://www.svtplay.se' + gurl;
-    }
+    gurl = fixLink(gurl);
     Log("gurl:" + gurl);
     if (gurl.indexOf('?') != -1)
         url_param = '&output=json'; 

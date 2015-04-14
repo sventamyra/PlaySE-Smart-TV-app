@@ -118,13 +118,14 @@ SearchList.decode_data = function(searchData) {
             Name = searchData[k].match(/data-title="([^"]+)"/)[1];
             Duration = searchData[k].match(/data-length="([^"]+)"/);
             Description = searchData[k].match(/data-description="([^"]+)"/);
-            Link = searchData[k].match(/href="([^#][^#"]+)"/)[1];
+            Link = fixLink(searchData[k].match(/href="([^#][^#"]+)"/)[1]);
             ImgLink = searchData[k].match(/data-imagename="([^"]+)"/);
             IsLive = searchData[k].search(/svt_icon--live/) > -1;
             running = searchData[k].search(/play_graphics-live--inactive/) == -1;
             starttime = searchData[k].match(/alt="([^"]+)"/);
             Description = (!Description) ? "" : Description[1];
             ImgLink = (!ImgLink) ? searchData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
+            ImgLink = fixLink(ImgLink);
             starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
             searchData[k] = "";
 	    if (Description.length > 55){
@@ -136,7 +137,6 @@ SearchList.decode_data = function(searchData) {
                 LinkPrefx = '<a href="details.html?ilink=';
             }
             else {
-                Link = "http://svtplay.se" + Link
                 Duration = 0;
             }
 	    if(itemCounter % 2 == 0){
