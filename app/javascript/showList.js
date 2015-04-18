@@ -88,6 +88,8 @@ showList.decode_data = function(showData) {
             //         return $(this).attr('class') == "play_videolist-element__title-text";
             //     }).text();
             showData[k] = showData[k].split("<article")[1];
+            if (showData[k].match('countdown play_live-countdown'))
+                continue;
             Name = showData[k].match(/play_vertical-list__header-link\">([^<]+)</)[1].trim();
 
             // Duration = showData[k].match(/data-length="([^"]+)"/)[1];
