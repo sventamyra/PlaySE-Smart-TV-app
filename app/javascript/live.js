@@ -170,7 +170,9 @@ live.getLiveJson = function() {
             {
 
                 Log('Success:' + this.url);
-                data = xhr.responseText.split("</article>");
+                data = xhr.responseText.split("<article");
+                data.shift();
+                data = ("<article" + data).split("</article>");
                 data.pop();
                 xhr.destroy();
                 xhr = null;

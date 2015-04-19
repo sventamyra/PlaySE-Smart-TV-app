@@ -28,6 +28,7 @@ PathHistory.GetPath = function(){
 			parse = parse.substring(parse.indexOf("/") + 1 , parse.length);
 			html +='<li class="root-item"><a href="index.html" class="active">' + title + '</a></li>';
 		}
+                Header.display('');
 		$('.dropdown').html($(html));
 	}
 	

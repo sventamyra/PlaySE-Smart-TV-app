@@ -42,6 +42,7 @@ SearchList.Geturl=function(){
 
 
 SearchList.setPath = function(name, count) {
+    Header.display('');
     document.title = "Sökning: " + name;
     var title = this.urldecode(name);
     var html;
