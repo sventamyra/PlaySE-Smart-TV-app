@@ -47,7 +47,7 @@ function getimg(param,arr)
 
 live.getChannelsJson = function() {
     $.support.cors = true; 
-
+    $("#content-scroll").hide();
     $.ajax(
         {
             type: 'GET',
@@ -181,6 +181,7 @@ live.getLiveJson = function() {
                 data = null;
                 Log("itemCounter:" + itemCounter);
                 restorePosition();
+                $("#content-scroll").show();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {

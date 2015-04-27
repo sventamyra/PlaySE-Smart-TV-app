@@ -6,6 +6,7 @@ var itemCounter = 0;
 var myLocation = "index.html";
 var myHistory = [];
 var myPos = null;
+var loadingTimer = 0;
 
 getDeviceYear = function() {
     var pluginNNavi = document.getElementById("pluginObjectNNavi");
@@ -47,6 +48,28 @@ String.prototype.trim = function () {
     return this.replace(/^\s*/, "").replace(/\s*$/, "");
 };
 
+loadingStart = function() {
+    try {
+        if (loadingTimer == 0) {
+            loadingTimer = window.setTimeout(function () {
+                $('#loading').sfLoading('show');
+            }, 500);
+        }
+    } catch(err) {
+        return;
+    }
+};
+
+loadingStop = function() {
+    try {
+        clearTimeout(loadingTimer);
+        loadingTimer = 0;
+        $('#loading').sfLoading('hide');  
+    } catch(err) {
+        return;
+    }
+};
+
 // Methods for "restoring" item position during "history.back"
 setLocation = function(location, oldPos)
 {
@@ -74,7 +97,7 @@ setLocation = function(location, oldPos)
     myLocation = location;
     Buttons.setKeyHandleID(0); // default
     resetHtml(oldPos);
-
+    loadingStart();
     switch (myLocation.match(/([a-zA-Z]+)\.html/)[1])
     {
     case "index":
@@ -139,6 +162,7 @@ goBack = function(location)
 
 restorePosition = function() 
 {
+    loadingStop();
     if (myPos) {
         setPosition(myPos);
     }

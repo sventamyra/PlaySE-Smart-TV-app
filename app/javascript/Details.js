@@ -306,7 +306,7 @@ Details.loadXml = function(){
                             VideoLength = dataLengthToVideoLength($video);
                             if (VideoLength.length == 0)
                             {
-                                VideoLength = $video.find('h2').html().replace(/.+span> /,"");
+                                VideoLength = $video.find('span').find('time').text();
                             }
                         }
 		        Description = $($video.find('p')[0]).text();
@@ -375,11 +375,12 @@ Details.loadXml = function(){
 	        $video = html = null;
 		
 		Language.setDetailLang();
-
+                loadingStop();
                 data = null;       
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
+                loadingStop();
           	if (textStatus == 'timeout') {
                     this.tryCount++;
                     if (this.tryCount <= this.retryLimit) {
@@ -393,7 +394,6 @@ Details.loadXml = function(){
         	    Log('Failure:' + textStatus);
         	    ConnectionError.show();
         	}
-                
             }
         });
 

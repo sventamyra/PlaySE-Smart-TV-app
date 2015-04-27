@@ -9,6 +9,7 @@ Main.onLoad = function()
 {
     Header.display('Populärt');
     if (!this.loaded) {
+        loadingStart();
         this.loaded = true;
 	Audio.init();
 	Audio.showMuteFooter();

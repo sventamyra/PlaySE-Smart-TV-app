@@ -188,6 +188,11 @@ h4 {
         position:absolute;
 }
 
+#loading{
+	top: 250px;
+        left: 450px;
+}
+
 .header {
 	height:62px;
 	position: relative;

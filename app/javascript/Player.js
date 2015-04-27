@@ -14,6 +14,7 @@ var lastSetSubtitleTime = 0;
 var currentSubtitle = -1;
 var clrSubtitleTimer = 0;
 var subtitleStatusPrinted = false;
+var reloaded = false;
 
 var Player =
 {
@@ -236,6 +237,7 @@ Player.pauseVideo = function()
 
 Player.stopVideo = function()
 {
+        loadingStop();
         widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
         this.plugin.Stop();
         Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
@@ -272,6 +274,7 @@ Player.resumeVideo = function()
 
 Player.reloadVideo = function(time)
 {
+    reloaded = true;
 	this.plugin.Stop();
         if (time)
             ccTime = time;
@@ -373,6 +376,7 @@ Player.getState = function()
 Player.onBufferingStart = function()
 {
     Log("onBufferingStart");
+    loadingStart();
     currentSubtitle = 0;
     subtitlesEnabled = this.getSubtitlesEnabled();
     this.setSubtitleProperties();
@@ -401,6 +405,8 @@ Player.onBufferingProgress = function(percent)
 
 Player.onBufferingComplete = function()
 {
+        loadingStop();
+        reloaded = false;
 	if(Language.getisSwedish()){
 	buff='Buffrar';
 	}else{
@@ -538,6 +544,7 @@ Player.showInfo = function(force)
 
 Player.OnNetworkDisconnected = function()
 {
+        loadingStop();
 	this.showControls();
         Player.enableScreenSaver();
 	$('.bottomoverlaybig').css("display", "block");
@@ -554,7 +561,8 @@ Player.OnNetworkDisconnected = function()
                                     if (xhr.responseText.split("</article>").length > 1)
                                     {
 			        	Log('Success:' + this.url);
-			        	Player.reloadVideo();
+                                        if (!reloaded)
+			        	    Player.reloadVideo();
 			            } else {
 			        	Log('Failure');
 			        	$.ajax(this);
@@ -643,6 +651,8 @@ Player.getAspectModeText = function()
 
 Player.startPlayer = function(url, isLive, starttime)
 {
+    reloaded = false;
+    loadingStart();
     if(Language.getisSwedish()){
 	buff='Buffrar';
     }else{
