@@ -25,9 +25,9 @@ function Input(/**Object*/id)
     var element = document.getElementById( id );
     var installFocusKeyCallbacks = function() 
     {
+        ime.setEnterFunc(onEnter);
         ime.setKeyFunc(tvKey.KEY_RETURN, onReturn);
         ime.setKeyFunc(tvKey.KEY_EXIT, onReturn); 
-        ime.setKeyFunc(tvKey.KEY_ENTER, onEnter); //do
         ime.setKeyFunc(tvKey.KEY_RED, onRed); 
     };
     
@@ -44,7 +44,6 @@ function Input(/**Object*/id)
     {
         Search.imeShow(0);
 	setLocation('SearchList.html?sok=' + $('#ime_write').val());
-	return true;
     };
 
     var onReturn = function() {

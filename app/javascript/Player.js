@@ -425,6 +425,7 @@ Player.onRenderingComplete = function()
 };
 
 Player.showControls = function(){
+  Player.infoActive = true;
   $('.video-wrapper').css("display", "block");				
   $('.video-footer').css("display", "block");
   Log("show controls");
@@ -533,7 +534,6 @@ Player.showInfo = function(force)
 	this.showControls();
 	//$('.bottomoverlaybig').css("display", "block");
 	timeout = window.setTimeout(this.hideControls, 5000);
-        Player.infoActive = true;
     }
     else
     {
