@@ -1,6 +1,8 @@
 var buff;
 var skipTime = 0;
-var timeoutS;
+var osdTimer; 
+var clockTimer; 
+var skipTimer; 
 var pluginAPI = new Common.API.Plugin();
 var fpPlugin;
 var ccTime = 0;
@@ -15,6 +17,7 @@ var currentSubtitle = -1;
 var clrSubtitleTimer = 0;
 var subtitleStatusPrinted = false;
 var reloaded = false;
+var SEPARATOR = "&nbsp;&nbsp;&nbsp;&nbsp;"
 
 var Player =
 {
@@ -25,7 +28,14 @@ var Player =
     originalSource : null,
     sourceDuration: 0,
     infoActive:false,
+    detailsActive:false,
     offset:0,
+
+    repeat:0,
+    REPEAT_OFF:0,
+    REPEAT_ONE:1,
+    REPEAT_ALL:2,
+    REPEAT_BACK:3,
 
     aspectMode: 0,
     ASPECT_NORMAL : 0,
@@ -199,11 +209,11 @@ Player.playVideo = function()
         this.plugin.SetPendingBuffer(640*1024);
         startup = true;
         if(Audio.plugin.GetUserMute() == 1){
-        	$('.muteoverlay').css("display", "block");
+                $('.muteoverlay').show();
         	smute = 1;
         }
         else{
-            $('.muteoverlay').css("display", "none");
+            $('.muteoverlay').hide();
             smute = 0;
         }
         this.plugin.Play( videoUrl );
@@ -216,11 +226,20 @@ Player.playVideo = function()
     }
 };
 
+Player.togglePause = function()
+{
+    if (this.state === this.PAUSED) 
+    {
+        Player.resumeVideo();
+    } else {
+        Player.pauseVideo();
+    }
+};
+
 Player.pauseVideo = function()
 {
-	window.clearTimeout(timeout);
+	window.clearTimeout(osdTimer);
 	this.showControls();
-	$('.bottomoverlaybig').css("display", "block");
 	var pp;
 	if(Language.getisSwedish()){
 		pp='Pausad';
@@ -229,6 +248,7 @@ Player.pauseVideo = function()
 	}
 	$('.bottomoverlaybig').html(pp);
 
+    window.clearTimeout(clrSubtitleTimer);
     Player.enableScreenSaver();
     this.state = this.PAUSED;
     Player.setFrontPanelText(Player.FRONT_DISPLAY_PAUSE);
@@ -239,6 +259,7 @@ Player.stopVideo = function()
 {
         loadingStop();
         widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
+        $("#srtId").hide();
         this.plugin.Stop();
         Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
         Player.enableScreenSaver();
@@ -269,7 +290,7 @@ Player.resumeVideo = function()
 	//this.plugin.ResumePlay(vurl, time);
     this.state = this.PLAYING;
     this.plugin.Resume();
-    this.hideControls();
+    this.hideDetailedInfo();
 };
 
 Player.reloadVideo = function(time)
@@ -284,12 +305,12 @@ Player.reloadVideo = function(time)
 	this.plugin.ResumePlay(videoUrl, lastPos);
 	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
     this.state = this.PLAYING;
-	this.hideControls();
+	this.hideDetailedInfo();
 };
 
 Player.skipInVideo = function()
 {
-    window.clearTimeout(timeout);
+    window.clearTimeout(osdTimer);
     Player.skipState = -1;
     var timediff = +skipTime - +ccTime;
     timediff = timediff / 1000;
@@ -301,7 +322,7 @@ Player.skipInVideo = function()
     	timediff = 0 - timediff;
     	Player.plugin.JumpBackward(timediff);
     }
-    timeout = window.setTimeout(this.hideControls, 5000);
+    Player.refreshOsdTimer(5000);
 };
 
 Player.skipForward = function(time)
@@ -320,29 +341,29 @@ Player.skipForward = function(time)
     {
         return -1
     }
-    window.clearTimeout(timeoutS);
+    window.clearTimeout(skipTimer);
     this.showControls();
     skipTime = +skipTime + time;
     this.skipState = this.FORWARD;
     Log("forward skipTime: " + skipTime);
     this.updateSeekBar(skipTime);
-    timeoutS = window.setTimeout(this.skipInVideo, 2000);
+    skipTimer = window.setTimeout(this.skipInVideo, 2000);
 };
 
 Player.skipForwardVideo = function()
 {
-    this.skipForward(30000);
+    this.skipForward(10*1000);
 };
 
 Player.skipLongForwardVideo = function()
 {
-    this.skipForward(5*60*1000);
+    this.skipForward(1*60*1000);
 };
 
 Player.skipBackward = function(time)
 {
     widgetAPI.putInnerHTML(document.getElementById("srtId"), ""); //hide subs while jumping
-    window.clearTimeout(timeoutS);
+    window.clearTimeout(skipTimer);
     this.showControls();
     if(this.skipState == -1){
 	skipTime = ccTime;
@@ -353,17 +374,17 @@ Player.skipBackward = function(time)
     }
     this.skipState = this.REWIND;
     this.updateSeekBar(skipTime);
-    timeoutS = window.setTimeout(this.skipInVideo, 2000);
+    skipTimer = window.setTimeout(this.skipInVideo, 2000);
 };
 
 Player.skipBackwardVideo = function()
 {
-    this.skipBackward(30000);
+    this.skipBackward(10*1000);
 };
 
 Player.skipLongBackwardVideo = function()
 {
-    this.skipBackward(5*60*1000);
+    this.skipBackward(1*60*1000);
 };
 
 Player.getState = function()
@@ -381,7 +402,6 @@ Player.onBufferingStart = function()
     subtitlesEnabled = this.getSubtitlesEnabled();
     this.setSubtitleProperties();
     this.showControls();
-    $('.bottomoverlaybig').css("display", "block");
 	if(Language.getisSwedish()){
 	buff='Buffrar';
 	}else{
@@ -392,19 +412,23 @@ Player.onBufferingStart = function()
 
 Player.onBufferingProgress = function(percent)
 {
-	if(Language.getisSwedish()){
+    Log("onBufferingProgress");
+    // Ignore if received without onBufferingStart. Seems sometimes 
+    // it's received after onBufferingComplete.
+    if (!Player.infoActive)
+        return
+    if(Language.getisSwedish()){
 	buff='Buffrar';
-	}else{
+    }else{
 	buff='Buffering';
-	}
-  this.showControls();
-  $('.bottomoverlaybig').css("display", "block");
-  $('.bottomoverlaybig').html(buff+': ' + percent + '%');
-
+    }
+    this.showControls();
+    $('.bottomoverlaybig').html(buff+': ' + percent + '%');
 };
 
 Player.onBufferingComplete = function()
 {
+    Log("onBufferingComplete");
         loadingStop();
         reloaded = false;
 	if(Language.getisSwedish()){
@@ -413,7 +437,6 @@ Player.onBufferingComplete = function()
 	buff='Buffering';
 	}
 	this.hideControls();
-	$('.bottomoverlaybig').html(buff+': 100%');
 	this.setFullscreen();
 //	this.setWindow();
    //$('.loader').css("display", "none");
@@ -421,23 +444,75 @@ Player.onBufferingComplete = function()
 
 Player.onRenderingComplete = function()
 {
+    Log("onRenderingComplete");
 	Player.stopVideo();
+        if (Player.repeat == Player.REPEAT_ONE) {
+            Buttons.playItem();
+        } else if (Player.repeat == Player.REPEAT_ALL) {
+            Buttons.playNextItem(1);
+        } else if (Player.repeat == Player.REPEAT_BACK) {
+            Buttons.playNextItem(-1);
+        }
+    }
 };
 
 Player.showControls = function(){
   Player.infoActive = true;
-  $('.video-wrapper').css("display", "block");				
-  $('.video-footer').css("display", "block");
+  $('.topoverlayresolution').show();
+  $('.video-wrapper').show();				
+  $('.video-footer').show();
+  Player.setClock();
   Log("show controls");
+};
+
+Player.setClock = function() {
+    var time = new Date(new Date().getTime() + (systemOffset*3600*1000));
+    var hour = time.getHours();
+    var minutes = time.getMinutes();
+    if (hour < 10) hour = "0" + hour;
+    if (minutes < 10) minutes = "0" + minutes;
+    $('.topoverlayclock').html(hour + ":" + minutes);
+    window.clearTimeout(clockTimer);
+    clockTimer = window.setTimeout(this.setClock, (60-time.getSeconds())*1000);
+}
+
+Player.hideControls = function(){
+    if (Player.detailsActive)
+        return;
+    window.clearTimeout(osdTimer);
+    window.clearTimeout(clockTimer);
+    $('.topoverlayresolution').hide();
+    $('.video-wrapper').hide();				
+    $('.video-footer').hide();
+    $('.bottomoverlaybig').html("");
+    Player.infoActive = false;
+    Log("hide controls");
+};
+
+Player.showDetailedInfo = function(){
+    if (Player.detailsActive)
+        return;
+    Player.detailsActive = true;
+    var details = Details.fetchedDetails;
+    $('.detailstitle').html(details.name);
+    $('.detailsdescription').html(details.description); 
+    $('.details-wrapper').show();
+    Player.showControls();
+    $('.topoverlaybig').hide();
+    Log("showDetailedInfo");
 
 };
 
-Player.hideControls = function(){
-	$('.video-wrapper').css("display", "none");				
-	$('.video-footer').css("display", "none");
-	$('.bottomoverlaybig').css("display", "none");
-        Player.infoActive = false;
-	Log("hide controls");
+Player.hideDetailedInfo = function(){
+    if (Player.detailsActive) {
+        Player.detailsActive = false;
+        $('.detailstitle').html("");
+        $('.detailsdescription').html(""); 
+        $('.details-wrapper').hide();
+        $('.topoverlaybig').show();
+    }
+    Player.hideControls();
+    Log("hideDetailedInfo");
 };
 
 Player.setCurTime = function(time)
@@ -529,11 +604,9 @@ Player.setTotalTime = function()
 
 Player.showInfo = function(force)
 {
-    window.clearTimeout(timeout);
     if (!Player.infoActive || force) {
 	this.showControls();
-	//$('.bottomoverlaybig').css("display", "block");
-	timeout = window.setTimeout(this.hideControls, 5000);
+        Player.refreshOsdTimer(5000);
     }
     else
     {
@@ -542,12 +615,25 @@ Player.showInfo = function(force)
 
 };
 
+Player.showDetails = function()
+{
+    if (!Details.fetchedDetails)
+        return;
+    if (!Player.detailsActive) {
+	this.showDetailedInfo();
+        window.clearTimeout(osdTimer);
+    }
+    else
+    {
+        this.hideDetailedInfo();
+    }
+};
+
 Player.OnNetworkDisconnected = function()
 {
         loadingStop();
 	this.showControls();
         Player.enableScreenSaver();
-	$('.bottomoverlaybig').css("display", "block");
 	$('.bottomoverlaybig').html('Network Error!');
 	// just to test the network so that we know when to resume
 	 $.ajax(
@@ -587,6 +673,35 @@ Player.GetDuration = function()
         return this.sourceDuration;
 };
 
+Player.toggleRepeat = function() {
+
+    if (this.repeat === Player.REPEAT_OFF) {
+        this.repeat = Player.REPEAT_ONE;
+    } else if (this.repeat === Player.REPEAT_ONE) {
+        this.repeat = Player.REPEAT_ALL;
+    } else if (this.repeat === Player.REPEAT_ALL) {
+        this.repeat = Player.REPEAT_BACK;
+    } else if (this.repeat === Player.REPEAT_BACK) {
+        this.repeat = Player.REPEAT_OFF;
+    }
+    this.updateTopOSD();
+};
+
+Player.setTopOSDText = function(init_text) {
+    var resolution_text = init_text;
+    if (resolution_text == undefined) {
+        resolution_text = $('.topoverlayresolution').text().replace(/^([^)]+\))*.*/, "$1");
+    }
+    resolution_text = resolution_text + this.getAspectModeText() + this.getRepeatText();
+    $('.topoverlayresolution').html(resolution_text.replace(/^(&nbsp;)*/,""));
+};
+
+Player.updateTopOSD = function() {
+    Player.setTopOSDText();
+    $('.topoverlayresolution').show();
+    Player.refreshOsdTimer(3000);
+};
+
 Player.toggleAspectRatio = function() {
 
     if (this.aspectMode === Player.ASPECT_NORMAL) {
@@ -597,11 +712,8 @@ Player.toggleAspectRatio = function() {
         this.aspectMode = Player.ASPECT_NORMAL;
     }
     this.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
-
     // Update OSD
-    var resolution_text = $('.topoverlayresolution').text().replace(/\).*/, ")");
-    $('.topoverlayresolution').html(resolution_text + this.getAspectModeText());
-
+    this.updateTopOSD()
     if (this.state === this.PAUSED) {
         this.pauseVideo();
     }
@@ -619,7 +731,7 @@ Player.setResolution = function (videoWidth, videoHeight) {
         else {
             aspect = aspect.toFixed(2) + ":1";
         }
-	$('.topoverlayresolution').html(videoWidth + "x" + videoHeight + " (" + aspect + ")" + this.getAspectModeText());
+        Player.setTopOSDText(videoWidth + "x" + videoHeight + " (" + aspect + ")");
         this.setAspectRatio(videoWidth, videoHeight);
     }
 };
@@ -643,10 +755,23 @@ Player.setAspectRatio = function(videoWidth, videoHeight) {
 Player.getAspectModeText = function()
 {
     if (this.aspectMode === Player.ASPECT_H_FIT) {
-        return " H-FIT";
+        return SEPARATOR + "H-FIT";
     }
     else 
         return "";
+};
+
+Player.getRepeatText = function()
+{
+    if (this.repeat === Player.REPEAT_OFF) {
+        return "";
+    } else if (this.repeat === Player.REPEAT_ONE) {
+        return SEPARATOR + "Repeat ONE";
+    } else if (this.repeat === Player.REPEAT_ALL) {
+        return SEPARATOR + "Repeat ALL";
+    } else if (this.repeat === Player.REPEAT_BACK) {
+        return SEPARATOR + "Repeat BACKWARDS";
+    }
 };
 
 Player.startPlayer = function(url, isLive, starttime)
@@ -677,16 +802,15 @@ Player.startPlayer = function(url, isLive, starttime)
     subtitles = [];
     ccTime = 0;
     lastPos = 0;
-    $('.topoverlayresolution').html("");
+    Player.setTopOSDText("");
     $('.currentTime').text("");
     $('.totalTime').text("");
     $('.progressfull').css("width", 0);
     $('.progressempty').css("width", 960);
 
-    $('#outer').css("display", "none");
-    $('.video-wrapper').css("display", "block");
-    $('.video-footer').css("display", "block");
-    $('.bottomoverlaybig').css("display", "block");
+    $('#outer').hide();
+    this.hideDetailedInfo();
+    this.showControls();
     $('.bottomoverlaybig').html(buff+': 0%');
     
     var oldKeyHandleID = Buttons.getKeyHandleID();
@@ -697,22 +821,17 @@ Player.startPlayer = function(url, isLive, starttime)
 	
 	Player.stopCallback = function()
 	{
-	    $('#outer').css("display", "block");
-	    $('.video-wrapper').css("display", "none");
-	    
-	    $('.video-footer').css("display", "none");
-	    
+	    $('#outer').show();
+            Player.hideDetailedInfo();
 	    Buttons.setKeyHandleID(oldKeyHandleID);
 	    /* Return to windowed mode when video is stopped
 	       (by choice or when it reaches the end) */
 	    //   Main.setWindowMode();
 	};
         this.GetPlayUrl(url, isLive);
+        Details.fetchData(url);
     } else
         Log("INIT FAILED!!!!!");
-        
-    
-    
 };
 
 Player.GetPlayUrl = function(gurl, isLive) {
@@ -929,11 +1048,17 @@ Player.setSubtitleText = function (text, timeout) {
 };
 
 Player.refreshClrSubtitleTimer = function(timeout) {
-    clearTimeout(clrSubtitleTimer);
+    window.clearTimeout(clrSubtitleTimer);
     clrSubtitleTimer = window.setTimeout(function () {
         // Log("Clearing srt due to timer");
         $("#srtId").html("");
     }, timeout)
+};
+
+Player.refreshOsdTimer = function(value) {
+    window.clearTimeout(osdTimer);
+    if (!Player.detailsActive)
+        osdTimer = window.setTimeout(this.hideControls, value);
 };
 
 Player.getSubtitleSize = function () {
@@ -1038,6 +1163,7 @@ Player.separateSubtitles = function(increase) {
 };
 
 Player.showTestSubtitle = function () {
+    this.hideDetailedInfo();
     var testText = "Test subtitle<br />Test subtitle";
     if ($("#srtId").html() == "" || $("#srtId").html() == testText) 
     {
@@ -1046,6 +1172,7 @@ Player.showTestSubtitle = function () {
 }
 
 Player.setSubtitleProperties = function() {
+    $("#srtId").show();
     $("#srtId").css("font-size", this.getSubtitleSize());
     $("#srtId").css("top", this.getSubtitlePos());
     var subBack = this.getSubtitleBackground();

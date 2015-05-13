@@ -11,7 +11,6 @@ var Search =
 
 function Input(/**Object*/id)
 {
-    alert("Input called:" + id);
     // var parent = null;
     var imeReady = function()
     {
@@ -76,7 +75,6 @@ Search.imeShow = function(slideDuration)
         // Default value
         slideDuration = 500
 
-    alert("Search.imeShow called:" + slideDuration);
     if(Buttons.getKeyHandleID()!=7){
         oldKeyHandle = Buttons.getKeyHandleID();
         Buttons.setKeyHandleID(7);

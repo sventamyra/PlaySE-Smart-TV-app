@@ -27,7 +27,6 @@ Main.onLoad = function()
     } else {
 	this.loadXml();	
     }
-	
 };
 
 Main.onUnload = function()

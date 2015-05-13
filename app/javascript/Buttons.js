@@ -92,7 +92,7 @@ Buttons.clearKey = function()
     keyHeld = false;
 };
 
-Buttons.sscroll = function() 
+Buttons.sscroll = function(hide) 
 {
     var xaxis = 0;
     if(columnCounter > 0){
@@ -105,7 +105,7 @@ Buttons.sscroll = function()
         {complete: function() 
          {
              animateCallbacked = animateCallbacked+1;
-             if (animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
+             if (!hide && animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
                  $("#content-scroll").show();
              }
          }
@@ -197,26 +197,7 @@ Buttons.keyHandleForList = function()
                                 if (ilink != undefined)
                                 {
                                     if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
-				        var duration = itemSelected.find('.ilink').attr("data-length");
-                                        var isLive   = (itemSelected.find('.ilink').attr("is-live") != null);
-                                        var starttime = 0;
-                                        if (isLive) {
-                                            if (itemSelected.html().indexOf('bottomoverlay\"') != -1) {
-                                                // Not available yet
-                                                break;
-                                            } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
-                                                starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
-                                            } else if (getDeviceYear() == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
-                                                starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/)[1];
-                                            }
-                                        }
-                                        // Log("isLive:" + isLive + " starttime:" + starttime);
-                                        if (duration.search(/[hsekmin]/) == -1) {
-                                            duration = duration + " sek";
-                                        }
-                                        Player.setDuration(duration);
-                                        Player.setNowPlaying(itemSelected.find('a').text());
-                                        Player.startPlayer(ilink.match(/ilink=(.+)&history/)[1], isLive, starttime);
+                                        Buttons.playItem();
                                         break;
                                     }
                                     else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
@@ -638,7 +619,7 @@ Buttons.keyHandleForPlayer2 = function(){
 	switch(keyCode)
 		{
 			case tvKey.KEY_PAUSE:
-				Player.pauseVideo();
+				Player.togglePause();
 				break;
 			case tvKey.KEY_PLAY:
 				Player.resumeVideo();
@@ -667,13 +648,6 @@ Buttons.keyHandleForPlayer2 = function(){
 				Player.stopVideo();
 				break;
 			case tvKey.KEY_CH_UP:
-				Log('ch up');
-				Player.stopVideoNoCallback();
-				if(channelId < channels.length - 1){
-					channelId = channelId + 1;
-					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
-				}
-				break;
 			case tvKey.KEY_PANEL_CH_UP:
 				Log('ch up');
 				Player.stopVideoNoCallback();
@@ -683,12 +657,6 @@ Buttons.keyHandleForPlayer2 = function(){
 				}
 				break;
 			case tvKey.KEY_CH_DOWN:
-				Player.stopVideoNoCallback();
-				if(channelId > 0){
-					channelId--;
-					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
-				}
-				break;
 			case tvKey.KEY_PANEL_CH_DOWN:
 				Player.stopVideoNoCallback();
 				if(channelId > 0){
@@ -697,7 +665,7 @@ Buttons.keyHandleForPlayer2 = function(){
 				}
 				break;
 			case tvKey.KEY_INFO:
-				Player.showInfo();
+				Player.showDetails();
 				break;
 			 case tvKey.KEY_MUTE:
 				Audio.toggleMute();
@@ -718,10 +686,20 @@ Buttons.keyHandleForPlayer = function(){
 	Player.skipBackwardVideo();
 	break;
     case tvKey.KEY_PAUSE:
-	Player.pauseVideo();
+	Player.togglePause();
 	break;
     case tvKey.KEY_FF:
 	Player.skipForwardVideo();
+	break;
+    case tvKey.KEY_CH_UP:
+    case tvKey.KEY_PANEL_CH_UP:
+    case tvKey.KEY_FF_:
+	this.playNextItem(1);
+	break;
+    case tvKey.KEY_CH_DOWN:
+    case tvKey.KEY_PANEL_CH_DOWN:
+    case tvKey.KEY_REWIND_:
+	this.playNextItem(-1);
 	break;
     case tvKey.KEY_PLAY:
 	Player.resumeVideo();
@@ -760,10 +738,13 @@ Buttons.keyHandleForPlayer = function(){
 	// Terminated by force
 	break;
     case tvKey.KEY_INFO:
-	Player.showInfo();
+	Player.showDetails();
 	break;
     case tvKey.KEY_MUTE:
 	Audio.toggleMute();
+	break;
+    case tvKey.KEY_RED:
+	Player.toggleRepeat();
 	break;
     case tvKey.KEY_BLUE:
     case tvKey.KEY_ASPECT:
@@ -884,4 +865,113 @@ Buttons.handleMenuKeys = function(keyCode){
 				break;
 			 break;
 		}
+};
+
+
+Buttons.playItem = function() {
+    var duration  = itemSelected.find('.ilink').attr("data-length");
+    var isLive    = (itemSelected.find('.ilink').attr("is-live") != null);
+    var starttime = 0;
+    var itemLink  = itemSelected.find('.ilink').attr("href")
+
+    if (isLive) {
+        if (itemSelected.html().indexOf('bottomoverlay\"') != -1) {
+            // Not available yet
+            return -1;
+        } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
+            starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
+        } else if (getDeviceYear() == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
+            starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/)[1];
+        }
+    }
+    // Log("isLive:" + isLive + " starttime:" + starttime);
+    if (duration.search(/[hsekmin]/) == -1) {
+        duration = duration + " sek";
+    }
+    Player.setDuration(duration);
+    Player.setNowPlaying(itemSelected.find('a').text());
+    Player.startPlayer(itemLink.match(/ilink=(.+)&history/)[1], isLive, starttime);
+    return 0;
+};
+
+Buttons.findNextPlayItem = function() {
+
+    var topItems = $('.topitem');
+    var bottomItems = $('.bottomitem');
+    var tmpItem;
+    var tmpTopSelected = isTopRowSelected
+    var tmpColumnCounter = columnCounter;
+
+    while (true) {
+        // First go down if possible
+        if(tmpTopSelected) {
+            if (bottomItems.length > tmpColumnCounter) {
+                tmpTopSelected = false;
+	        tmpItem = bottomItems.eq(tmpColumnCounter);
+            } else {
+                return -1
+            }
+        } else {
+            // Go Up and right
+            tmpTopSelected = true;
+            tmpItem = topItems.eq(tmpColumnCounter).next();
+            if (tmpItem.length <= 0) {
+                return -1
+            }
+            tmpColumnCounter++;
+        }
+        if (tmpItem.find('.ilink').attr("href") != undefined && 
+            tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
+            tmpItem.html().indexOf('bottomoverlay\"') === -1) {
+            return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
+        }
+    }
+};
+
+Buttons.findPriorPlayItem = function() {
+
+    var topItems = $('.topitem');
+    var bottomItems = $('.bottomitem');
+    var tmpItem;
+    var tmpTopSelected = isTopRowSelected
+    var tmpColumnCounter = columnCounter;
+
+    while (true) {
+        // First go up
+        if(!tmpTopSelected) {
+            // Go Up
+            tmpTopSelected = true;
+            tmpItem = topItems.eq(tmpColumnCounter);
+        } else if (tmpColumnCounter == 0) {
+            // At first Item
+            return -1;
+        } else {
+            // Go left and down
+            tmpColumnCounter--;
+            tmpItem = bottomItems.eq(tmpColumnCounter);
+        }
+        if (tmpItem.find('.ilink').attr("href") != undefined && 
+            tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
+            tmpItem.html().indexOf('bottomoverlay\"') === -1) {
+            return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
+        }
+    }
+};
+
+Buttons.playNextItem = function(direction) {
+    var tmpItem;
+    if (direction == 1)
+        tmpItem = this.findNextPlayItem();
+    else
+        tmpItem = this.findPriorPlayItem();
+    if (tmpItem != -1) {
+        Player.stopVideo();
+        itemSelected.removeClass('selected');
+        columnCounter = tmpItem.col;
+        isTopRowSelected = tmpItem.top;
+        itemSelected = tmpItem.item;
+        itemSelected.addClass('selected');
+        this.sscroll(true);
+        this.playItem()
+    }
 };
