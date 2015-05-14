@@ -453,7 +453,6 @@ Player.onRenderingComplete = function()
         } else if (Player.repeat == Player.REPEAT_BACK) {
             Buttons.playNextItem(-1);
         }
-    }
 };
 
 Player.showControls = function(){
