@@ -24,7 +24,7 @@ Main.onLoad = function()
 	this.loadXml();	
 	// Enable key event processing
 	Buttons.enableKeys();
-    } else if (!detailsOnTop)
+    } else if (!detailsOnTop) {
 	this.loadXml();	
     }
 };
