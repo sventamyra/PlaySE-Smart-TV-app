@@ -310,6 +310,18 @@ Buttons.keyHandleForDetails = function()
     case tvKey.KEY_INFO:
 	goBack();
 	break;
+
+    case tvKey.KEY_CH_UP:
+    case tvKey.KEY_PANEL_CH_UP:
+    case tvKey.KEY_FF_:
+	this.showNextItem(1);
+	break;
+
+    case tvKey.KEY_CH_DOWN:
+    case tvKey.KEY_PANEL_CH_DOWN:
+    case tvKey.KEY_REWIND_:
+	this.showNextItem(-1);
+	break;
     }
     this.handleMenuKeys(keyCode);
     
@@ -615,62 +627,7 @@ Buttons.keyHandleForKanaler = function()
 	
 };
 Buttons.keyHandleForPlayer2 = function(){
-		var keyCode = event.keyCode;
-	switch(keyCode)
-		{
-			case tvKey.KEY_PAUSE:
-				Player.togglePause();
-				break;
-			case tvKey.KEY_PLAY:
-				Player.resumeVideo();
-				break;
-			case tvKey.KEY_STOP:
-				Player.stopVideo();
-				break;
-			case tvKey.KEY_VOL_DOWN:
-					Log("VOL_DOWN");
-					Audio.setRelativeVolume(1);
-				break;
-			case tvKey.KEY_PANEL_VOL_DOWN:
-				Log("VOL_DOWN");
-					Audio.setRelativeVolume(1);
-				break;
-			case tvKey.KEY_VOL_UP:
-				Log("VOL_UP");
-				Audio.setRelativeVolume(0);
-				break;
-			case tvKey.KEY_PANEL_VOL_UP:
-				Log("VOL_UP");
-				Audio.setRelativeVolume(0);
-				break;
-			case tvKey.KEY_RETURN:
-				widgetAPI.blockNavigation(event); 
-				Player.stopVideo();
-				break;
-			case tvKey.KEY_CH_UP:
-			case tvKey.KEY_PANEL_CH_UP:
-				Log('ch up');
-				Player.stopVideoNoCallback();
-				if(channelId < channels.length - 1){
-					channelId = channelId + 1;
-					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
-				}
-				break;
-			case tvKey.KEY_CH_DOWN:
-			case tvKey.KEY_PANEL_CH_DOWN:
-				Player.stopVideoNoCallback();
-				if(channelId > 0){
-					channelId--;
-					setLocation('kanaler.html?ilink=kanaler/' + channels[channelId] + '&history=Kanaler/' + channels[channelId] + '/&direct=1');
-				}
-				break;
-			case tvKey.KEY_INFO:
-				Player.showDetails();
-				break;
-			 case tvKey.KEY_MUTE:
-				Audio.toggleMute();
-				break;
-			}
+    Log("keyHandleForPlayer2!!!");
 };
 Buttons.keyHandleForPlayer = function(){
     var keyCode = event.keyCode;
@@ -725,7 +682,10 @@ Buttons.keyHandleForPlayer = function(){
 	break;
     case tvKey.KEY_RETURN:
 	widgetAPI.blockNavigation(event); 
-	Player.stopVideo();
+        if (Player.detailsActive || Player.infoActive)
+            Player.hideDetailedInfo();
+        else
+	    Player.stopVideo();
 	break;
     case tvKey.KEY_EXIT:
     case tvKey.KEY_INFOLINK:
@@ -894,7 +854,7 @@ Buttons.playItem = function() {
     return 0;
 };
 
-Buttons.findNextPlayItem = function() {
+Buttons.findNextPlayItem = function(play) {
 
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
@@ -922,13 +882,13 @@ Buttons.findNextPlayItem = function() {
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
-            tmpItem.html().indexOf('bottomoverlay\"') === -1) {
+            (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
     }
 };
 
-Buttons.findPriorPlayItem = function() {
+Buttons.findPriorPlayItem = function(play) {
 
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
@@ -948,30 +908,62 @@ Buttons.findPriorPlayItem = function() {
         } else {
             // Go left and down
             tmpColumnCounter--;
+            tmpTopSelected = false;
             tmpItem = bottomItems.eq(tmpColumnCounter);
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
-            tmpItem.html().indexOf('bottomoverlay\"') === -1) {
+            (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
     }
 };
 
-Buttons.playNextItem = function(direction) {
+Buttons.runNextItem = function(direction, play) {
     var tmpItem;
     if (direction == 1)
-        tmpItem = this.findNextPlayItem();
+        tmpItem = this.findNextPlayItem(play);
     else
-        tmpItem = this.findPriorPlayItem();
+        tmpItem = this.findPriorPlayItem(play);
     if (tmpItem != -1) {
-        Player.stopVideo();
         itemSelected.removeClass('selected');
         columnCounter = tmpItem.col;
         isTopRowSelected = tmpItem.top;
         itemSelected = tmpItem.item;
         itemSelected.addClass('selected');
         this.sscroll(true);
-        this.playItem()
+        if (detailsOnTop) {
+            // refresh History
+            oldPos = myHistory.pop();
+            myHistory.push(
+                {
+                    loc: oldPos.loc,
+                    pos: 
+                    {
+                        col: tmpItem.col,
+                        top: tmpItem.top
+                    }
+                }
+            );
+        }
+        if (play) {
+            Player.stopVideo();
+            this.playItem()
+        }
+        if (myLocation.match(/details.html/)) {
+            // refresh Details
+            myLocation = itemSelected.find('.ilink').attr("href");
+            Details.refresh();
+        }
+    // } else {
+    //     alert("No more items");
     }
+};
+
+Buttons.playNextItem = function(direction) {
+    this.runNextItem(direction, true);
+};
+
+Buttons.showNextItem = function(direction) {
+    this.runNextItem(direction, false);
 };

@@ -4,7 +4,8 @@ var showList =
 
 showList.onLoad = function()
 {
-	this.loadXml();
+        if (!detailsOnTop)
+	    this.loadXml();
 	PathHistory.GetPath();
 //	widgetAPI.sendReadyEvent();
 };

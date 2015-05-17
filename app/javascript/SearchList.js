@@ -6,8 +6,12 @@ var SearchList =
 
 SearchList.onLoad = function()
 {
+    if (!detailsOnTop) {
         this.setPath(this.Geturl());
 	this.loadXml();
+    } else {
+        this.setPath(this.Geturl(), itemCounter);
+    }
 //	widgetAPI.sendReadyEvent();
 };
 

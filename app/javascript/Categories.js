@@ -6,7 +6,8 @@ var Categories =
 Categories.onLoad = function()
 {
 	Header.display('Kategorier');
-	this.loadXml();
+        if (!detailsOnTop)
+	    this.loadXml();
 };
 
 Categories.onUnload = function()

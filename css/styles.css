@@ -1122,7 +1122,7 @@ small {
 .bottomoverlayred      { position: absolute; top: 110px; left: 0; color: #e0e7ea; font: bold 12px/24px Helvetica, Sans-Serif; letter-spacing: -1px;  
                       background: rgb(255, 0, 0); background: rgba(255, 0, 0, 0.7);  margin-left:6px;  padding: 0 10px; }
 					  
-.topoverlayresolution { position: absolute; top: 40px; left: 0; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; letter-spacing: -1px;  width: auto; height: auto; display: block; vertical-align: middle; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7); padding: 0 10px; z-index:inherit;}
+.topoverlayresolution { position: absolute; top: 40px; left: 0; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; letter-spacing: -1px;  width: auto; height: auto; display: none; vertical-align: middle; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7); padding: 0 10px; z-index:inherit;}
 
 .topoverlayclock { position: absolute; top: 40px; right: 0; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; letter-spacing: -1px;  width: auto; height: auto; display: inline-block; vertical-align: middle; overflow: hidden; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7); padding: 0 10px; z-index:inherit;}
 

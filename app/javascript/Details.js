@@ -7,25 +7,22 @@ var downCounter;
 var Details =
 {
     duration:null,
-    starttime:0,
+    startTime:0,
     fetchedDetails:null
 };
 
 Details.init = function() {
     isLive = false;
     Details.duration = null;
-    Details.starttime = 0;
+    Details.startTime = 0;
 };
 
 Details.onLoad = function()
 {
-        $(".slider-body").hide();
-        $(".content").show();
-        Details.init();
-	Header.display('');
-	PathHistory.GetPath();
-	Buttons.setKeyHandleID(1);					
-	this.loadXml();
+    $(".slider-body").hide();
+    $(".content").show();
+    Buttons.setKeyHandleID(1);
+    Details.refresh(true);
 };
 
 Details.onUnload = function()
@@ -33,6 +30,12 @@ Details.onUnload = function()
 	Player.deinit();
 };
 
+Details.refresh = function (isInitial) {
+    Details.init();
+    Header.display('');
+    PathHistory.GetPath();
+    this.loadXml(isInitial);
+}
 
 Details.Geturl=function(detailsUrl){
     var url;
@@ -208,7 +211,7 @@ Details.GetPlayUrl = function(){
 	});
 };
 
-Details.loadXml = function(){
+Details.loadXml = function(isInitial) {
     var url = fixLink(this.Geturl());
     var html;
 
@@ -224,7 +227,7 @@ Details.loadXml = function(){
             {
                 Log('Success:' + this.url);
                 programData = Details.getData(this.url, data, xhr);
-                Player.setNowPlaying(programData.name);
+                Details.fetchedDetails = programData;
                 if(programData.name.length > 47){
 	            programData.name = programData.name.substring(0, 47)+ "...";
                 }
@@ -250,13 +253,16 @@ Details.loadXml = function(){
 		html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
             	$('#projdetails').html(html);
 	        html = null;
-
-		Language.setDetailLang();
-                loadingStop();
+                if (isInitial) {
+		    Language.setDetailLang();
+                    Player.setNowPlaying(programData.name);
+                    loadingStop();
+                }
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
-                loadingStop();
+                if (isInitial)
+                    loadingStop();
           	if (textStatus == 'timeout') {
                     this.tryCount++;
                     if (this.tryCount <= this.retryLimit) {
@@ -268,7 +274,8 @@ Details.loadXml = function(){
                 }
         	else{
         	    Log('Failure:' + textStatus);
-        	    ConnectionError.show();
+                    if (isInitial)
+        	        ConnectionError.show();
         	}
             }
         });
@@ -276,7 +283,7 @@ Details.loadXml = function(){
 };
 
 Details.fetchData = function(detailsUrl) {
-    Log("Details.fetchData");
+    // Log("Details.fetchData");
     Details.init();
     Details.fetchedDetails = null;
     var detailsXhr = new XMLHttpRequest();
@@ -299,6 +306,7 @@ Details.getData = function(url, data, xhr){
     xhr = null;
 
     var Name="";
+    var Title = Name;
     var DetailsImgLink="";
     var DetailsPlayTime="";
     var VideoLength = "";
@@ -308,10 +316,12 @@ Details.getData = function(url, data, xhr){
     var $video;
     var isChannel=false;
     var NotAvailable=false;
+    var startTime=0;
     try {
 
         if (url.indexOf("/kanaler/") > -1) {
-            var $video = $(data).find('div').filter(function() {
+            data = data.split("<div class=\"play_channel-schedules")[0];
+            $video = $(data).find('div').filter(function() {
                 return $(this).attr('class') == "play_channels";
             });
             isChannel = true;
@@ -335,12 +345,15 @@ Details.getData = function(url, data, xhr){
             });
             DetailsPlayTime = tsToClock(+timeData.attr('data-starttime')) + "-" +
                 tsToClock(timeData.attr('data-endtime'));
+            Title = DetailsPlayTime + " " + Name;
             isLive = true;
 
         } else if (url.indexOf("oppetarkiv") > -1) {
             Name = $($(data).find('img')[1]).attr('alt');
+            Title = Name;
             // Log("Name:" + Name);
-	    DetailsImgLink = fixLink($($(data).find('img')[1]).attr('data-imagename'));
+	    DetailsImgLink = $($(data).find('img')[1]).attr('srcset');
+            DetailsImgLink = fixLink(DetailsImgLink.split(",").pop().split(" ")[1]);
 	    DetailsPlayTime = $($(data).find('strong')[0]).text();
             VideoLength = $($(data).find('strong')[1]).text();
 
@@ -361,6 +374,7 @@ Details.getData = function(url, data, xhr){
 		isLive = true;
 
             Name = $video.find('a').attr('data-title');
+            Title = Name;
 	    DetailsImgLink = fixLink($video.find('img').attr('data-imagename'));
             // Log(DetailsImgLink);
             var DetailsClock = "";
@@ -404,14 +418,14 @@ Details.getData = function(url, data, xhr){
 	    DetailsPlayTime=DetailsPlayTime.replace("idag","today");
 	}
 
-        Details.duration = VideoLength;
+        Details.duration = VideoLength.trim();
 
-        Details.starttime = DetailsPlayTime.match(/([0-9]+[:.][0-9]+)/);
-        if ((isChannel || (isLive && getDeviceYear() == 2013)) && Details.starttime.length > 1)
-            Details.starttime = Details.starttime[1];
+        startTime = DetailsPlayTime.match(/([0-9]+[:.][0-9]+)/);
+        if ((isChannel || (isLive && getDeviceYear() == 2013)) && startTime.length > 1)
+            startTime = startTime[1];
         else 
-            Details.starttime = 0;
-        
+            startTime = 0;
+        Details.startTime = startTime;
 	// Log("isLive=" + isLive);
 	if (onlySweden != "false" && onlySweden != false) {
 	    //proxy = 'http://playse.kantaris.net/?mode=native&url=';
@@ -426,12 +440,21 @@ Details.getData = function(url, data, xhr){
         }
     } catch(err) {
         Log("Details Exception:" + err.message);
+        Log("Name:" + Name);
+        Log("DetailsPlayTime:" + DetailsPlayTime);
+        Log("AvailDate:" + AvailDate);
+        Log("VideoLength:" + VideoLength);
+        Log("Description:" + Description);
+        Log("NotAvailable:" + NotAvailable);
+        Log("DetailsImgLink:" + DetailsImgLink);
     }
 
     $video = data = null;
     return {name          : Name,
+            title         : Title,
             air_date      : DetailsPlayTime,
             avail_date    : AvailDate,
+            start_time    : startTime,
             duration      : VideoLength.trim(),
             description   : Description,
             not_available : NotAvailable,
@@ -442,8 +465,8 @@ Details.getData = function(url, data, xhr){
 Details.startPlayer = function()
 {
     Player.setDuration(Details.duration);
-    // Log("isLive:" + isLive + " starttime:" + Details.starttime);
-    Player.startPlayer(this.Geturl(), isLive, this.starttime);
+    // Log("isLive:" + isLive + " startTime:" + Details.startTime);
+    Player.startPlayer(this.Geturl(), isLive, this.startTime);
     
 };
 

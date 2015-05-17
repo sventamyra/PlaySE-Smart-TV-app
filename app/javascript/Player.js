@@ -3,11 +3,13 @@ var skipTime = 0;
 var osdTimer; 
 var clockTimer; 
 var skipTimer; 
+var detailsTimer;
 var pluginAPI = new Common.API.Plugin();
 var fpPlugin;
 var ccTime = 0;
 var lastPos = 0;
 var videoUrl;
+var detailsUrl;
 var startup = true;
 var smute = 0;
 var subtitles = [];
@@ -29,7 +31,9 @@ var Player =
     sourceDuration: 0,
     infoActive:false,
     detailsActive:false,
+    startTime: null,
     offset:0,
+    durationOffset:0,
 
     repeat:0,
     REPEAT_OFF:0,
@@ -263,11 +267,11 @@ Player.stopVideo = function()
         this.plugin.Stop();
         Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
         Player.enableScreenSaver();
+        window.clearTimeout(detailsTimer);
         if (this.stopCallback)
         {
             this.stopCallback();
         }
-    
 };
 
 Player.stopVideoNoCallback = function()
@@ -424,6 +428,7 @@ Player.onBufferingProgress = function(percent)
     }
     this.showControls();
     $('.bottomoverlaybig').html(buff+': ' + percent + '%');
+    Player.refreshDetailsTimer();
 };
 
 Player.onBufferingComplete = function()
@@ -460,11 +465,12 @@ Player.showControls = function(){
   $('.topoverlayresolution').show();
   $('.video-wrapper').show();				
   $('.video-footer').show();
-  Player.setClock();
+  this.setClock();
   Log("show controls");
 };
 
 Player.setClock = function() {
+    // Log("setClock");
     var time = new Date(new Date().getTime() + (systemOffset*3600*1000));
     var hour = time.getHours();
     var minutes = time.getMinutes();
@@ -472,7 +478,7 @@ Player.setClock = function() {
     if (minutes < 10) minutes = "0" + minutes;
     $('.topoverlayclock').html(hour + ":" + minutes);
     window.clearTimeout(clockTimer);
-    clockTimer = window.setTimeout(this.setClock, (60-time.getSeconds())*1000);
+    clockTimer = window.setTimeout(Player.setClock, (60-time.getSeconds())*1000);
 }
 
 Player.hideControls = function(){
@@ -491,18 +497,21 @@ Player.hideControls = function(){
 Player.showDetailedInfo = function(){
     if (Player.detailsActive)
         return;
+    Log("showDetailedInfo");
     Player.detailsActive = true;
-    var details = Details.fetchedDetails;
-    $('.detailstitle').html(details.name);
-    $('.detailsdescription').html(details.description); 
+    Player.setDetailsData(Details.fetchedDetails);
     $('.details-wrapper').show();
     Player.showControls();
     $('.topoverlaybig').hide();
-    Log("showDetailedInfo");
+};
 
+Player.setDetailsData = function(details) {
+    $('.detailstitle').html(details.title);
+    $('.detailsdescription').html(details.description); 
 };
 
 Player.hideDetailedInfo = function(){
+    Log("hideDetailedInfo");
     if (Player.detailsActive) {
         Player.detailsActive = false;
         $('.detailstitle').html("");
@@ -511,7 +520,6 @@ Player.hideDetailedInfo = function(){
         $('.topoverlaybig').show();
     }
     Player.hideControls();
-    Log("hideDetailedInfo");
 };
 
 Player.setCurTime = function(time)
@@ -528,7 +536,7 @@ Player.setCurTime = function(time)
 	if (this.state != this.PAUSED) { // because on 2010 device the device triggers this function even if video is paused
 	    this.setCurSubtitle(ccTime);
         }
-	
+        Player.refreshStartData(Details.fetchedDetails);
 };
 
 Player.updateSeekBar = function(time){
@@ -616,14 +624,16 @@ Player.showInfo = function(force)
 
 Player.showDetails = function()
 {
-    if (!Details.fetchedDetails)
-        return;
-    if (!Player.detailsActive) {
+    if (!Details.fetchedDetails || Details.fetchedDetails.name == "") {
+        // See if update may help...
+        Details.fetchData(detailsUrl)
+        Player.showInfo();
+    } else if (!Player.detailsActive) {
 	this.showDetailedInfo();
         window.clearTimeout(osdTimer);
-    }
-    else
-    {
+    } else {
+        // Update in case of channel where details may change
+        Details.fetchData(detailsUrl)
         this.hideDetailedInfo();
     }
 };
@@ -664,7 +674,7 @@ Player.OnNetworkDisconnected = function()
 
 Player.GetDuration = function()
 {
-    var duration = this.plugin.GetDuration()
+    var duration = this.plugin.GetDuration() - Player.durationOffset;
 
     if (duration > this.sourceDuration)
         return duration;
@@ -773,31 +783,25 @@ Player.getRepeatText = function()
     }
 };
 
-Player.startPlayer = function(url, isLive, starttime)
+Player.startPlayer = function(url, isLive, startTime)
 {
     reloaded = false;
     loadingStart();
+    window.clearTimeout(detailsTimer);
+    Player.startTime = 0;
+    Player.offset = 0;
+    Player.durationOffset = 0;
     if(Language.getisSwedish()){
 	buff='Buffrar';
     }else{
 	buff='Buffering';
     }
 
-    if (!isLive || +starttime == 0) {
-        Player.offset = 0;
-    } else {
-        var start_mins = starttime.match(/([0-9]+)[:.]/)[1]*60;
-        start_mins = start_mins + starttime.match(/[:.]([0-9]+)/)[1]*1;
-        var now = new Date();
-        var now_mins = now.getHours()*60 + now.getMinutes() + systemOffset*60;
-
-        if (start_mins > now_mins)
-            // Time passed midnight
-            now_mins = now_mins + 24*60;
-        Player.offset = (now_mins - start_mins)*60*1000;
-        // Log("starttime:" + starttime + " start_mins:" + start_mins + " now_mins:" + now_mins + " Player.offset:" + Player.offset);
+    if (isLive && +startTime != 0) {
+        Player.updateOffset(startTime);
     }
-
+    Player.startTime = startTime;
+    
     subtitles = [];
     ccTime = 0;
     lastPos = 0;
@@ -829,8 +833,55 @@ Player.startPlayer = function(url, isLive, starttime)
 	};
         this.GetPlayUrl(url, isLive);
         Details.fetchData(url);
+        detailsUrl = url;
     } else
         Log("INIT FAILED!!!!!");
+};
+
+Player.refreshStartData = function(details) {
+    if (details && details.start_time != 0 && details.start_time != Player.startTime) {
+        Log("refreshStartData, new start" + details.start_time);
+        Player.setNowPlaying(details.title);
+        Player.setDuration(details.duration);
+        Player.updateOffset(details.start_time);
+        Player.setDetailsData(details);
+    }
+};
+    
+Player.updateOffset = function (startTime) {
+    var start_mins     = Player.startTimeToMinutes(startTime);
+    var old_start_mins = Player.startTimeToMinutes(Player.startTime);
+    var diff_mins      = 0;
+    if (old_start_mins != 0) {
+        diff_mins = start_mins - old_start_mins;
+        if (old_start_mins > start_mins)
+            // Time passed midnight
+            diff_mins = diff_mins + 24*60;
+    }
+    if (diff_mins > 0) {
+        Log("New startTime:" + startTime + " old:" + Player.startTime + " diff:" + diff_mins + " offset:" + Player.offset + " durationOffset:" + Player.durationOffset);
+
+        Player.offset = Player.offset - (diff_mins*60*1000);
+        Player.durationOffset = Player.durationOffset + (diff_mins*60*1000);
+        Log("New offset:" + Player.offset + " new durationOffset:" + Player.durationOffset);
+    } else {
+        var now = new Date();
+        var now_mins = now.getHours()*60 + now.getMinutes() + systemOffset*60;
+
+        if (start_mins > now_mins)
+            // Time passed midnight
+            now_mins = now_mins + 24*60;
+        Player.offset = (now_mins - start_mins)*60*1000;
+    }
+    Player.startTime = startTime;
+        // Log("startTime:" + startTime + " start_mins:" + start_mins + " now_mins:" + now_mins + " Player.offset:" + Player.offset);
+}
+
+Player.startTimeToMinutes = function (startTime) {
+    if (startTime == 0)
+        return 0
+    var start_mins = startTime.match(/([0-9]+)[:.]/)[1]*60;
+    return (start_mins + startTime.match(/[:.]([0-9]+)/)[1]*1);
 };
 
 Player.GetPlayUrl = function(gurl, isLive) {
@@ -1058,6 +1109,16 @@ Player.refreshOsdTimer = function(value) {
     window.clearTimeout(osdTimer);
     if (!Player.detailsActive)
         osdTimer = window.setTimeout(this.hideControls, value);
+};
+
+Player.refreshDetailsTimer = function() {
+    window.clearTimeout(detailsTimer); 
+    if (detailsUrl.indexOf("/kanaler/") > -1) {
+        detailsTimer = window.setTimeout(function () {
+            Details.fetchData(detailsUrl);
+            Player.refreshDetailsTimer();
+        }, 1*60*1000);
+    }
 };
 
 Player.getSubtitleSize = function () {

@@ -7,6 +7,7 @@ var myLocation = "index.html";
 var myHistory = [];
 var myPos = null;
 var loadingTimer = 0;
+var detailsOnTop = false;
 
 getDeviceYear = function() {
     var pluginNNavi = document.getElementById("pluginObjectNNavi");
@@ -75,7 +76,7 @@ setLocation = function(location, oldPos)
 {
     if (location == myLocation)
         return;
-    else if (!oldPos) {
+    if (oldPos == undefined) {
         myPos = null;
         myHistory.push(
             {
@@ -87,17 +88,30 @@ setLocation = function(location, oldPos)
                 }
             }
         );
+        detailsOnTop = false;
     } else {
         myPos = oldPos;
     }
-    itemSelected = null;
-    itemCounter = 0;
-    columnCounter = 0;
-    isTopRowSelected = true;
+    var isDetails = location.match(/details.html/);
+    if (isDetails) {
+        if (oldPos == undefined) {
+            detailsOnTop = true;
+        } else {
+            detailsOnTop = false;
+        }
+    }
+    if ((isDetails && !detailsOnTop) || !detailsOnTop)
+    {
+        itemSelected = null;
+        itemCounter = 0;
+        columnCounter = 0;
+        isTopRowSelected = true;
+    }
     myLocation = location;
     Buttons.setKeyHandleID(0); // default
-    resetHtml(oldPos);
+    resetHtml(oldPos, isDetails);
     loadingStart();
+
     switch (myLocation.match(/([a-zA-Z]+)\.html/)[1])
     {
     case "index":
@@ -131,19 +145,24 @@ setLocation = function(location, oldPos)
     default:
         Log("Unknown loaction!!!!" + location);
     }
-    
+    if (detailsOnTop && oldPos) {
+        restorePosition();
+        detailsOnTop = false;
+    }
     // window.location = location;
 };
 
-resetHtml = function(oldPos)
+resetHtml = function(oldPos, isDetails)
 {
     // Delete and hide details
     $(".content").hide();
     $('#projdetails').html("");
     // Delete and show list
-    $('#topRow').html("");
-    $('#bottomRow').html("");
-    $('.content-holder').css("marginLeft", "0");
+    if ((isDetails && !detailsOnTop) || !detailsOnTop) {
+        $('#topRow').html("");
+        $('#bottomRow').html("");
+        $('.content-holder').css("marginLeft", "0");
+    }
     $(".slider-body").show();
     if (oldPos)
         $("#content-scroll").hide();
@@ -166,6 +185,7 @@ restorePosition = function()
     if (myPos) {
         setPosition(myPos);
     }
+    return myPos;
 };
 
 setPosition = function(pos)

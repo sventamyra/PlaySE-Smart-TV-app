@@ -6,7 +6,8 @@ live.onLoad = function()
 {
         document.title = 'Kanaler & livesändningar'
 	Header.display(document.title);
-        this.getChannelsJson();
+        if (!detailsOnTop)
+	    this.getChannelsJson();
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -180,8 +181,8 @@ live.getLiveJson = function() {
                 decode_live(data);
                 data = null;
                 Log("itemCounter:" + itemCounter);
-                restorePosition();
-                $("#content-scroll").show();
+                if (!restorePosition())
+                    $("#content-scroll").show();
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
