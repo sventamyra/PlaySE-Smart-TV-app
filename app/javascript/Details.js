@@ -6,6 +6,7 @@ var downCounter;
 
 var Details =
 {
+    url:"",
     duration:null,
     startTime:0,
     fetchedDetails:null
@@ -13,6 +14,7 @@ var Details =
 
 Details.init = function() {
     isLive = false;
+    Details.url = "";
     Details.duration = null;
     Details.startTime = 0;
 };
@@ -22,7 +24,7 @@ Details.onLoad = function()
     $(".slider-body").hide();
     $(".content").show();
     Buttons.setKeyHandleID(1);
-    Details.refresh(true);
+    Details.refresh(false);
 };
 
 Details.onUnload = function()
@@ -30,11 +32,11 @@ Details.onUnload = function()
 	Player.deinit();
 };
 
-Details.refresh = function (isInitial) {
+Details.refresh = function (isBackground) {
     Details.init();
     Header.display('');
     PathHistory.GetPath();
-    this.loadXml(isInitial);
+    this.loadXml(isBackground);
 }
 
 Details.Geturl=function(detailsUrl){
@@ -211,8 +213,10 @@ Details.GetPlayUrl = function(){
 	});
 };
 
-Details.loadXml = function(isInitial) {
+Details.loadXml = function(isBackground) {
+    $('#projdetails').html("");
     var url = fixLink(this.Geturl());
+    Details.url = url;
     var html;
 
     $.support.cors = true;
@@ -226,42 +230,52 @@ Details.loadXml = function(isInitial) {
             success: function(data, status, xhr)
             {
                 Log('Success:' + this.url);
+                if (this.url != Details.url) {
+                    // Log(this.url + " skipped");
+                    return;
+                }
+
                 programData = Details.getData(this.url, data, xhr);
                 Details.fetchedDetails = programData;
-                if(programData.name.length > 47){
-	            programData.name = programData.name.substring(0, 47)+ "...";
-                }
-		html = '<div class="project-text">';
-		html+='<div class="project-name">';
-		html+='<h1>'+programData.name+'</h1>';
-		html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
-		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
-		html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
-		html+='<div class="project-desc">'+programData.description+'</div>';
-		html+='<div class="bottom-buttons">';
-                if (programData.not_available) {
-                    html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
-                    html+='<a href="#" id="backButton" class="link-button selected">Tillbaka</a>';
-                } else {
-                    html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a> ';
-                    html+='<a href="#" id="backButton" class="link-button">Tillbaka</a>';
-                }
-                html+=' </div>';
-		html+=' </div>';
-		
-                html+='</div>';
-		html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
-            	$('#projdetails').html(html);
-	        html = null;
-                if (isInitial) {
+                if (!isBackground) {
 		    Language.setDetailLang();
                     Player.setNowPlaying(programData.name);
                     loadingStop();
                 }
+                loadThumb(programData.thumb, function() {
+                    if(programData.name.length > 47){
+	                programData.name = programData.name.substring(0, 47)+ "...";
+                    }
+		    html = '<div class="project-text">';
+		    html+='<div class="project-name">';
+		    html+='<h1>'+programData.name+'</h1>';
+		    html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
+		    html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
+		    html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
+		    html+='<div class="project-desc">'+programData.description+'</div>';
+		    html+='<div class="bottom-buttons">';
+                    if (programData.not_available) {
+                        html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
+                        // html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
+                        // html+='<a href="#" id="backButton" class="link-button selected">Tillbaka</a>';
+                    } else {
+                        html+='<a href="#" id="playButton" class="link-button selected" style="margin-left:80px;">Spela upp</a>';
+                        // html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a> ';
+                        // html+='<a href="#" id="backButton" class="link-button">Tillbaka</a>';
+                    }
+                    html+=' </div>';
+		    html+=' </div>';
+		    
+                    html+='</div>';
+		    html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
+            	    $('#projdetails').html(html);
+                    // $("#playButton").css("margin-left","80px");
+	            html = null;
+                });
             },
             error: function(XMLHttpRequest, textStatus, errorThrown)
             {
-                if (isInitial)
+                if (!isBackground)
                     loadingStop();
           	if (textStatus == 'timeout') {
                     this.tryCount++;
@@ -274,7 +288,7 @@ Details.loadXml = function(isInitial) {
                 }
         	else{
         	    Log('Failure:' + textStatus);
-                    if (isInitial)
+                    if (!isBackground)
         	        ConnectionError.show();
         	}
             }
@@ -299,7 +313,6 @@ Details.fetchData = function(detailsUrl) {
 };
 
 Details.getData = function(url, data, xhr){
-
     data = xhr.responseText.split("<section class=\"play_js-tabs")[0]
     data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
     xhr.destroy();
@@ -448,7 +461,6 @@ Details.getData = function(url, data, xhr){
         Log("NotAvailable:" + NotAvailable);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
-
     $video = data = null;
     return {name          : Name,
             title         : Title,
@@ -458,7 +470,7 @@ Details.getData = function(url, data, xhr){
             duration      : VideoLength.trim(),
             description   : Description,
             not_available : NotAvailable,
-            thumb         : DetailsImgLink
+            thumb         : DetailsImgLink.replace("extralarge", "large")
     }
 };
 
@@ -494,3 +506,10 @@ function dataLengthToVideoLength($video)
     }                      
     return VideoLength;
 }
+
+loadThumb = function (thumb, callback) {
+    var img = document.createElement("img");
+    img.onload = callback;
+    img.onerror =  callback;
+    img.src = thumb;
+};

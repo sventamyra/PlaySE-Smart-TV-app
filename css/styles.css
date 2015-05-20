@@ -707,7 +707,8 @@ a.next {
 
 /* project detail */
 .project-details {
-margin-top:30px;
+    position:relative;
+    margin-top:20px;
 }
 
 .project-text {
@@ -729,7 +730,7 @@ margin-top:30px;
 	width: 300px;
 	height: 350px;
 	position: relative;
-	padding:5px 0 0 37px;
+	padding:5px 0 0 25px;
 	float:left}
 
 .project-name h1 {

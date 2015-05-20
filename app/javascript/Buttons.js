@@ -13,7 +13,6 @@ var keyCount = 0;
 var first = true;
 var channels = ['svt1', 'svt2', 'svt24', 'barnkanalen', 'kunskapskanalen'];
 var channelId = 0;
-var isLeft = 1;
 var menuId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
 var reslButton = ["#resl1", "#resl2", "#resl3", "#resl4", "#resl5"];
@@ -143,10 +142,10 @@ Buttons.keyHandleForList = function()
 		{
 			case tvKey.KEY_RIGHT:
                             if (keyHeld) {
-                                itemSelected = nextInList(topItems, itemSelected, 4);
+                                itemSelected = nextInList(topItems, bottomItems, itemSelected, 4);
                             }
                             else {
-                                itemSelected = nextInList(topItems, itemSelected, 1);
+                                itemSelected = nextInList(topItems, bottomItems, itemSelected, 1);
                             }
 	                    break;
 
@@ -154,15 +153,15 @@ Buttons.keyHandleForList = function()
                         case tvKey.KEY_PANEL_CH_UP:         
 	                case tvKey.KEY_FF:
                         case tvKey.KEY_FF_:
-                            itemSelected = nextInList(topItems, itemSelected, 4);
+                            itemSelected = nextInList(topItems, bottomItems, itemSelected, 4);
 	                    break;
 				
 			case tvKey.KEY_LEFT:
                             if (keyHeld) {
-                                itemSelected = prevInList(topItems, itemSelected, 4);
+                                itemSelected = prevInList(topItems, bottomItems, itemSelected, 4);
                             }
                             else {
-                                itemSelected = prevInList(topItems, itemSelected, 1);
+                                itemSelected = prevInList(topItems, bottomItems, itemSelected, 1);
                             }
 	                    break;
 
@@ -170,7 +169,7 @@ Buttons.keyHandleForList = function()
          	        case tvKey.KEY_PANEL_CH_DOWN:
 	                case tvKey.KEY_RW:
                         case tvKey.KEY_REWIND_:
-                            itemSelected = prevInList(topItems, itemSelected, 4);
+                            itemSelected = prevInList(topItems, bottomItems, itemSelected, 4);
 	                    break;
 
 			case tvKey.KEY_DOWN:
@@ -227,7 +226,7 @@ Buttons.keyHandleForList = function()
         }
 };
 
-nextInList = function(topItems, itemSelected, steps)
+nextInList = function(topItems, bottomItems, itemSelected, steps)
 {
     itemSelected.removeClass('selected');
     next = itemSelected.next();
@@ -244,15 +243,19 @@ nextInList = function(topItems, itemSelected, steps)
     if (next.length > 0) {
         columnCounter++;
 	itemSelected = next.addClass('selected');
-    } else {
+    } else if (isTopRowSelected) {
 	itemSelected = topItems.eq(0).addClass('selected');
 	columnCounter = 0;
         isTopRowSelected = true;
+    } else {
+	itemSelected = bottomItems.eq(0).addClass('selected');
+	columnCounter = 0;
+        isTopRowSelected = false;
     }
     return itemSelected;
 };
 
-prevInList = function(topItems, itemSelected, steps)
+prevInList = function(topItems, bottomItems, itemSelected, steps)
 {
     itemSelected.removeClass('selected');
     prev = itemSelected.prev();
@@ -269,10 +272,14 @@ prevInList = function(topItems, itemSelected, steps)
     if (prev.length > 0) {
         columnCounter--;
 	itemSelected = prev.addClass('selected');
-    } else {
+    } else if (topItems.length > bottomItems.length || isTopRowSelected) {
 	itemSelected = topItems.last().addClass('selected');
 	columnCounter = topItems.length - 1;
         isTopRowSelected = true;
+    } else {
+	itemSelected = bottomItems.last().addClass('selected');
+	columnCounter = bottomItems.length - 1;
+        isTopRowSelected = false;
     }
     return itemSelected;
 };
@@ -282,27 +289,10 @@ Buttons.keyHandleForDetails = function()
     var keyCode = event.keyCode;
     switch(keyCode)
     {
-    case tvKey.KEY_LEFT:
-        if ($('#playButton').is(':visible')) {
-	    isLeft = 1;
-	    $('#playButton').addClass('selected');
-	    $('#backButton').removeClass('selected');
-        }
-	break;
-    case tvKey.KEY_RIGHT:
-        if ($('#playButton').is(':visible')) {
-	    isLeft = 0;
-	    $('#backButton').addClass('selected');
-	    $('#playButton').removeClass('selected');
-        }
-	break;
     case tvKey.KEY_ENTER:
     case tvKey.KEY_PANEL_ENTER:
 	Log("enter");
-	if(isLeft == 0 || !$('#playButton').is(':visible')) {
-	    goBack();
-	}
-	else {
+	if($('#playButton').is(':visible')) {
 	    Details.startPlayer();
 	}
 	break;
@@ -314,12 +304,14 @@ Buttons.keyHandleForDetails = function()
     case tvKey.KEY_CH_UP:
     case tvKey.KEY_PANEL_CH_UP:
     case tvKey.KEY_FF_:
+    case tvKey.KEY_RIGHT:
 	this.showNextItem(1);
 	break;
 
     case tvKey.KEY_CH_DOWN:
     case tvKey.KEY_PANEL_CH_DOWN:
     case tvKey.KEY_REWIND_:
+    case tvKey.KEY_LEFT:
 	this.showNextItem(-1);
 	break;
     }
@@ -598,33 +590,7 @@ Buttons.keyHandleForSearch = function()
 
 Buttons.keyHandleForKanaler = function()
 {
-	var keyCode = event.keyCode;
-	switch(keyCode)
-	{
-		case tvKey.KEY_LEFT:
-		isLeft = 1;
-		$('#playButton').addClass('selected');
-		$('#backButton').removeClass('selected');
-		break;
-		case tvKey.KEY_RIGHT:
-		isLeft = 0;
-		$('#backButton').addClass('selected');
-		$('#playButton').removeClass('selected');
-		break;
-		case tvKey.KEY_ENTER:
-		case tvKey.KEY_PANEL_ENTER:
-			Log("enter");
-			if(isLeft == 0){
-			        goBack();
-			}
-			else{
-				Kanaler.startPlayer();
-			}
-			break;
-		
-	}
-	this.handleMenuKeys(keyCode);
-	
+    Log("keyHandleForKanaler!!!");
 };
 Buttons.keyHandleForPlayer2 = function(){
     Log("keyHandleForPlayer2!!!");
@@ -868,7 +834,12 @@ Buttons.findNextPlayItem = function(play) {
             if (bottomItems.length > tmpColumnCounter) {
                 tmpTopSelected = false;
 	        tmpItem = bottomItems.eq(tmpColumnCounter);
+            } else if (!play && tmpColumnCounter != 0) {
+                // Start from beginning unless playing
+                tmpItem = topItems.eq(0);
+                tmpColumnCounter = 0;
             } else {
+                // There is no more item
                 return -1
             }
         } else {
@@ -876,9 +847,17 @@ Buttons.findNextPlayItem = function(play) {
             tmpTopSelected = true;
             tmpItem = topItems.eq(tmpColumnCounter).next();
             if (tmpItem.length <= 0) {
-                return -1
+                // Start from beginning unless playing
+                if (!play && tmpColumnCounter != 0) {
+                    tmpItem = topItems.eq(0);
+                    tmpColumnCounter = 0;
+                } else {
+                    // There is no more item
+                    return -1
+                }
+            } else {
+                tmpColumnCounter++;
             }
-            tmpColumnCounter++;
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
@@ -903,8 +882,20 @@ Buttons.findPriorPlayItem = function(play) {
             tmpTopSelected = true;
             tmpItem = topItems.eq(tmpColumnCounter);
         } else if (tmpColumnCounter == 0) {
-            // At first Item
-            return -1;
+            // At first Item - go to last item unless playing
+            if (!play && topItems.length != 1) {
+                if (topItems.length > bottomItems.length) {
+	            tmpItem = topItems.last();
+	            tmpColumnCounter = topItems.length - 1;
+                    tmpTopSelected = true;
+                } else {
+	            tmpItem = bottomItems.last();
+	            tmpColumnCounter = bottomItems.length - 1;
+                    tmpTopSelected = false;
+                }
+            } else {
+                return -1;
+            }
         } else {
             // Go left and down
             tmpColumnCounter--;
@@ -953,7 +944,7 @@ Buttons.runNextItem = function(direction, play) {
         if (myLocation.match(/details.html/)) {
             // refresh Details
             myLocation = itemSelected.find('.ilink').attr("href");
-            Details.refresh();
+            Details.refresh(play);
         }
     // } else {
     //     alert("No more items");
@@ -965,5 +956,6 @@ Buttons.playNextItem = function(direction) {
 };
 
 Buttons.showNextItem = function(direction) {
+    loadingStart();
     this.runNextItem(direction, false);
 };
