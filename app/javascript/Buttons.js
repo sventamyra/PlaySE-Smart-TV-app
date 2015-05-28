@@ -199,11 +199,14 @@ Buttons.keyHandleForList = function()
                                         Buttons.playItem();
                                         break;
                                     }
+                                    else if (keyCode == tvKey.KEY_INFO && ilink.search("showList.html\\?") != -1) {
+                                        // Info of show.
+                                        ilink = "details.html?" + ilink;
+                                    }
                                     else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
-                                        // Info only relevant if episode, not if show.
+                                        // Info of non-episode/show, not relevant.
                                         break;
                                     }
-                                    
 	                            setLocation(ilink);
                                 }
                                 else {
@@ -292,7 +295,10 @@ Buttons.keyHandleForDetails = function()
     case tvKey.KEY_ENTER:
     case tvKey.KEY_PANEL_ENTER:
 	Log("enter");
-	if($('#playButton').is(':visible')) {
+	if($('#enterShowButton').is(':visible')) {
+	    setLocation(itemSelected.find('.ilink').attr("href"));
+	}
+	else if($('#playButton').is(':visible')) {
 	    Details.startPlayer();
 	}
 	break;
@@ -820,7 +826,7 @@ Buttons.playItem = function() {
     return 0;
 };
 
-Buttons.findNextPlayItem = function(play) {
+Buttons.findNextItem = function(play) {
 
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
@@ -860,14 +866,15 @@ Buttons.findNextPlayItem = function(play) {
             }
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
-            tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
+            (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
+             (tmpItem.find('.ilink').attr("href").search("showList.html\\?") != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
     }
 };
 
-Buttons.findPriorPlayItem = function(play) {
+Buttons.findPriorItem = function(play) {
 
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
@@ -883,7 +890,7 @@ Buttons.findPriorPlayItem = function(play) {
             tmpItem = topItems.eq(tmpColumnCounter);
         } else if (tmpColumnCounter == 0) {
             // At first Item - go to last item unless playing
-            if (!play && topItems.length != 1) {
+            if (!play && topItems.length > 1) {
                 if (topItems.length > bottomItems.length) {
 	            tmpItem = topItems.last();
 	            tmpColumnCounter = topItems.length - 1;
@@ -903,7 +910,8 @@ Buttons.findPriorPlayItem = function(play) {
             tmpItem = bottomItems.eq(tmpColumnCounter);
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
-            tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 &&
+            (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
+             (tmpItem.find('.ilink').attr("href").search("showList.html\\?") != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
@@ -913,9 +921,9 @@ Buttons.findPriorPlayItem = function(play) {
 Buttons.runNextItem = function(direction, play) {
     var tmpItem;
     if (direction == 1)
-        tmpItem = this.findNextPlayItem(play);
+        tmpItem = this.findNextItem(play);
     else
-        tmpItem = this.findPriorPlayItem(play);
+        tmpItem = this.findPriorItem(play);
     if (tmpItem != -1) {
         itemSelected.removeClass('selected');
         columnCounter = tmpItem.col;
@@ -944,10 +952,15 @@ Buttons.runNextItem = function(direction, play) {
         if (myLocation.match(/details.html/)) {
             // refresh Details
             myLocation = itemSelected.find('.ilink').attr("href");
+            if (myLocation.search("showList.html\\?") != -1) {
+                // Info of show.
+                myLocation = "details.html?" + myLocation;
+            }
             Details.refresh(play);
         }
-    // } else {
-    //     alert("No more items");
+    } else {
+        // Log("No more items");
+        return -1;
     }
 };
 
@@ -956,6 +969,6 @@ Buttons.playNextItem = function(direction) {
 };
 
 Buttons.showNextItem = function(direction) {
-    loadingStart();
-    this.runNextItem(direction, false);
+    if (this.runNextItem(direction, false) != -1)
+        loadingStart();
 };

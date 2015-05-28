@@ -4,13 +4,13 @@ var SearchList =
 
 };
 
-SearchList.onLoad = function()
+SearchList.onLoad = function(refresh)
 {
     if (!detailsOnTop) {
-        this.setPath(this.Geturl());
-	this.loadXml();
+        this.setPath(this.Geturl(refresh), undefined, refresh);
+	this.loadXml(refresh);
     } else {
-        this.setPath(this.Geturl(), itemCounter);
+        this.setPath(this.Geturl(refresh), itemCounter, refresh);
     }
 //	widgetAPI.sendReadyEvent();
 };
@@ -34,8 +34,10 @@ SearchList.urldecode = function(str) {
    return decodeURIComponent((str+'').replace(/\+/g, '%20'));
 };
 
-SearchList.Geturl=function(){
+SearchList.Geturl=function(refresh){
     var url = myLocation;
+    if (refresh)
+        url = myRefreshLocation;
     var name="";
     if (url.indexOf("=")>0)
     {
@@ -45,9 +47,11 @@ SearchList.Geturl=function(){
 };
 
 
-SearchList.setPath = function(name, count) {
-    Header.display('');
+SearchList.setPath = function(name, count, refresh) {
     document.title = "Sökning: " + name;
+    if (refresh)
+        return;
+    Header.display('');
     var title = this.urldecode(name);
     var html;
     html = '<li class="root-item"><a href="index.html" class="active">Sökning: ' + title + '</a></li>';
@@ -56,54 +60,26 @@ SearchList.setPath = function(name, count) {
     $('.dropdown').html($(html));
 };
 
-SearchList.loadXml = function(){
+SearchList.loadXml = function(refresh) {
     var parentThis = this;
-    $.support.cors = true;
-    $.ajax(
-        {
-            type: 'GET',
-            url: 'http://www.svtplay.se/sok?q='+this.Geturl(),
-            tryCount : 0,
-            retryLimit : 3,
-	    timeout: 15000,
-            success: function(data, status, xhr)
-            {
-                Log('Success:' + this.url);
-                // Log("xhr.responseText.length:" + xhr.responseText.length);
-                data = xhr.responseText.split("id=\"search-categories");
-                data = (data.length > 1) ? data[1] : data[0];
-                data = data.split("id=\"search-");
-                data.shift();
-                data = data.join("").split("</article>");
-                data.pop();
-                xhr.destroy();
-                xhr = null;
-                SearchList.decode_data(data);
-                data = null;
-                Log("itemCounter:" + itemCounter);
-                restorePosition();
-            },
-            error: function(XMLHttpRequest, textStatus, errorThrown)
-            {
-        	if (textStatus == 'timeout') {
-                    this.tryCount++;
-                    if (this.tryCount <= this.retryLimit) {
-                        //try again
-                        $.ajax(this);
-                        return;
-                    }            
-                    return;
-                }
-        	else{
-        	    Log('Failure');
-        	    ConnectionError.show();
-        	}
-                
-            },
-            complete: function() {
-                parentThis.setPath(parentThis.Geturl(), itemCounter);
-            }
-        });
+    requestUrl('http://www.svtplay.se/sok?q='+this.Geturl(refresh),
+               function(status, data)
+               {
+                   data = data.responseText.split("id=\"search-categories");
+                   data = (data.length > 1) ? data[1] : data[0];
+                   data = data.split("id=\"search-");
+                   data.shift();
+                   data = data.join("").split("</article>");
+                   data.pop();
+                   SearchList.decode_data(data);
+                   Log("itemCounter:" + itemCounter);
+                   restorePosition();
+               },
+               null,
+               function() {
+                   parentThis.setPath(parentThis.Geturl(refresh), itemCounter, refresh);
+               }
+              );
 };
 
 SearchList.decode_data = function(searchData) {

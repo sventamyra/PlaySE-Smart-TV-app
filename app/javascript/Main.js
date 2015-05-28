@@ -5,9 +5,10 @@ var Main =
     loaded: false
 };
 
-Main.onLoad = function()
+Main.onLoad = function(refresh)
 {
-    Header.display('Populärt');
+    if (!refresh)
+        Header.display('Populärt');
     if (!this.loaded) {
         loadingStart();
         this.loaded = true;
@@ -21,11 +22,11 @@ Main.onLoad = function()
 	Language.setLang();
 	Resolution.displayRes();
         setSystemOffset();
-	this.loadXml();	
+	this.loadXml(refresh);	
 	// Enable key event processing
 	Buttons.enableKeys();
     } else if (!detailsOnTop) {
-	this.loadXml();	
+	this.loadXml(refresh);	
     }
 };
 
@@ -35,48 +36,19 @@ Main.onUnload = function()
 };
 
 
-Main.loadXml = function(){
-	$.support.cors = true;
-	
-	  $.ajax(
-    {
-        type: 'GET',
-        // url: 'http://188.40.102.5/recommended.ashx',
-        url: 'http://www.svtplay.se/populara?sida=1',
-        tryCount : 0,
-        retryLimit : 3,
-	timeout: 15000,
-        success: function(data, status, xhr)
-        {
-            Log('Success:' + this.url);
-            data = xhr.responseText.split("div id=\"gridpage-content")[1];
-            data = data.split("</article>");
-            data.pop();
-            xhr.destroy();
-            xhr = null;
-            Main.decode_data(data);
-            data = null;
-            Log("itemCounter:" + itemCounter);
-            restorePosition();
-        },
-        error: function(XMLHttpRequest, textStatus, errorThrown)
-        {
-          	if (textStatus == 'timeout') {
-                this.tryCount++;
-                if (this.tryCount <= this.retryLimit) {
-                    //try again
-                    $.ajax(this);
-                    return;
-                }            
-                return;
-            }
-        	else{
-        		Log('Failure:' + textStatus);
-        		ConnectionError.show();
-        	}
-         
-        }
-    });
+Main.loadXml = function(refresh){
+
+    requestUrl('http://www.svtplay.se/populara?sida=1',
+               function(status, data)
+               {
+                   data = data.responseText.split("div id=\"gridpage-content")[1];
+                   data = data.split("</article>");
+                   data.pop();
+                   Main.decode_data(data);
+                   Log("itemCounter:" + itemCounter);
+                   restorePosition();
+               }
+              );
 };
 
 Main.decode_data = function(mainData) {

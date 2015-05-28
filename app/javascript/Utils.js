@@ -4,6 +4,7 @@ var isTopRowSelected = true;
 var columnCounter = 0;
 var itemCounter = 0;
 var myLocation = "index.html";
+var myRefreshLocation = null;
 var myHistory = [];
 var myPos = null;
 var loadingTimer = 0;
@@ -39,7 +40,7 @@ getCookie = function (cName) {
 
 setCookie = function(cName,value,exdays)
 {
-    var exdate=new Date();
+    var exdate=getDate();
     exdate.setDate(exdate.getDate() + exdays);
     var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
     document.cookie=cName + "=" + c_value;
@@ -69,6 +70,12 @@ loadingStop = function() {
     } catch(err) {
         return;
     }
+};
+
+refreshLocation = function(entry)
+{
+    myRefreshLocation = entry.loc;
+    dispatch(myRefreshLocation, true);
 };
 
 // Methods for "restoring" item position during "history.back"
@@ -108,48 +115,54 @@ setLocation = function(location, oldPos)
         isTopRowSelected = true;
     }
     myLocation = location;
+    myRefreshLocation = null;
     Buttons.setKeyHandleID(0); // default
     resetHtml(oldPos, isDetails);
     loadingStart();
 
-    switch (myLocation.match(/([a-zA-Z]+)\.html/)[1])
-    {
-    case "index":
-        Main.onLoad();
-        break;
+    dispatch(myLocation);
 
-    case "live":
-        live.onLoad();
-        break;
-
-    case "categories":
-        Categories.onLoad();
-        break;
-
-    case "categoryDetail":
-        categoryDetail.onLoad();
-        break;
-
-    case "showList":
-        showList.onLoad();
-        break;
-
-    case "SearchList":
-        SearchList.onLoad();
-        break;
-
-    case "details":
-        Details.onLoad();
-        break;
-
-    default:
-        Log("Unknown loaction!!!!" + location);
-    }
     if (detailsOnTop && oldPos) {
         restorePosition();
         detailsOnTop = false;
     }
     // window.location = location;
+};
+
+dispatch = function(NewLocation, Refresh) {
+    switch (NewLocation.match(/([a-zA-Z]+)\.html/)[1])
+    {
+    case "details":
+        Details.onLoad(Refresh);
+        break;
+
+    case "index":
+        Main.onLoad(Refresh);
+        break;
+
+    case "live":
+        live.onLoad(Refresh);
+        break;
+
+    case "categories":
+        Categories.onLoad(Refresh);
+        break;
+
+    case "categoryDetail":
+        categoryDetail.onLoad(Refresh);
+        break;
+
+    case "showList":
+        showList.onLoad(Refresh);
+        break;
+
+    case "SearchList":
+        SearchList.onLoad(Refresh);
+        break;
+
+    default:
+        Log("Unknown loaction!!!!" + location);
+    }
 };
 
 resetHtml = function(oldPos, isDetails)
@@ -181,11 +194,20 @@ goBack = function(location)
 
 restorePosition = function() 
 {
-    loadingStop();
     if (myPos) {
         setPosition(myPos);
     }
+    if (myRefreshLocation) {
+        detailsOnTop = true;
+    } else {
+        loadingStop();
+    }
     return myPos;
+};
+
+fetchPriorLocation = function() 
+{
+    refreshLocation(myHistory[myHistory.length-1]);
 };
 
 setPosition = function(pos)
@@ -203,13 +225,24 @@ setPosition = function(pos)
     Buttons.sscroll();
 };
 
+getDate = function() {
+    try {
+        var pluginTime = document.getElementById("pluginTime").GetEpochTime();
+        if (pluginTime && pluginTime > 0)
+            return new Date(pluginTime*1000);
+    } catch(err) {
+        // Log("pluginTime failed:" + err);
+    }
+    return new Date();
+}
+
 setSystemOffset = function() {
     var timeXhr = new XMLHttpRequest();
     timeXhr.onreadystatechange = function () {
         if (timeXhr.readyState == 4) {
             var timeMatch = timeXhr.responseText.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
             var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
-            var now = new Date();
+            var now = getDate();
             var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
             systemOffset = Math.round((actualSeconds-nowSecs)/3600);
             Log("System Offset hours:" + systemOffset);
@@ -221,9 +254,23 @@ setSystemOffset = function() {
     timeXhr.send();
 };
 
+getInternalOffset = function () {
+    var pluginNow = getDate();
+    // var pluginNowSecs = pluginNow.getHours()*3600 + pluginNow.getMinutes()*60 + pluginNow.getSeconds();
+    var internalNow = new Date() ;
+    // var internalNowSecs = internalNow.getHours()*3600 + internalNow.getMinutes()*60 + internalNow.getSeconds();
+    // Log("pluginNow:" + pluginNow);
+    // Log("internalNow:" + internalNow);
+    // Log("internalOffset (minutes):" + Math.round((pluginNow-internalNow)/60/1000));
+    // Round to minutes
+    return Math.round((pluginNow-internalNow)/60/1000)*60*1000
+    
+}
+
 tsToClock = function (ts)
 {
-    var time = new Date(+ts + (systemOffset*3600*1000));
+    var time = new Date(+ts + (systemOffset*3600*1000) + getInternalOffset());
+    // Log("ts:" + ts + " time:" + time);
     var hour = time.getHours();
     var minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;
@@ -243,6 +290,59 @@ fixLink = function (ImgLink)
         return ImgLink
     }
 };
+
+requestUrl = function(url, cbSucces, cbError, cbComplete) {
+
+    var requestedLocation = {loc:myLocation, refLoc:myRefreshLocation};
+    $.support.cors = true;
+    $.ajax(
+        {
+            type: 'GET',
+            url: url,
+            tryCount : 0,
+            retryLimit : 3,
+	    timeout: 15000,
+            success: function(data, status, xhr)
+            {
+                Log('Success:' + this.url);
+                data = null;
+                callUrlCallBack(requestedLocation, cbSucces, status, xhr)
+                xhr.destroy();
+                xhr = null;
+            },
+            error: function(XMLHttpRequest, textStatus, errorThrown)
+            {
+                if (isRequestStillValid(requestedLocation)) {
+
+                    this.tryCount++;
+          	    if (textStatus == 'timeout' && this.tryCount <= this.retryLimit) {
+                        //try again
+                        return $.ajax(this);
+                    } else {
+        	        Log('Failure:' + this.url + " status:" + textStatus + " error:" + errorThrown);
+        	        ConnectionError.show();
+                        callUrlCallBack(requestedLocation, cbError, status, errorThrown);
+        	    }
+                }
+            },
+            complete: function(xhr, status)
+            {
+                callUrlCallBack(requestedLocation, cbComplete, status, xhr);
+            }
+        }
+    );
+};
+
+callUrlCallBack = function(requestedLocation,cb,status,xhr) {
+    if (cb && isRequestStillValid(requestedLocation))
+        cb(status, xhr);
+    else if (cb)
+        Log("url skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " Now:" + myLocation + " " +  myRefreshLocation);
+};
+
+isRequestStillValid = function (request) {
+    return (request.loc == myLocation && request.refLoc == myRefreshLocation);x
+}
 
 Log = function (msg) 
 {

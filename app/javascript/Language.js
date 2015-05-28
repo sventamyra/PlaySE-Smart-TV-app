@@ -116,6 +116,7 @@ Language.setDetailLang=function(){
 		$("#playButton").text("Play");	
 		$("#notStartedButton").text("Not started");	
 		$("#backButton").text("Return");
+		$("#enterShowButton").text("Enter Show");
 		
 	}else {
 		$("#aired").text("Sändes: ");
@@ -124,6 +125,7 @@ Language.setDetailLang=function(){
 		$("#playButton").text("Spela upp");
 		$("#notStartedButton").text("Ej Startat");
 		$("#backButton").text("Tillbaka");
+		$("#enterShowButton").text("Till Programmet");
 	}
 };
 

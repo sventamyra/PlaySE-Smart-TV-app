@@ -47,7 +47,7 @@ Details.Geturl=function(detailsUrl){
         url = detailsUrl;
     var parse;
     var name=url;
-    if (url.indexOf("ilink=")>0)
+    if (url.indexOf("ilink=")>0 || url.indexOf("name=")>0)
     {
 		parse = url.substring(url.indexOf("=")+1,url.length);
 		if (url.indexOf("&")>0)
@@ -215,86 +215,62 @@ Details.GetPlayUrl = function(){
 
 Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
-    var url = fixLink(this.Geturl());
-    Details.url = url;
-    var html;
-
-    $.support.cors = true;
-    $.ajax(
-        {
-            type: 'GET',
-            url: url,
-	    timeout: 15000,
-	    tryCount : 0,
-	    retryLimit : 3,
-            success: function(data, status, xhr)
-            {
-                Log('Success:' + this.url);
-                if (this.url != Details.url) {
-                    // Log(this.url + " skipped");
-                    return;
-                }
-
-                programData = Details.getData(this.url, data, xhr);
-                Details.fetchedDetails = programData;
-                if (!isBackground) {
-		    Language.setDetailLang();
-                    Player.setNowPlaying(programData.name);
-                    loadingStop();
-                }
-                loadThumb(programData.thumb, function() {
-                    if(programData.name.length > 47){
-	                programData.name = programData.name.substring(0, 47)+ "...";
-                    }
-		    html = '<div class="project-text">';
-		    html+='<div class="project-name">';
-		    html+='<h1>'+programData.name+'</h1>';
-		    html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
-		    html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
-		    html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
-		    html+='<div class="project-desc">'+programData.description+'</div>';
-		    html+='<div class="bottom-buttons">';
-                    if (programData.not_available) {
-                        html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
-                        // html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
-                        // html+='<a href="#" id="backButton" class="link-button selected">Tillbaka</a>';
-                    } else {
-                        html+='<a href="#" id="playButton" class="link-button selected" style="margin-left:80px;">Spela upp</a>';
-                        // html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a> ';
-                        // html+='<a href="#" id="backButton" class="link-button">Tillbaka</a>';
-                    }
-                    html+=' </div>';
-		    html+=' </div>';
-		    
-                    html+='</div>';
-		    html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
-            	    $('#projdetails').html(html);
-                    // $("#playButton").css("margin-left","80px");
-	            html = null;
-                });
-            },
-            error: function(XMLHttpRequest, textStatus, errorThrown)
-            {
-                if (!isBackground)
-                    loadingStop();
-          	if (textStatus == 'timeout') {
-                    this.tryCount++;
-                    if (this.tryCount <= this.retryLimit) {
-                        //try again
-                        $.ajax(this);
-                        return;
-                    }            
-                    return;
-                }
-        	else{
-        	    Log('Failure:' + textStatus);
-                    if (!isBackground)
-        	        ConnectionError.show();
-        	}
-            }
-        });
-
+    Details.url = fixLink(this.Geturl());
+    requestUrl(Details.url,
+               function(status, data)
+               {
+                   var html;
+                   programData = Details.getData(Details.url, data);
+                   Details.fetchedDetails = programData;
+                   if (!isBackground) {
+		       Language.setDetailLang();
+                       Player.setNowPlaying(programData.name);
+                       loadingStop();
+                   }
+                   loadThumb(programData.thumb, function() {
+                       if(programData.name.length > 47){
+	                   programData.name = programData.name.substring(0, 47)+ "...";
+                       }
+		       html = '<div class="project-text">';
+		       html+='<div class="project-name">';
+		       html+='<h1>'+programData.name+'</h1>';
+                       if (programData.show) {
+		           html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
+                       } else {
+		           html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
+                           if (Details.url.indexOf("oppetarkiv") == -1 && !programData.is_live)
+		               html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
+		           html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
+                       }
+		       html+='<div class="project-desc">'+programData.description+'</div>';
+		       html+='<div class="bottom-buttons">';
+                       if (programData.show) {
+                           html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till Programmet</a>';
+                       } else if (programData.not_available) {
+                           html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
+                       } else {
+                           html+='<a href="#" id="playButton" class="link-button selected" style="margin-left:80px;">Spela upp</a>';
+                       }
+                       html+=' </div>';
+		       html+=' </div>';
+		       
+                       html+='</div>';
+		       html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
+            	       $('#projdetails').html(html);
+	               html = null;
+                       if (!detailsOnTop)
+                           fetchPriorLocation();
+                   });
+               },
+               function(textStatus, errorThrown)
+               {
+                   if (!isBackground) {
+                       loadingStop();
+                   }
+               }
+              )
 };
+
 
 Details.fetchData = function(detailsUrl) {
     // Log("Details.fetchData");
@@ -304,7 +280,7 @@ Details.fetchData = function(detailsUrl) {
     detailsUrl = fixLink(this.Geturl(detailsUrl));
     detailsXhr.onreadystatechange = function () {
         if (detailsXhr.readyState == 4) {
-            Details.fetchedDetails = Details.getData(detailsUrl,detailsXhr,detailsXhr);
+            Details.fetchedDetails = Details.getData(detailsUrl,detailsXhr);
             detailsXhr.destroy();
         }
     };
@@ -312,11 +288,14 @@ Details.fetchData = function(detailsUrl) {
     detailsXhr.send();
 };
 
-Details.getData = function(url, data, xhr){
-    data = xhr.responseText.split("<section class=\"play_js-tabs")[0]
+Details.getData = function(url, data) {
+    if (url.indexOf("/video/") == -1 && url.indexOf("/klipp/") == -1 && url.indexOf("/kanaler/") == -1) {
+        return Details.getShowData(url, data);
+    }
+
+    data = data.responseText.split("<section class=\"play_js-tabs")[0]
     data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
-    xhr.destroy();
-    xhr = null;
+
 
     var Name="";
     var Title = Name;
@@ -334,9 +313,7 @@ Details.getData = function(url, data, xhr){
 
         if (url.indexOf("/kanaler/") > -1) {
             data = data.split("<div class=\"play_channel-schedules")[0];
-            $video = $(data).find('div').filter(function() {
-                return $(this).attr('class') == "play_channels";
-            });
+            $video = $(data).find('div.play_channels');
             isChannel = true;
 
             Name = $video.find('a').attr('data-title');
@@ -370,9 +347,7 @@ Details.getData = function(url, data, xhr){
 	    DetailsPlayTime = $($(data).find('strong')[0]).text();
             VideoLength = $($(data).find('strong')[1]).text();
 
-            Description = $(data).find('div').filter(function() {
-                return $(this).attr('class') == "svt-text-bread";
-            }).text();
+            Description = $(data).find('div.svt-text-bread').text();
 
 	    onlySweden = ($(data).find('span').filter(function() {
                 return $(this).attr('class') == "svtoa-icon-geoblock svtIcon";
@@ -380,9 +355,7 @@ Details.getData = function(url, data, xhr){
 
 
         } else {
-            $video = $(data).find('div').filter(function() {
-                return $(this).attr('class') == "play_container";
-            });
+            $video = $(data).find('div.play_container');
             if ($video.find('section').find('a').attr('data-livestart'))
 		isLive = true;
 
@@ -464,14 +437,69 @@ Details.getData = function(url, data, xhr){
     $video = data = null;
     return {name          : Name,
             title         : Title,
+            is_live       : isLive,
             air_date      : DetailsPlayTime,
             avail_date    : AvailDate,
             start_time    : startTime,
             duration      : VideoLength.trim(),
             description   : Description,
             not_available : NotAvailable,
-            thumb         : DetailsImgLink.replace("extralarge", "large")
+            thumb         : DetailsImgLink
     }
+};
+
+Details.getShowData = function(url, data) {
+    data = data.responseText.split("<section class=\"play_title-page__title-info")[1];
+    data = data.split("<section class=\"play_js-tabs")[0];
+    data = data.split("id=\"videos-in-same-category")[0];
+
+    // alert(data);
+    var Name="";
+    var Genre = Name;
+    var DetailsImgLink="";
+    var Description="";
+    var $show = $(data);
+    try {
+        Name  = $show.find('h1').text();
+	DetailsImgLink = fixLink($show.find('img').attr('data-imagename'));
+        // Log(DetailsImgLink);
+	Description = $($show.find('p.play_title-page-info__description')[1]).text();
+        Genre = [];
+        GenreData = $show.find('li.play_tag-list__tag').find("a");
+        for (var i=0; i < GenreData.length;i++) {
+            Genre.push($(GenreData[i]).text());
+        }
+        Genre = Genre.join('/');
+        if (!Genre)
+            Genre = $($show.find('p.play_title-page-info__description')[0]).text();
+        if (Genre == Description)
+            Genre == "";
+        // Log("Name:" + Name);
+        // Log("DetailsImgLink:" + DetailsImgLink);
+        // Log("Description:" + Description);
+        // Log("DetailsPlayTime:" + DetailsPlayTime);
+        // Log("VideoLength:" + VideoLength);
+        // Log("onlySweden:" + onlySweden);
+
+
+    } catch(err) {
+        Log("Details Exception:" + err.message);
+        Log("Name:" + Name);
+        Log("Genre:" + Genre);
+        Log("Description:" + Description);
+        Log("DetailsImgLink:" + DetailsImgLink);
+    }
+    Log("Name:" + Name);
+    Log("Genre:" + Genre);
+    Log("Description:" + Description);
+    Log("DetailsImgLink:" + DetailsImgLink);
+    $show = data = null;
+    return {show          : true,
+            name          : Name,
+            description   : Description,
+            genre         : Genre,
+            thumb         : DetailsImgLink
+           }
 };
 
 Details.startPlayer = function()
@@ -510,6 +538,6 @@ function dataLengthToVideoLength($video)
 loadThumb = function (thumb, callback) {
     var img = document.createElement("img");
     img.onload = callback;
-    img.onerror =  callback;
+    img.onerror = callback;
     img.src = thumb;
 };

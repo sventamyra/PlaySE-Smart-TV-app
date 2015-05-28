@@ -3,10 +3,11 @@ var categoryDetail =
 
 };
 
-categoryDetail.onLoad = function()
+categoryDetail.onLoad = function(refresh)
 {
-        if (!detailsOnTop)
-	    this.loadXml();
+    if (!detailsOnTop)
+	this.loadXml(refresh);
+    if (!refresh)
 	PathHistory.GetPath();
 //	widgetAPI.sendReadyEvent();
 };
@@ -16,8 +17,10 @@ categoryDetail.onUnload = function()
 
 };
 // categoryDetail.html?category=/barn&history=Kategorier/Barn
-categoryDetail.Geturl=function(){
+categoryDetail.Geturl=function(refresh){
     var url = myLocation;
+    if (refresh)
+        url = myRefreshLocation;
     var parse;
     var name="";
     if (url.indexOf("category=")>0)
@@ -37,55 +40,24 @@ categoryDetail.Geturl=function(){
 };
 
 
-categoryDetail.loadXml = function(){
-    var url = this.Geturl();
-    $.support.cors = true;
-    $.ajax(
-        {
-            type: 'GET',
-            url: url,
-            tryCount : 0,
-            retryLimit : 3,
-	    timeout: 15000,
-            success: function(data, status, xhr)
-            {
-                Log('Success:' + this.url);
-                // Log("xhr.responseText.length:"+ xhr.responseText.length);
-                // Log("org items:" + $(data).find('article').length);
-                data = xhr.responseText.split("ul class=\"play_category__tab")[1];
-                data = data.split("div id=\"playJs-alphabetic-list")[1];
-                data = data.split("div class=\"play_js-videolist__item-container")[1];
-                data = data.split("</article>");
-                data.pop();
-                // Log("articles:"+ data.length);
-                xhr.destroy();
-                xhr = null;
-                itemCounter = 0;
-                categoryDetail.decode_data(data);
-                data = null;
-                Log("itemCounter:" + itemCounter);
-                restorePosition();
-            },
-            error: function(XMLHttpRequest, textStatus, errorThrown)
-            {
-          	if (textStatus == 'timeout') {
-                    this.tryCount++;
-                    if (this.tryCount <= this.retryLimit) {
-                        //try again
-                        $.ajax(this);
-                        return;
-                    }            
-                    return;
-                }
-        	else{
-        	    Log('Failure');
-        	    ConnectionError.show();
-        	}
-                
-            }
-        });
-
+categoryDetail.loadXml = function(refresh){
+    requestUrl(this.Geturl(refresh),
+               function(status, data)
+               {
+                   data = data.responseText.split("ul class=\"play_category__tab")[1];
+                   data = data.split("div id=\"playJs-alphabetic-list")[1];
+                   data = data.split("div class=\"play_js-videolist__item-container")[1];
+                   data = data.split("</article>");
+                   data.pop();
+                   // Log("articles:"+ data.length);
+                   itemCounter = 0;
+                   categoryDetail.decode_data(data);
+                   Log("itemCounter:" + itemCounter);
+                   restorePosition();
+               }
+              );
 };
+
 
 categoryDetail.decode_data = function (categoryData) {
 
@@ -98,6 +70,7 @@ categoryDetail.decode_data = function (categoryData) {
             categoryData[k] = "<article" + categoryData[k].split("<article")[1];
             Name = categoryData[k].match(/data-title="([^"]+)"/)[1];
             Link = fixLink(categoryData[k].match(/href="([^"]+)"/)[1]);
+            // Log(Link);
             ImgLink = categoryData[k].match(/data-imagename="([^"]+)"/);
             if (!ImgLink) {
                 ImgLink = categoryData[k].match(/src="([^"]+)"/)[1];

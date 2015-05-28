@@ -2,10 +2,11 @@ var showList =
 {
 };
 
-showList.onLoad = function()
+showList.onLoad = function(refresh)
 {
-        if (!detailsOnTop)
-	    this.loadXml();
+    if (!detailsOnTop)
+	this.loadXml(refresh);
+    if (!refresh)
 	PathHistory.GetPath();
 //	widgetAPI.sendReadyEvent();
 };
@@ -16,8 +17,10 @@ showList.onUnload = function()
 };
 
 
-showList.Geturl=function(){
+showList.Geturl=function(refresh){
     var url = myLocation;
+    if (refresh)
+        url = myRefreshLocation;
     var name="";
     if (url.indexOf("=")>0)
     {
@@ -31,49 +34,20 @@ showList.Geturl=function(){
 
 
 
-showList.loadXml = function(){
-    
-    $.support.cors = true;
-    $.ajax(
-        {
-            type: 'GET',
-            url: this.Geturl(),
-            tryCount : 0,
-            retryLimit : 3,
-	    timeout: 15000,
-            success: function(data, status, xhr)
-            {
-                Log('Success:' + this.url);
-                data = xhr.responseText.split("id=\"videos-in-same-category")[0];
-                data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
-                data = data.split("</article>");
-                data.pop();
-                xhr.destroy();
-                xhr = null;
-                showList.decode_data(data);
-                data = null;
-                Log("itemCounter:" + itemCounter);
-                restorePosition();
-            },
-            error: function(XMLHttpRequest, textStatus, errorThrown)
-            {
-          	if (textStatus == 'timeout') {
-                    this.tryCount++;
-                    if (this.tryCount <= this.retryLimit) {
-                        //try again
-                        $.ajax(this);
-                        return;
-                    }            
-                    return;
-                }
-        	else{
-        	    Log('Failure');
-        	    ConnectionError.show();
-        	}
-                
-            }
-        });
-
+showList.loadXml = function(refresh)
+{
+    requestUrl(this.Geturl(refresh),
+               function(status, data)
+               {
+                   data = data.responseText.split("id=\"videos-in-same-category")[0];
+                   data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
+                   data = data.split("</article>");
+                   data.pop();
+                   showList.decode_data(data);
+                   Log("itemCounter:" + itemCounter);
+                   restorePosition();
+               }
+              );
 };
 
 showList.decode_data = function(showData) {

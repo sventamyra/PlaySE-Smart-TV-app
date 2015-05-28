@@ -471,7 +471,7 @@ Player.showControls = function(){
 
 Player.setClock = function() {
     // Log("setClock");
-    var time = new Date(new Date().getTime() + (systemOffset*3600*1000));
+    var time = new Date(getDate().getTime() + (systemOffset*3600*1000));
     var hour = time.getHours();
     var minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;
@@ -865,13 +865,13 @@ Player.updateOffset = function (startTime) {
         Player.durationOffset = Player.durationOffset + (diff_mins*60*1000);
         Log("New offset:" + Player.offset + " new durationOffset:" + Player.durationOffset);
     } else {
-        var now = new Date();
-        var now_mins = now.getHours()*60 + now.getMinutes() + systemOffset*60;
+        var now = getDate();
+        var now_secs = (now.getHours()*3600) + (now.getMinutes()*60) + now.getSeconds() + (systemOffset*3600);
 
-        if (start_mins > now_mins)
+        if ((start_mins*60) > now_secs)
             // Time passed midnight
-            now_mins = now_mins + 24*60;
-        Player.offset = (now_mins - start_mins)*60*1000;
+            now_secs = now_secs + (24*3600);
+        Player.offset = (now_secs - (start_mins*60))*1000;
     }
     Player.startTime = startTime;
         // Log("startTime:" + startTime + " start_mins:" + start_mins + " now_mins:" + now_mins + " Player.offset:" + Player.offset);
