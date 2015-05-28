@@ -746,7 +746,14 @@ Buttons.handleMenuKeys = function(keyCode){
 	switch(keyCode)
 		{
 			case tvKey.KEY_RED: 
-				setLocation('index.html');
+				if ($("#popular").text().indexOf("Pop") != -1) {
+				    setLocation('index.html');
+                                } else if ($("#popular").text().indexOf(" ") != -1) {
+				    setLocation('LastChance.html');
+                                } else {
+				    setLocation('Latest.html');
+                                }
+
 				break;
 			case tvKey.KEY_GREEN: 
 				setLocation('categories.html');
@@ -760,7 +767,7 @@ Buttons.handleMenuKeys = function(keyCode){
 				break;
 			case tvKey.KEY_RETURN:
 				var urlpath = myLocation;
-				var ifound = urlpath.indexOf('index.html');
+				// var ifound = urlpath.indexOf('index.html');
 				if(index == 6){
 					widgetAPI.blockNavigation(event); 
 					Language.hide();

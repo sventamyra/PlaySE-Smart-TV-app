@@ -48,12 +48,12 @@ Language.setLang = function(){
 	var value = this.checkLanguage();
 	alert(value);
 	var src="url(images/name.png)";
+        this.fixAButton(value);
 	if(value == 'English'){
 		$('#english').addClass('checked');
 		$('#swedish').removeClass('checked');
 
 		src="url(images/name-english.png)";
-		$("#popular").text('Popular');
 		$("#categories").text('Categories');
 		$("#channels").text('Channels & live broadcasts');
 		$("#searchshow").text('Search shows');
@@ -77,7 +77,6 @@ Language.setLang = function(){
 		$('#swedish').addClass('checked');
 		$('#english').removeClass('checked');
 
-		$("#popular").text('Populärt');
 		$("#categories").text('Kategorier');
 		$("#channels").text('Kanaler & livesändningar');
 		$("#searchshow").text('Sök programtitlar');
@@ -190,4 +189,29 @@ Language.setLanguage = function(value)
 {
 	setCookie('language', value, 1000);
 };
+
+Language.fixAButton = function(language) {
+    if (language)
+        language = this.checkLanguage();
+    if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
+        if(language == 'English'){
+	    $("#popular").text('Last Chance');
+        } else {
+	    $("#popular").text('Sista Chansen');
+        }
+    } else if((myRefreshLocation && (myRefreshLocation.indexOf("LastChance.html")) != -1) || myLocation.indexOf("LastChance.html") != -1) {
+        if(language == 'English'){
+	    $("#popular").text('Latest');
+        } else {
+	    $("#popular").text('Senaste');
+        }
+    } else {
+        if(language == 'English'){
+	    $("#popular").text('Popular');
+        } else {
+	    $("#popular").text('Populärt');
+        }
+
+    }
+}
 

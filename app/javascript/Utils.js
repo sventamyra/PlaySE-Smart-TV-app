@@ -75,6 +75,7 @@ loadingStop = function() {
 refreshLocation = function(entry)
 {
     myRefreshLocation = entry.loc;
+    Language.fixAButton();
     dispatch(myRefreshLocation, true);
 };
 
@@ -99,13 +100,20 @@ setLocation = function(location, oldPos)
     } else {
         myPos = oldPos;
     }
+
     var isDetails = location.match(/details.html/);
+    myLocation = location;
+    myRefreshLocation = null;
+    Buttons.setKeyHandleID(0); // default
+
     if (isDetails) {
         if (oldPos == undefined) {
             detailsOnTop = true;
         } else {
             detailsOnTop = false;
         }
+    } else {
+        Language.fixAButton();
     }
     if ((isDetails && !detailsOnTop) || !detailsOnTop)
     {
@@ -114,12 +122,8 @@ setLocation = function(location, oldPos)
         columnCounter = 0;
         isTopRowSelected = true;
     }
-    myLocation = location;
-    myRefreshLocation = null;
-    Buttons.setKeyHandleID(0); // default
     resetHtml(oldPos, isDetails);
     loadingStart();
-
     dispatch(myLocation);
 
     if (detailsOnTop && oldPos) {
@@ -160,8 +164,16 @@ dispatch = function(NewLocation, Refresh) {
         SearchList.onLoad(Refresh);
         break;
 
+    case "LastChance":
+        LastChance.onLoad(Refresh);
+        break;
+
+    case "Latest":
+        Latest.onLoad(Refresh);
+        break;
+
     default:
-        Log("Unknown loaction!!!!" + location);
+        Log("Unknown loaction!!!!" + NewLocation);
     }
 };
 
