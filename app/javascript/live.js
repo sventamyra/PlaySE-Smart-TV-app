@@ -142,7 +142,7 @@ live.getLiveJson = function(refresh) {
                    data = ("<article" + data).split("</article>");
                    data.pop();
                    // Log("items:" + data.length + ", channels:" + itemCounter);
-                   decode_live(data);
+                   Section.decode_data(data);
                    data = null;
                    Log("itemCounter:" + itemCounter);
                    if (!restorePosition() && !refresh)
@@ -170,71 +170,5 @@ function GetChannelThumb(url, Name)
             return channels[i].thumb;
     }
     return url + '/public/images/channels/backgrounds/' + Name + '-background.jpg';
-};
-
-function decode_live(liveData) {
-    try {
-        var html;
-        var Name;
-        var Duration;
-        var running;
-        var starttime;
-        var Link;
-        var ImgLink;
-        for (var k=0; k < liveData.length; k++) {
-            if (liveData[k].search(/data-broadcastended=\"true\"/i) > -1)
-                // Show already ended
-                continue;
-            Name = liveData[k].match(/data-title="([^"]+)"/)[1];
-            Duration = liveData[k].match(/data-length="([^"]+)"/)[1];
-            Link = fixLink(liveData[k].match(/href="([^#][^#"]+)"/)[1]);
-            ImgLink = fixLink(liveData[k].match(/data-imagename="([^"]+)"/)[1]);
-            running = liveData[k].search(/play_graphics-live--inactive/) == -1;
-            starttime = liveData[k].match(/alt="([^"]+)"/)[1].replace(/([^:]+):.+/, "$1");
-            liveData[k] = "";
-	    if (itemCounter % 2 == 0) 
-            {
-		if(itemCounter > 0){
-		    html = '<div class="scroll-content-item topitem">';
-		}
-		else{
-		    html = '<div class="scroll-content-item selected topitem">';
-		}
-	    }
-	    else{
-		html = '<div class="scroll-content-item bottomitem">';
-	    }
-	    
-	    html += '<div class="scroll-item-img">';
-	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + '/' + Name + '/" class="ilink" data-length="' + Duration + '" is-live><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
-	    if (!running){
-		html += '<span class="topoverlay">LIVE</span>';
-		// html += '<span class="bottomoverlay">' + starttime + ' - ' + endtime + '</span>';
-		html += '<span class="bottomoverlay">' + starttime + '</span>';
-	    }
-	    else{
-		html += '<span class="topoverlayred">LIVE</span>';
-		// html += '<span class="bottomoverlayred">' + starttime + ' - ' + endtime + '</span>';
-		html += '<span class="bottomoverlayred">' + starttime + '</span>';
-	    }
-	    html += '</div>';
-	    html += '<div class="scroll-item-name">';
-	    html +=	'<p><a href="#">' + Name + '</a></p>';
-	    //	html += '<span class="item-date">' + Description + '</span>';
-	    html += '</div>';
-	    html += '</div>';
-	    
-	    if(itemCounter % 2 == 0){
-		$('#topRow').append($(html));
-	    }
-	    else{
-		$('#bottomRow').append($(html));
-	    }
-	    html = null;
-	    itemCounter++;
-	}
-    } catch(err) {
-        Log("decode_live Exception:" + err.message + " data[" + k + "]:" + liveData[k]);
-    }
 };
 //window.location = 'project.html?ilink=' + ilink;

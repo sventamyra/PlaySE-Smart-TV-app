@@ -9,8 +9,9 @@ var Main =
 Main.onLoad = function(refresh)
 {
     Language.fixAButton();
+    document.title = "Populärt";
     if (!refresh)
-        Header.display('Populärt');
+	Header.display(document.title);
     if (!this.loaded) {
         loadingStart();
         this.loaded = true;
@@ -64,7 +65,7 @@ Main.loadPopular = function(refresh){
                    data = data.responseText.split("div id=\"gridpage-content")[1];
                    data = data.split("</article>");
                    data.pop();
-                   Main.decode_data(data);
+                   Section.decode_data(data, recommendedLinks);
                    Log("itemCounter:" + itemCounter);
                    if (!restorePosition() && !refresh)
                        $("#content-scroll").show();
@@ -123,74 +124,6 @@ Main.decode_recommended = function(mainData) {
 	        html += '<a href="details.html?ilink=' + Link + '&history=Populärt/' + Name +'/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
             } else
 	        html += '<a href="showList.html?name=' + Link + '&history=Populärt/' + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-	    if(Live == 1){
-		html += '<span class="topoverlay">LIVE</span>';
-		html += '<span class="bottomoverlay">' + starttime + '</span>';
-	    }
-	    else if(Live == 2){
-		html += '<span class="topoverlayred">LIVE</span>';
-		html += '<span class="bottomoverlayred">' + starttime + '</span>';
-	    }
-	    html += '</div>';
-	    html += '<div class="scroll-item-name">';
-	    html +=	'<p><a href="#">' + Name + '</a></p>';
-	    html += '<span class="item-date">' + Description + '</span>';
-	    html += '</div>';
-	    html += '</div>';
-	    if(itemCounter % 2 == 0){
-		$('#topRow').append($(html));
-	    }
-	    else{
-		$('#bottomRow').append($(html));
-	    }
-	    html = null;
-	    itemCounter++;
-	}
-    } catch(err) {
-        Log("decode_data Exception:" + err.message + " data[" + k + "]:" + mainData[k]);
-    }
-};
-
-Main.decode_data = function(mainData) {
-    try {
-        var html; 
-        var Name;
-        var Link;
-        var Description;
-        var Duration;
-        var ImgLink;
-        var Live;
-        var starttime;
-        for (var k=0; k < mainData.length; k++) {
-            if (mainData[k].search(/data-broadcastended=\"true\"/i) > -1)
-                // Show already ended
-                continue;
-            Name = mainData[k].match(/data-title="([^"]+)"/)[1];
-            Duration = mainData[k].match(/data-length="([^"]+)"/)[1];
-            Link = fixLink(mainData[k].match(/href="([^#][^#"]+)"/)[1]);
-            if (recommendedLinks.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
-                continue;
-            Description = mainData[k].match(/data-description="([^"]+)"/);
-            Description = (!Description) ? "" : Description[1];
-            ImgLink = fixLink(mainData[k].match(/data-imagename="([^"]+)"/)[1]);
-            mainData[k] = "";
-
-	    if(Description.length > 55){
-		Description = Description.substring(0, 52)+ "...";
-	    }
-	    if(itemCounter % 2 == 0){
-		if(itemCounter > 0){
-		    html = '<div class="scroll-content-item topitem">';
-		}
-		else{
-		    html = '<div class="scroll-content-item selected topitem">';
-		}
-	    }
-	    else{
-		html = '<div class="scroll-content-item bottomitem">';
-	    }
-	    html += '<div class="scroll-item-img">';
-	    html += '<a href="details.html?ilink=' + Link + '&history=Populärt/' + Name +'/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
 	    if(Live == 1){
 		html += '<span class="topoverlay">LIVE</span>';
 		html += '<span class="bottomoverlay">' + starttime + '</span>';

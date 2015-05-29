@@ -746,10 +746,12 @@ Buttons.handleMenuKeys = function(keyCode){
 	switch(keyCode)
 		{
 			case tvKey.KEY_RED: 
-				if ($("#popular").text().indexOf("Pop") != -1) {
+				if ($("#a-button").text().indexOf("Pop") != -1) {
 				    setLocation('index.html');
-                                } else if ($("#popular").text().indexOf(" ") != -1) {
+                                } else if ($("#a-button").text().indexOf("Chan") != -1) {
 				    setLocation('LastChance.html');
+                                } else if ($("#a-button").text().indexOf(" N") != -1) {
+				    setLocation('LatestNews.html');
                                 } else {
 				    setLocation('Latest.html');
                                 }

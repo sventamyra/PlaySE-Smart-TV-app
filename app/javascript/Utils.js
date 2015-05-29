@@ -165,11 +165,9 @@ dispatch = function(NewLocation, Refresh) {
         break;
 
     case "LastChance":
-        LastChance.onLoad(Refresh);
-        break;
-
     case "Latest":
-        Latest.onLoad(Refresh);
+    case "LatestNews":
+        Section.onLoad(NewLocation, Refresh);
         break;
 
     default:

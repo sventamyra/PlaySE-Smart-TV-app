@@ -195,21 +195,27 @@ Language.fixAButton = function(language) {
         language = this.checkLanguage();
     if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
         if(language == 'English'){
-	    $("#popular").text('Last Chance');
+	    $("#a-button").text('Last Chance');
         } else {
-	    $("#popular").text('Sista Chansen');
+	    $("#a-button").text('Sista Chansen');
         }
     } else if((myRefreshLocation && (myRefreshLocation.indexOf("LastChance.html")) != -1) || myLocation.indexOf("LastChance.html") != -1) {
         if(language == 'English'){
-	    $("#popular").text('Latest');
+	    $("#a-button").text('Latest');
         } else {
-	    $("#popular").text('Senaste');
+	    $("#a-button").text('Senaste');
+        }
+    } else if((myRefreshLocation && (myRefreshLocation.indexOf("Latest.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
+        if(language == 'English'){
+	    $("#a-button").text('Latest News');
+        } else {
+	    $("#a-button").text('Senaste Nyheter');
         }
     } else {
         if(language == 'English'){
-	    $("#popular").text('Popular');
+	    $("#a-button").text('Popular');
         } else {
-	    $("#popular").text('Populärt');
+	    $("#a-button").text('Populärt');
         }
 
     }
