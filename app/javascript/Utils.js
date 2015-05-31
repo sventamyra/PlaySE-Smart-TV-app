@@ -1,5 +1,8 @@
 var seqNo = 0;
-var systemOffset = 0;
+var clockOffset = 0;
+var setClockOffsetTimer = null;
+var dateOffset = 0;
+var setDateOffsetTimer = null;
 var isTopRowSelected = true;
 var columnCounter = 0;
 var itemCounter = 0;
@@ -40,8 +43,8 @@ getCookie = function (cName) {
 
 setCookie = function(cName,value,exdays)
 {
-    var exdate=getDate();
-    exdate.setDate(exdate.getDate() + exdays);
+    var exdate=getCurrentDate();
+    exdate.setDate(exdate.getCurrentDate() + exdays);
     var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
     document.cookie=cName + "=" + c_value;
 };
@@ -235,52 +238,93 @@ setPosition = function(pos)
     Buttons.sscroll();
 };
 
-getDate = function() {
+getCurrentDate = function() {
     try {
         var pluginTime = document.getElementById("pluginTime").GetEpochTime();
         if (pluginTime && pluginTime > 0)
-            return new Date(pluginTime*1000);
+            return new Date(pluginTime*1000 + clockOffset);
     } catch(err) {
         // Log("pluginTime failed:" + err);
     }
     return new Date();
 }
 
-setSystemOffset = function() {
+setClockOffset = function() {
+    // Retry once a minute in case of failure
+    setClockOffsetTimer = window.setTimeout(setClockOffset, 60*1000);
     var timeXhr = new XMLHttpRequest();
     timeXhr.onreadystatechange = function () {
         if (timeXhr.readyState == 4) {
             var timeMatch = timeXhr.responseText.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
             var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
-            var now = getDate();
-            var nowSecs = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
-            systemOffset = Math.round((actualSeconds-nowSecs)/3600);
-            Log("System Offset hours:" + systemOffset);
+            var actualDay = +timeXhr.responseText.match(/id=ctdat>[^0-9]+([0-9]+)/)[1];
+            clockOffset = 0;
+            var now = getCurrentDate();
+            var nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
+            var nowDay = now.getDate();
+            if (actualDay != nowDay) {
+                if (actualDay > nowDay || actualDay == 1) {
+                    // Add 24 hours to actual
+                    actualSeconds = actualSeconds + 24*3600;
+                } else {
+                    // Add 24 hours to now
+                    nowSeconds = nowSeconds + 24*3600
+                }
+            }
+            clockOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
+            Log("Clock Offset hours:" + clockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0]);
             timeXhr.destroy();
             timeXhr = null;
+	    window.clearTimeout(setClockOffsetTimer);
         }
     };
     timeXhr.open("GET", "http://www.timeanddate.com/worldclock/sweden/stockholm");
     timeXhr.send();
+    setDateOffset();
 };
 
-getInternalOffset = function () {
-    var pluginNow = getDate();
-    // var pluginNowSecs = pluginNow.getHours()*3600 + pluginNow.getMinutes()*60 + pluginNow.getSeconds();
-    var internalNow = new Date() ;
-    // var internalNowSecs = internalNow.getHours()*3600 + internalNow.getMinutes()*60 + internalNow.getSeconds();
-    // Log("pluginNow:" + pluginNow);
-    // Log("internalNow:" + internalNow);
-    // Log("internalOffset (minutes):" + Math.round((pluginNow-internalNow)/60/1000));
-    // Round to minutes
-    return Math.round((pluginNow-internalNow)/60/1000)*60*1000
-    
+setDateOffset = function () {
+    // Retry once a minute in case of failure
+    setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
+    var timeXhr = new XMLHttpRequest();
+    timeXhr.onreadystatechange = function () {
+        if (timeXhr.readyState == 4) {
+            var data = timeXhr.responseText.split("<div class=\"play_js-schedule__entry")[1];
+            var actualData = $(data).find('time').attr('datetime').match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
+            var actualSeconds = actualData[2]*3600 + actualData[3]*60;
+            var actualDateString = actualData[1].replace(/-/g, "")
+            var tsDate = new Date(+data.match(/data-starttime=\"([0-9]+)/)[1]);           
+            var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
+            var tsDateString = dateToString(tsDate);
+            if (actualDateString > tsDateString) {
+                // Add 24 hours to actual
+                actualSeconds = actualSeconds + 24*3600;
+            } else if (tsDateString > actualDateString) {
+                // Add 24 hours to ts
+                tsSeconds = tsSeconds + 24*3600
+            }
+            dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
+            Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString);
+            timeXhr.destroy();
+            timeXhr = null;
+	    window.clearTimeout(setDateOffsetTimer);
+        }
+    };
+    timeXhr.open("GET", "http://www.svtplay.se/kanaler");
+    timeXhr.send();
+};
+
+dateToString = function (Date) {
+    var Day = Date.getDate()
+    Day = Day < 10 ?  "0" + Day : "" + Day;
+    var Month = Date.getMonth()+1;
+    Month = Month < 10 ?  "0" + Month : "" + Month;
+    return Date.getFullYear() + Month + Day;
 }
 
 tsToClock = function (ts)
 {
-    var time = new Date(+ts + (systemOffset*3600*1000) + getInternalOffset());
-    // Log("ts:" + ts + " time:" + time);
+    var time = new Date(+ts + dateOffset);
     var hour = time.getHours();
     var minutes = time.getMinutes();
     if (hour < 10) hour = "0" + hour;

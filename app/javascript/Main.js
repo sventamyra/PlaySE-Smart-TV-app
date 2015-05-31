@@ -24,7 +24,7 @@ Main.onLoad = function(refresh)
         pluginAPI.registIMEKey();
 	Language.setLang();
 	Resolution.displayRes();
-        setSystemOffset();
+        setClockOffset();
 	this.loadXml(refresh);	
 	// Enable key event processing
 	Buttons.enableKeys();
@@ -48,7 +48,6 @@ Main.loadXml = function(refresh){
                    data = data.split("</article>");
                    data.pop();
                    Main.decode_recommended(data);
-                   restorePosition();
                },
                null,
                function(xhr, status)
@@ -93,8 +92,8 @@ Main.decode_recommended = function(mainData) {
 	    Name = $(mainData[k]).find('span.play_carousel-caption__title-inner');
             var i = 0;
             while (i < Name.length) {
-                if ($(Name[i]).text().length >= 1) {
-                    Name = $(Name[i]).text();
+                if ($(Name[i]).text().trim().length >= 1) {
+                    Name = $(Name[i]).text().trim();
                     break;
                 }
                 i = i+1;

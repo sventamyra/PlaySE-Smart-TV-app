@@ -453,7 +453,6 @@ Details.getShowData = function(url, data) {
     data = data.split("<section class=\"play_js-tabs")[0];
     data = data.split("id=\"videos-in-same-category")[0];
 
-    // alert(data);
     var Name="";
     var Genre = Name;
     var DetailsImgLink="";
