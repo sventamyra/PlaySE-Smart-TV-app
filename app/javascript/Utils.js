@@ -1,6 +1,8 @@
 var seqNo = 0;
 var clockOffset = 0;
 var setClockOffsetTimer = null;
+var checkOffsetTimer = null;
+var checkOffsetCounter = 0;
 var dateOffset = 0;
 var setDateOffsetTimer = null;
 var isTopRowSelected = true;
@@ -249,15 +251,17 @@ getCurrentDate = function() {
     return new Date();
 }
 
-setClockOffset = function() {
+setOffsets = function() {
     // Retry once a minute in case of failure
-    setClockOffsetTimer = window.setTimeout(setClockOffset, 60*1000);
+    window.clearTimeout(setClockOffsetTimer);
+    setClockOffsetTimer = window.setTimeout(setOffsets, 60*1000);
     var timeXhr = new XMLHttpRequest();
     timeXhr.onreadystatechange = function () {
         if (timeXhr.readyState == 4) {
             var timeMatch = timeXhr.responseText.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
             var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
             var actualDay = +timeXhr.responseText.match(/id=ctdat>[^0-9]+([0-9]+)/)[1];
+            var oldClockOffset = clockOffset;
             clockOffset = 0;
             var now = getCurrentDate();
             var nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
@@ -271,8 +275,21 @@ setClockOffset = function() {
                     nowSeconds = nowSeconds + 24*3600
                 }
             }
-            clockOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
-            Log("Clock Offset hours:" + clockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0]);
+            var newClockOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
+            Log("Clock Offset hours:" + newClockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
+            if (checkOffsetTimer == null || checkOffsetCounter > 0) {
+                if (checkOffsetTimer == null) {
+                    checkOffsetCounter = 10;
+                } else {
+                    checkOffsetCounter = checkOffsetCounter - 1;
+                }
+                if (newClockOffset != oldClockOffset && checkOffsetTimer != null) {
+                    Log("Clock Offset was changed!!!");
+                } else {
+                    checkOffsetTimer = window.setTimeout(setOffsets, 10*1000);
+                }
+            }
+            clockOffset = newClockOffset;
             timeXhr.destroy();
             timeXhr = null;
 	    window.clearTimeout(setClockOffsetTimer);
@@ -285,6 +302,7 @@ setClockOffset = function() {
 
 setDateOffset = function () {
     // Retry once a minute in case of failure
+    window.clearTimeout(setDateOffsetTimer);
     setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
     var timeXhr = new XMLHttpRequest();
     timeXhr.onreadystatechange = function () {
@@ -303,8 +321,9 @@ setDateOffset = function () {
                 // Add 24 hours to ts
                 tsSeconds = tsSeconds + 24*3600
             }
-            dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
-            Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString);
+            var newDateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
+            Log("dateOffset (hours):" + newDateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " ts:" + data.match(/data-starttime=\"([0-9]+)/)[1] + " starttime:" + actualData[0]);
+            dateOffset = newDateOffset;
             timeXhr.destroy();
             timeXhr = null;
 	    window.clearTimeout(setDateOffsetTimer);

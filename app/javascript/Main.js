@@ -24,7 +24,7 @@ Main.onLoad = function(refresh)
         pluginAPI.registIMEKey();
 	Language.setLang();
 	Resolution.displayRes();
-        setClockOffset();
+        setOffsets();
 	this.loadXml(refresh);	
 	// Enable key event processing
 	Buttons.enableKeys();
