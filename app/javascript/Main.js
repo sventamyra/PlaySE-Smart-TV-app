@@ -78,31 +78,29 @@ Main.loadPopular = function(refresh){
 
 Main.decode_recommended = function(mainData) {
     try {
-        var html; 
+        var html;
+        var Titles;
         var Name;
         var Link;
         var Description;
         var Duration;
         var ImgLink;
-        var Live;
         var starttime;
         recommendedLinks = [];
         for (var k=0; k < mainData.length; k++) {
             mainData[k] = "<article" + mainData[k].split("<article")[1];
-	    Name = $(mainData[k]).find('span.play_carousel-caption__title-inner');
+	    Titles = $(mainData[k]).find('span.play_carousel-caption__title-inner');
             var i = 0;
-            while (i < Name.length) {
-                if ($(Name[i]).text().trim().length >= 1) {
-                    Name = $(Name[i]).text().trim();
-                    break;
-                }
+            Name = "";
+            while (i < Titles.length) {
+                Name = Name + " " + $(Titles[i]).text().trim();
+                Name.trim();
                 i = i+1;
             }
+            Name = Name.replace(/Live just nu /, "");
             Link = fixLink(mainData[k].match(/href="([^#][^#"]+)"/)[1]);
             Description = $(mainData[k]).find('span.play_carousel-caption__description').text();
 	    ImgLink = fixLink($(mainData[k]).find('img').attr('data-imagename')).replace("_imax", "");
-            mainData[k] = "";
-
 	    if(Description.length > 55){
 		Description = Description.substring(0, 52)+ "...";
 	    }
@@ -123,14 +121,12 @@ Main.decode_recommended = function(mainData) {
 	        html += '<a href="details.html?ilink=' + Link + '&history=Populärt/' + Name +'/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
             } else
 	        html += '<a href="showList.html?name=' + Link + '&history=Populärt/' + Name + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-	    if(Live == 1){
-		html += '<span class="topoverlay">LIVE</span>';
-		html += '<span class="bottomoverlay">' + starttime + '</span>';
-	    }
-	    else if(Live == 2){
+            if (mainData[k].match(/play_graphics-live-top--visible/)) {
 		html += '<span class="topoverlayred">LIVE</span>';
-		html += '<span class="bottomoverlayred">' + starttime + '</span>';
+		// html += '<span class="bottomoverlayred">' + starttime + ' - ' + endtime + '</span>';
+		html += '<span class="bottomoverlayred"></span>';
 	    }
+            mainData[k] = "";
 	    html += '</div>';
 	    html += '<div class="scroll-item-name">';
 	    html +=	'<p><a href="#">' + Name + '</a></p>';

@@ -349,7 +349,7 @@ Player.skipForward = function(time)
     this.showControls();
     skipTime = +skipTime + time;
     this.skipState = this.FORWARD;
-    Log("forward skipTime: " + skipTime);
+    // Log("forward skipTime: " + skipTime);
     this.updateSeekBar(skipTime);
     skipTimer = window.setTimeout(this.skipInVideo, 2000);
 };
@@ -466,7 +466,7 @@ Player.showControls = function(){
   $('.video-wrapper').show();				
   $('.video-footer').show();
   this.setClock();
-  Log("show controls");
+  // Log("show controls");
 };
 
 Player.setClock = function() {
@@ -491,13 +491,13 @@ Player.hideControls = function(){
     $('.video-footer').hide();
     $('.bottomoverlaybig').html("");
     Player.infoActive = false;
-    Log("hide controls");
+    // Log("hide controls");
 };
 
 Player.showDetailedInfo = function(){
     if (Player.detailsActive)
         return;
-    Log("showDetailedInfo");
+    // Log("showDetailedInfo");
     Player.detailsActive = true;
     Player.setDetailsData(Details.fetchedDetails);
     $('.details-wrapper').show();
@@ -511,7 +511,7 @@ Player.setDetailsData = function(details) {
 };
 
 Player.hideDetailedInfo = function(){
-    Log("hideDetailedInfo");
+    // Log("hideDetailedInfo");
     if (Player.detailsActive) {
         Player.detailsActive = false;
         $('.detailstitle').html("");

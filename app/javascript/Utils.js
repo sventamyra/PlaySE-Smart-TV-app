@@ -46,7 +46,7 @@ getCookie = function (cName) {
 setCookie = function(cName,value,exdays)
 {
     var exdate=getCurrentDate();
-    exdate.setDate(exdate.getCurrentDate() + exdays);
+    exdate.setDate(exdate.getDate() + exdays);
     var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
     document.cookie=cName + "=" + c_value;
 };
@@ -279,7 +279,7 @@ setOffsets = function() {
             Log("Clock Offset hours:" + newClockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
             if (checkOffsetTimer == null || checkOffsetCounter > 0) {
                 if (checkOffsetTimer == null) {
-                    checkOffsetCounter = 10;
+                    checkOffsetCounter = 5;
                 } else {
                     checkOffsetCounter = checkOffsetCounter - 1;
                 }
