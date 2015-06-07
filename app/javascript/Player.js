@@ -10,6 +10,7 @@ var ccTime = 0;
 var lastPos = 0;
 var videoUrl;
 var detailsUrl;
+var requestedUrl;
 var startup = true;
 var smute = 0;
 var subtitles = [];
@@ -203,6 +204,7 @@ Player.playVideo = function()
     }
     else
     {
+        this.plugin.Stop();
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.state = this.PLAYING;
@@ -831,9 +833,10 @@ Player.startPlayer = function(url, isLive, startTime)
 	       (by choice or when it reaches the end) */
 	    //   Main.setWindowMode();
 	};
-        this.GetPlayUrl(url, isLive);
-        Details.fetchData(url);
-        detailsUrl = url;
+        if (this.GetPlayUrl(url, isLive) != -1) {
+            Details.fetchData(url);
+            detailsUrl = url;
+        }
     } else
         Log("INIT FAILED!!!!!");
 };
@@ -891,9 +894,12 @@ Player.GetPlayUrl = function(gurl, isLive) {
     Log("gurl:" + gurl);
     if (gurl.indexOf('?') != -1)
         url_param = '&output=json'; 
-
+    requestedUrl = gurl;
     $.getJSON(gurl+url_param, function(data) {
-	
+	if (requestedUrl != gurl) {
+            Log("gurl skipped:" + gurl + " requestedUrl:" + requestedUrl);
+            return -1;
+        }
 	$.each(data, function(key, val) {
 	    if(key == 'video'){
 		
@@ -931,7 +937,7 @@ Player.GetPlayUrl = function(gurl, isLive) {
 		}
 	    }
 	});
-	
+	return 0;
     });
 };
 
