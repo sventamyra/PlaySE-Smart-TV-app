@@ -15,8 +15,8 @@ PathHistory.GetPath = function(){
 	if (url.indexOf("&")>0)
 	{
 		parse = url.substring(url.indexOf("=") + 1 , url.length);
-		parse = parse.substring(parse.indexOf("y=") + 2 , parse.length);
-		document.title = parse;
+	 	parse = parse.substring(parse.indexOf("y=") + 2 , parse.length);
+	 	document.title = parse.split("&")[0];
 		var html = '';
 		var title = "";
 		while(parse.indexOf("/")>0){

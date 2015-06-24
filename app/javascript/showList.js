@@ -30,20 +30,19 @@ showList.Geturl=function(refresh){
     return name;
 };
 
-
-
-
-
 showList.loadXml = function(refresh)
 {
     requestUrl(this.Geturl(refresh),
                function(status, data)
                {
-                   data = data.responseText.split("id=\"videos-in-same-category")[0];
-                   data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
-                   data = data.split("</article>");
-                   data.pop();
-                   showList.decode_data(data);
+                   if (!data.responseText.match("play_js-tabs")) {
+                       data = data.responseText.split("<article").slice(1).join("<article");
+                       Section.decode_data("<article" + data);
+                   } else {
+                       data = data.responseText.split("id=\"videos-in-same-category")[0];
+                       data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
+                       showList.decode_data(data);
+                   }
                    Log("itemCounter:" + itemCounter);
                    restorePosition();
                }
@@ -57,6 +56,10 @@ showList.decode_data = function(showData) {
         var Duration;
         var Link;
         var ImgLink;
+
+        showData = showData.split("</article>");
+        showData.pop();
+
         for (var k=0; k < showData.length; k++) {
             
             // Name = $(showData[k]).find('span').filter(function() {
@@ -89,7 +92,7 @@ showList.decode_data = function(showData) {
 		html = '<div class="scroll-content-item bottomitem">';
 	    }
 	    html += '<div class="scroll-item-img">';
-	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + Name + '/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
+	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + encodeURIComponent(Name) + '/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
 	    html += '</div>';
 	    html += '<div class="scroll-item-name">';
 	    html +=	'<p><a href="#">' + Name + '</a></p>';

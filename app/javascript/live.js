@@ -104,7 +104,7 @@ live.getChannelsJson = function(refresh) {
 		       
 		       
 		       html += '<div class="scroll-item-img">';
-		       html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + '/' + Name + '/" class="ilink" data-length="' + Duration + '" is-live><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
+		       html += '<a href="details.html?ilink=' + Link + '&history=' + encodeURIComponent(document.title + '/' + Name) + '/" class="ilink" data-length="' + Duration + '" is-live><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
 		       html += '</div>';
 		       html += '<div class="scroll-item-name">';
 		       html +=	'<p><a href="#">' + Name + '</a></p>';
@@ -139,8 +139,7 @@ live.getLiveJson = function(refresh) {
                {
                    data = data.responseText.split("<article");
                    data.shift();
-                   data = ("<article" + data).split("</article>");
-                   data.pop();
+                   data = ("<article" + data);
                    // Log("items:" + data.length + ", channels:" + itemCounter);
                    Section.decode_data(data);
                    data = null;

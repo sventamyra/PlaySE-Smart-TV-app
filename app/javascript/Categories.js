@@ -47,7 +47,7 @@ Categories.loadXml = function(refresh) {
 		           html = '<div class="scroll-content-item bottomitem">';
 		       }
 		       html += '<div class="scroll-item-img">';
-		       html += '<a href="categoryDetail.html?category=' + Link + '&history=Kategorier/' + Name +'/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
+		       html += '<a href="categoryDetail.html?category=' + Link + '&history=Kategorier/' + encodeURIComponent(Name) +'/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
 		       html += '</div>';
 		       html += '<div class="scroll-item-name">';
 		       html +=	'<p><a href="#">' + Name + '</a></p>';

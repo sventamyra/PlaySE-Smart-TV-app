@@ -49,12 +49,12 @@ Language.setLang = function(){
 	alert(value);
 	var src="url(images/name.png)";
         this.fixAButton(value);
+        this.fixBButton(value);
 	if(value == 'English'){
 		$('#english').addClass('checked');
 		$('#swedish').removeClass('checked');
 
 		src="url(images/name-english.png)";
-		$("#categories").text('Categories');
 		$("#channels").text('Channels & live broadcasts');
 		$("#searchshow").text('Search shows');
 	
@@ -77,7 +77,6 @@ Language.setLang = function(){
 		$('#swedish').addClass('checked');
 		$('#english').removeClass('checked');
 
-		$("#categories").text('Kategorier');
 		$("#channels").text('Kanaler & livesändningar');
 		$("#searchshow").text('Sök programtitlar');
 		
@@ -191,7 +190,7 @@ Language.setLanguage = function(value)
 };
 
 Language.fixAButton = function(language) {
-    if (language)
+    if (!language)
         language = this.checkLanguage();
     if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
         if(language == 'English'){
@@ -221,3 +220,23 @@ Language.fixAButton = function(language) {
     }
 }
 
+Language.fixBButton = function(language)
+{
+    $("#b-button").text(this.getBButtonText(language))
+};
+
+Language.getBButtonText = function(language)
+{
+    if (!language)
+        language = this.checkLanguage();
+
+    if(language == 'English')
+        return 'Categories';
+    else
+        return 'Kategorier';
+};
+
+Language.isBButtonChanged = function()
+{
+    return $("#b-button").text() != this.getBButtonText();
+}

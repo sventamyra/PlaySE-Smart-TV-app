@@ -119,6 +119,8 @@ setLocation = function(location, oldPos)
         }
     } else {
         Language.fixAButton();
+        if (location.indexOf("categoryDetail.html") == -1)
+            Language.fixBButton();
     }
     if ((isDetails && !detailsOnTop) || !detailsOnTop)
     {
@@ -223,6 +225,13 @@ restorePosition = function()
 fetchPriorLocation = function() 
 {
     refreshLocation(myHistory[myHistory.length-1]);
+};
+
+getOldLocation = function() {
+    if (myHistory.length > 0)
+        return myHistory[myHistory.length-1].loc
+    else
+        return null
 };
 
 setPosition = function(pos)
@@ -365,7 +374,6 @@ fixLink = function (ImgLink)
 };
 
 requestUrl = function(url, cbSucces, cbError, cbComplete) {
-
     var requestedLocation = {loc:myLocation, refLoc:myRefreshLocation};
     $.support.cors = true;
     $.ajax(

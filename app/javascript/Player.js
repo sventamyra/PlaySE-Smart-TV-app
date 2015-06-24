@@ -970,10 +970,10 @@ Player.toggleSubtitles = function () {
 Player.printSubtitleStatus = function () {
     if (subtitlesEnabled && subtitles.length > 0) {
         this.setSubtitleText("Subtitles On", 2500);
-    } else if (subtitlesEnabled) {
-        this.setSubtitleText("Subtitles not available", 2500);
-    } else {
+    } else if (!subtitlesEnabled && subtitles.length > 0) {
         this.setSubtitleText("Subtitles Off", 2500);
+    } else {
+        this.setSubtitleText("Subtitles not available", 2500);
     }
 };
 

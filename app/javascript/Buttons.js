@@ -758,7 +758,12 @@ Buttons.handleMenuKeys = function(keyCode){
 
 				break;
 			case tvKey.KEY_GREEN: 
-				setLocation('categories.html');
+                                if (Language.isBButtonChanged())
+                                {
+				    categoryDetail.setNextLocation();
+                                } else {
+				    setLocation('categories.html');
+                                }
 				break;
 			case tvKey.KEY_YELLOW:
 				setLocation('live.html');

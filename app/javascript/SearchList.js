@@ -58,9 +58,7 @@ SearchList.loadXml = function(refresh) {
                    data = (data.length > 1) ? data[1] : data[0];
                    data = data.split("id=\"search-");
                    data.shift();
-                   data = data.join("").split("</article>");
-                   data.pop();
-                   Section.decode_data(data);
+                   Section.decode_data(data.join(""));
                    Log("itemCounter:" + itemCounter);
                    restorePosition();
                },
