@@ -301,6 +301,7 @@ Player.resumeVideo = function()
 
 Player.reloadVideo = function(time)
 {
+    $('.bottomoverlaybig').html('Reloading!');
     reloaded = true;
 	this.plugin.Stop();
         if (time)

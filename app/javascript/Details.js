@@ -449,16 +449,18 @@ Details.getData = function(url, data) {
 };
 
 Details.getShowData = function(url, data) {
-    data = data.responseText.split("<section class=\"play_title-page__title-info")[1];
-    data = data.split("<section class=\"play_js-tabs")[0];
-    data = data.split("id=\"videos-in-same-category")[0];
 
     var Name="";
     var Genre = Name;
     var DetailsImgLink="";
     var Description="";
-    var $show = $(data);
+
     try {
+        data = data.responseText.split("<section class=\"play_title-page__title-info")[1];
+        data = data.split("<section class=\"play_js-tabs")[0];
+        data = data.split("id=\"videos-in-same-category")[0];
+        var $show = $(data);
+
         Name  = $show.find('h1').text();
 	DetailsImgLink = fixLink($show.find('img').attr('data-imagename'));
         // Log(DetailsImgLink);
