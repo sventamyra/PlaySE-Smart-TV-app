@@ -35,11 +35,11 @@ showList.loadXml = function(refresh)
     requestUrl(this.Geturl(refresh),
                function(status, data)
                {
-                   if (!data.responseText.match("play_js-tabs")) {
-                       data = data.responseText.split("<article").slice(1).join("<article");
+                   data = data.responseText.split("id=\"videos-in-same-category")[0];
+                   if (!data.match("play_js-tabs")) {
+                       data = data.split("<article").slice(1).join("<article");
                        Section.decode_data("<article" + data);
                    } else {
-                       data = data.responseText.split("id=\"videos-in-same-category")[0];
                        data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
                        showList.decode_data(data);
                    }
