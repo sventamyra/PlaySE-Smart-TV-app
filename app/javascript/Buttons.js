@@ -24,7 +24,10 @@ var Buttons =
 };
 Buttons.keyDown = function()
 {
-	if(index == 0){
+        if($('#exitBlock').is(':visible')) {
+                this.keyHandleForExit();
+        }
+	else if(index == 0){
 		this.keyHandleForList();
 	}
 	else if(index == 1)
@@ -111,6 +114,25 @@ Buttons.sscroll = function(hide)
         }
     );
 };
+
+Buttons.keyHandleForExit = function()
+{
+    var keyCode = event.keyCode;
+
+    switch(keyCode)
+    {
+    case tvKey.KEY_RETURN:
+	widgetAPI.blockNavigation(event); 
+        $("#exitBlock").hide();
+        break
+
+    case tvKey.KEY_ENTER:
+        widgetAPI.sendReturnEvent();
+        break;
+    }
+};
+        
+            
 
 Buttons.keyHandleForList = function()
 {
@@ -199,7 +221,7 @@ Buttons.keyHandleForList = function()
                                         Buttons.playItem();
                                         break;
                                     }
-                                    else if (keyCode == tvKey.KEY_INFO && ilink.search("showList.html\\?") != -1) {
+                                    else if (keyCode == tvKey.KEY_INFO && ilink.match("showList.html\\?name=")) {
                                         // Info of show.
                                         ilink = "details.html?" + ilink;
                                     }
@@ -615,6 +637,7 @@ Buttons.keyHandleForPlayer = function(){
 	Player.skipBackwardVideo();
 	break;
     case tvKey.KEY_PAUSE:
+    case tvKey.KEY_ENTER:
 	Player.togglePause();
 	break;
     case tvKey.KEY_FF:
@@ -743,74 +766,95 @@ Buttons.keyHandleForConnectionError = function()
 };
 
 Buttons.handleMenuKeys = function(keyCode){
-	switch(keyCode)
-		{
-			case tvKey.KEY_RED: 
-				if ($("#a-button").text().indexOf("Pop") != -1) {
-				    setLocation('index.html');
-                                } else if ($("#a-button").text().indexOf("Chan") != -1) {
-				    setLocation('LastChance.html');
-                                } else if ($("#a-button").text().indexOf(" N") != -1) {
-				    setLocation('LatestNews.html');
-                                } else {
-				    setLocation('Latest.html');
-                                }
+    switch(keyCode)
+    {
+    case tvKey.KEY_RED: 
+        if (channel == "svt") {
+	    if ($("#a-button").text().indexOf("Pop") != -1) {
+	        setLocation('index.html');
+            } else if ($("#a-button").text().indexOf("Chan") != -1) {
+	        setLocation('LastChance.html');
+            } else if ($("#a-button").text().indexOf(" N") != -1) {
+	        setLocation('LatestNews.html');
+            } else {
+	        setLocation('Latest.html');
+            }
+        } else if (channel == "viasat") {
+	    if ($("#a-button").text().indexOf("Pop") != -1) {
+	        setLocation('index.html');
+            } else if ($("#a-button").text().indexOf("lip") != -1) {
+	        setLocation('LatestClips.html');
+            } else {
+	        setLocation('Latest.html');
+            }
+        }
 
-				break;
-			case tvKey.KEY_GREEN: 
-                                if (Language.isBButtonChanged())
-                                {
-				    categoryDetail.setNextLocation();
-                                } else {
-				    setLocation('categories.html');
-                                }
-				break;
-			case tvKey.KEY_YELLOW:
-				setLocation('live.html');
-				break;
-			case tvKey.KEY_BLUE:
-				Language.hide();
-                                Search.imeShow();
-				break;
-			case tvKey.KEY_RETURN:
-				var urlpath = myLocation;
-				// var ifound = urlpath.indexOf('index.html');
-				if(index == 6){
-					widgetAPI.blockNavigation(event); 
-					Language.hide();
-				}
-				else if(index == 4){
-					widgetAPI.blockNavigation(event); 
-					Search.hide();
-				}
-				else if(myHistory.length > 0) {
-				// else if(ifound < 0){
-					widgetAPI.blockNavigation(event); 
-					goBack();
-				}
-				else{
-					//terminate app
-				}
-				break;
-			case tvKey.KEY_EXIT:
-                        case tvKey.KEY_INFOLINK:
-                        case tvKey.KEY_HOME:
-                        case tvKey.KEY_MENU:
-                        case tvKey.KEY_PANEL_MENU:
-                        case tvKey.KEY_12:
-                        case tvKey.KEY_DISC_MENU:
-	            // Terminated by force
-	            break;
-			case tvKey.KEY_TOOLS:
-				widgetAPI.blockNavigation(event); 
-				Search.hide();
-				Language.show();
-				break;
-			case tvKey.KEY_MUTE:
-				Audio.uiToggleMute();
-				break;
-			 break;
-		}
+	break;
+    case tvKey.KEY_GREEN: 
+        if (Language.isBButtonChanged())
+        {
+            if (channel == "svt")
+	        categoryDetail.setNextLocation();
+            else if (channel == "viasat")
+                Categories.setNextLocation();
+        } else {
+	    setLocation('categories.html');
+        }
+	break;
+    case tvKey.KEY_YELLOW:
+	setLocation('live.html');
+	break;
+    case tvKey.KEY_BLUE:
+	Language.hide();
+        Search.imeShow();
+	break;
+    case tvKey.KEY_RETURN:
+	widgetAPI.blockNavigation(event); 
+	var urlpath = myLocation;
+	// var ifound = urlpath.indexOf('index.html');
+	if(index == 6){
+	    Language.hide();
+	}
+	else if(index == 4){
+	    Search.hide();
+	}
+	else if(myHistory.length > 0) {
+	    // else if(ifound < 0){
+	    goBack();
+	}
+	else{
+            $("#exitBlock").show();
+	    //terminate app
+	}
+	break;
+    case tvKey.KEY_EXIT:
+    case tvKey.KEY_INFOLINK:
+    case tvKey.KEY_HOME:
+    case tvKey.KEY_MENU:
+    case tvKey.KEY_PANEL_MENU:
+    case tvKey.KEY_12:
+    case tvKey.KEY_DISC_MENU:
+	// Terminated by force
+	break;
+    case tvKey.KEY_TOOLS:
+	widgetAPI.blockNavigation(event); 
+	Search.hide();
+	Language.show();
+	break;
+    case tvKey.KEY_MUTE:
+	Audio.uiToggleMute();
+	break;
+	break;
+    case tvKey.KEY_1:
+    case tvKey.KEY_2:
+        setChannel("svt");
+        break;
+    case tvKey.KEY_3:
+    case tvKey.KEY_6:
+    case tvKey.KEY_8:
+        setChannel("viasat");
+        break;
+    }
 };
 
 

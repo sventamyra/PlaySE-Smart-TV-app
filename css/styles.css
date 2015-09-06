@@ -46,6 +46,40 @@ body {
     z-index: 3;
 }
 
+#exitId {
+    text-align: center;
+    letter-spacing: -1px;
+    color: white;
+}
+
+#exitBlock {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1010;
+}
+
+.confirmExit{
+    position: relative;
+    top: 250px;
+    left: 0;
+    width:auto;
+    height:auto;
+    letter-spacing: -1px;
+    text-align: center;
+    vertical-align: middle;
+    font: bold 30px/60px Helvetica, Sans-Serif;
+    padding: 10px 10px;
+    color: #e0e7ea;
+    background-color:Green;
+    z-index:inherit;
+}
+
 .topmenu a:hover, .topmenu a.active, .news-name a, .scroll-item-name a:hover, a.link-view, .column h2, .news-name h2, a.link-button.selected, 
 a.link-button2, a.link-button4.selected, .btn-submit, .short-title a:hover, a:hover, .contact-form .btn-submit, h1, .dropdown .root-item span, #cboxTitle{
  color:#58b827;
@@ -1129,7 +1163,7 @@ small {
 
 .detailstitle         { position: absolute; top: 80px; left:115px; color: #e0e7ea; font: bold 25px/50px Helvetica, Sans-Serif; letter-spacing: -1px; width:75%; height:50px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle; text-align:center; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px; z-index:inherit;}
 
-.detailsdescription    { position: absolute; top: 130px; left:115px;  color: #e0e7ea; font: normal 20px/22px Helvetica, Sans-Serif; letter-spacing: -1px; width:70%; height:auto; max-height: 215px; overflow:hidden; display:inline-block; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7); padding: 0 34px 15px 34px; z-index:inherit;}
+.detailsdescription    { position: absolute; top: 130px; left:115px;  color: #e0e7ea; font: normal 20px/22px Helvetica, Sans-Serif; letter-spacing: -1px; width:70%; height:auto; max-height: 250px; overflow:hidden; display:inline-block; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7); padding: 0 34px 15px 34px; z-index:inherit;}
 
 .topoverlaybig         { position: absolute; top: 340px; left:0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px; width:inherit; height:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle; background:rgb(255, 0, 0); background:rgba(0, 0, 0, 0.7);  padding: 0 10px; z-index:inherit;}
 .bottomoverlaybig         { position: absolute; top: 400px; left:0;  color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; letter-spacing: -1px; width:inherit; height:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display: inline-block; vertical-align: middle; background: rgb(255, 0, 0); background: rgba(0, 0, 0, 0.7);  padding: 0 10px; z-index:inherit;}

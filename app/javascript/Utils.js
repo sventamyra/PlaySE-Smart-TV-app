@@ -1,3 +1,4 @@
+var channel = "svt";
 var seqNo = 0;
 var clockOffset = 0;
 var setClockOffsetTimer = null;
@@ -14,6 +15,19 @@ var myHistory = [];
 var myPos = null;
 var loadingTimer = 0;
 var detailsOnTop = false;
+
+setChannel = function(newChannel) {
+    if (channel == newChannel && 
+        (channel != 'viasat' || !Viasat.anySubChannel())
+       )
+        return
+    channel = newChannel;
+    Viasat.resetSubChannel();
+    myLocation = null;
+    setLocation('index.html', undefined);
+    myHistory = []; 
+    Language.setLang();
+}
 
 getDeviceYear = function() {
     var pluginNNavi = document.getElementById("pluginObjectNNavi");
@@ -85,22 +99,27 @@ refreshLocation = function(entry)
 };
 
 // Methods for "restoring" item position during "history.back"
-setLocation = function(location, oldPos)
+replaceLocation = function(newlocation) {
+    setLocation(newlocation, undefined, true);
+}
+setLocation = function(location, oldPos, skipHistory)
 {
     if (location == myLocation)
         return;
     if (oldPos == undefined) {
         myPos = null;
-        myHistory.push(
-            {
-                loc: myLocation,
-                pos: 
+        if (!skipHistory) {
+            myHistory.push(
                 {
-                    col: columnCounter,
-                    top: isTopRowSelected
+                    loc: myLocation,
+                    pos: 
+                    {
+                        col: columnCounter,
+                        top: isTopRowSelected
+                    }
                 }
-            }
-        );
+            );
+        }
         detailsOnTop = false;
     } else {
         myPos = oldPos;
@@ -119,7 +138,8 @@ setLocation = function(location, oldPos)
         }
     } else {
         Language.fixAButton();
-        if (location.indexOf("categoryDetail.html") == -1)
+        if ((channel == "svt" && !location.match(/categoryDetail.html/)) ||
+            (channel == "viasat" && !location.match(/categories.html/)))
             Language.fixBButton();
     }
     if ((isDetails && !detailsOnTop) || !detailsOnTop)
@@ -174,6 +194,7 @@ dispatch = function(NewLocation, Refresh) {
     case "LastChance":
     case "Latest":
     case "LatestNews":
+    case "LatestClips":
         Section.onLoad(NewLocation, Refresh);
         break;
 
@@ -342,12 +363,15 @@ setDateOffset = function () {
     timeXhr.send();
 };
 
-dateToString = function (Date) {
+dateToString = function (Date,separator) {
     var Day = Date.getDate()
     Day = Day < 10 ?  "0" + Day : "" + Day;
     var Month = Date.getMonth()+1;
     Month = Month < 10 ?  "0" + Month : "" + Month;
-    return Date.getFullYear() + Month + Day;
+    if (separator)
+        return Date.getFullYear() + separator + Month + separator + Day;
+    else
+        return Date.getFullYear() + Month + Day;
 }
 
 tsToClock = function (ts)
@@ -373,8 +397,8 @@ fixLink = function (ImgLink)
     }
 };
 
-requestUrl = function(url, cbSucces, cbError, cbComplete) {
-    var requestedLocation = {loc:myLocation, refLoc:myRefreshLocation};
+requestUrl = function(url, callLoadFinished, refresh, cbSucces, cbError, cbComplete) {
+    var requestedLocation = {loc:myLocation, refLoc:myRefreshLocation, channel:channel};
     $.support.cors = true;
     $.ajax(
         {
@@ -409,6 +433,8 @@ requestUrl = function(url, cbSucces, cbError, cbComplete) {
             complete: function(xhr, status)
             {
                 callUrlCallBack(requestedLocation, cbComplete, status, xhr);
+                if (callLoadFinished && isRequestStillValid(requestedLocation))
+                    loadFinished(status=="success", refresh);
             }
         }
     );
@@ -418,12 +444,80 @@ callUrlCallBack = function(requestedLocation,cb,status,xhr) {
     if (cb && isRequestStillValid(requestedLocation))
         cb(status, xhr);
     else if (cb)
-        Log("url skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " Now:" + myLocation + " " +  myRefreshLocation);
+        Log("url skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " Now:" + myLocation + " " +  myRefreshLocation);
 };
 
 isRequestStillValid = function (request) {
-    return (request.loc == myLocation && request.refLoc == myRefreshLocation);x
+    return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==channel);
 }
+
+getHistory = function(Name) {
+    var Prefix = document.title;
+    if (myRefreshLocation)
+        Prefix = myRefreshLocation.replace(/.+&history=/, "");
+    return Prefix.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/';
+}
+
+loadFinished = function(success, refresh) {
+
+    if (success) {
+        Log("itemCounter:" + itemCounter);
+        if (!restorePosition() && !refresh)
+            $("#content-scroll").show();
+    } else {
+        if (!refresh)
+            $("#content-scroll").show();
+    }
+}
+
+toHtml = function(Item) {
+
+    var html;
+    var IsLiveText;
+   
+    if(itemCounter % 2 == 0){
+	if(itemCounter > 0){
+	    html = '<div class="scroll-content-item topitem">';
+	}
+	else{
+	    html = '<div class="scroll-content-item selected topitem">';
+	}
+    }
+    else{
+	html = '<div class="scroll-content-item bottomitem">';
+    }
+
+    IsLiveText = (Item.is_live || Item.is_channel) ? " is-live" : "";
+    html += '<div class="scroll-item-img">';
+    html += Item.link_prefix + Item.link + '&history=' + getHistory(Item.name) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="240" height="135" alt="' + Item.name + '" /></a>';
+
+    if (Item.is_live && !Item.running) {
+	html += '<span class="topoverlay">LIVE</span>';
+	// html += '<span class="bottomoverlay">' + Item.starttime + ' - ' + endtime + '</span>';
+	html += '<span class="bottomoverlay">' + Item.starttime + '</span>';
+    }
+    else if (Item.is_live){
+	html += '<span class="topoverlayred">LIVE</span>';
+	// html += '<span class="bottomoverlayred">' + Item.starttime + ' - ' + endtime + '</span>';
+	html += '<span class="bottomoverlayred">' + Item.starttime + '</span>';
+    }
+    html += '</div>';
+    html += '<div class="scroll-item-name">';
+    html +=	'<p><a href="#">' + Item.name + '</a></p>';
+    html += '<span class="item-date">' + Item.description + '</span>';
+    html += '</div>';
+    html += '</div>';
+    
+    if(itemCounter % 2 == 0){
+	$('#topRow').append($(html));
+    }
+    else{
+	$('#bottomRow').append($(html));
+    }
+    html = null;
+    itemCounter++;
+};
+
 
 Log = function (msg) 
 {

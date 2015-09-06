@@ -160,8 +160,12 @@ Player.setVideoURL = function(url, srtUrl)
 
 Player.setDuration = function(duration)
 {
-    if (duration.length > 0) 
-    {
+    if (duration*1 == duration) {
+        this.sourceDuration = duration * 1000;
+    } else if (duration.length > 0) {
+        if (duration.match(/^[0-9]+$/)) {
+            this.sourceDuration = duration
+        }
         var h = this.GetDigits("h", duration);
         var m = this.GetDigits("min", duration);
         var s = this.GetDigits("sek", duration);
@@ -889,6 +893,11 @@ Player.startTimeToMinutes = function (startTime) {
 };
 
 Player.GetPlayUrl = function(gurl, isLive) {
+    if (channel == "viasat") {
+        Viasat.getPlayUrl(gurl);
+        return 0;
+    }
+
     var url_param = '?output=json';
 
     gurl = fixLink(gurl);
@@ -990,6 +999,9 @@ Player.getSubtitlesEnabled = function () {
 };
 
 Player.fetchSubtitle = function (srtUrl) {
+    if (channel == "viasat")
+        return Viasat.fetchSubtitle(srtUrl)
+
     var subtitleXhr = new XMLHttpRequest();
 
     subtitleXhr.onreadystatechange = function () {
@@ -1007,6 +1019,7 @@ Player.fetchSubtitle = function (srtUrl) {
 
 Player.parseSubtitle = function (xhr) {
     try {
+        subtitles = [];
         var srtdata    = xhr.responseText;
         var srtContent = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
         srtContent     = srtContent.split('\n\n');

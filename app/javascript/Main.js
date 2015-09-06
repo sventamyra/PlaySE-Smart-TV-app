@@ -13,6 +13,7 @@ Main.onLoad = function(refresh)
     if (!refresh)
 	Header.display(document.title);
     if (!this.loaded) {
+        $("#page-cover").hide();
         loadingStart();
         this.loaded = true;
 	Audio.init();
@@ -41,7 +42,27 @@ Main.onUnload = function()
 
 Main.loadXml = function(refresh){
     $("#content-scroll").hide();
+    switch (channel) {
+    case "svt":
+        Main.loadSvt(refresh);
+        break;
+    case "viasat":
+        Main.loadViasat(refresh);
+        break;
+    }
+};
+
+Main.getLocation = function (refresh)
+{
+    if (refresh)
+        return myRefreshLocation;
+    return myLocation;
+};
+    
+Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
+               false,
+               null,
                function(status, data)
                {
                    data = data.responseText.split("<section class=\"play_js-hovered-list play_videolist-group")[0];
@@ -57,17 +78,27 @@ Main.loadXml = function(refresh){
 
 Main.loadPopular = function(refresh){
     requestUrl('http://www.svtplay.se/populara?sida=1',
+               true,
+               refresh,
                function(status, data)
                {
                    data = data.responseText.split("div id=\"gridpage-content")[1];
                    Section.decode_data(data, recommendedLinks);
-                   Log("itemCounter:" + itemCounter);
-                   if (!restorePosition() && !refresh)
-                       $("#content-scroll").show();
-               },
-               function(status, data) {
-                   if (!refresh)
-                       $("#content-scroll").show();
+               }
+              );
+};
+
+Main.loadViasat = function(refresh) {
+    var newChannel = this.getLocation(refresh).match(/viasat_channel=([0-9]+|reset)/);
+    newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
+    if (newChannel)
+        myHistory = [];
+    requestUrl(Viasat.getUrl("main", newChannel),
+               true,
+               refresh,
+               function(status, data)
+               {
+                   Viasat.decode(data.responseText);
                }
               );
 };

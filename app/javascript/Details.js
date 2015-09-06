@@ -49,16 +49,10 @@ Details.Geturl=function(detailsUrl){
     var name=url;
     if (url.indexOf("ilink=")>0 || url.indexOf("name=")>0)
     {
-		parse = url.substring(url.indexOf("=")+1,url.length);
-		if (url.indexOf("&")>0)
-		{
-			name = parse.substring(0,parse.indexOf("&"));
-			
-		}
-		else{
-			name = parse;
-		}
-	}
+        name = url.match(/(ilink|name)=(.+)&history=/)[2]
+    }
+    if (channel == "viasat")
+        name = Viasat.getDetailsUrl(name);
     return name;
 };
 
@@ -161,6 +155,10 @@ Details.CountDown = function()
 };
 
 Details.GetPlayUrl = function(){
+    if (channel == "viasat") {
+        Viasat.getPlayUrl(gurl);
+        return 0;
+    }
         var url_param = '?output=json';
         var gurl = fixLink(this.Geturl());
         if (gurl.indexOf('?') != -1)
@@ -217,6 +215,8 @@ Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
     Details.url = fixLink(this.Geturl());
     requestUrl(Details.url,
+               false,
+               null,
                function(status, data)
                {
                    var html;
@@ -289,6 +289,14 @@ Details.fetchData = function(detailsUrl) {
 };
 
 Details.getData = function(url, data) {
+
+    if (channel == "svt") 
+        return Details.getSvtData(url, data);
+    else if (channel == "viasat") 
+        return Viasat.getDetailsData(url,data)
+};
+
+Details.getSvtData = function(url, data) {
     if (url.indexOf("/video/") == -1 && url.indexOf("/klipp/") == -1 && url.indexOf("/kanaler/") == -1) {
         return Details.getShowData(url, data);
     }
@@ -365,7 +373,8 @@ Details.getData = function(url, data) {
             // Log(DetailsImgLink);
             var DetailsClock = "";
             try {
-                DetailsClock = $video.find('p').find('time').attr('datetime').replace(/.+T([^+]+)+.+/, "$1"); 
+                DetailsClock = $video.find('p').find('time').attr('datetime'); 
+                DetailsClock = DetailsClock.replace(/.+T([^+]+)+.+/, "$1");
             } catch(err) {
                 Log("Exception:" + err.message);
             }
@@ -511,10 +520,12 @@ Details.startPlayer = function()
     
 };
 
-function dataLengthToVideoLength($video)
+function dataLengthToVideoLength($video, duration)
 {
     VideoLength = "";
-    var duration = $video.find('section').find('a').attr('data-length');
+    if (!duration && $video) {
+        duration = $video.find('section').find('a').attr('data-length');
+    }
 
     if (!duration)
         return VideoLength;

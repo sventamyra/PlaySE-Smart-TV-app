@@ -1,6 +1,6 @@
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
-var bwidths = [0, 400000, 700000, 1200000, 2000000, 3000000];
-var lbwidths = [400000, 700000, 1200000, 2000000, 3000000];
+var bwidths = [0, 400000, 700000, 1200000, 2000000, 4000000];
+var lbwidths = [400000, 700000, 1200000, 2000000, 4000000];
 var target = 1200000;
 var livetarget = 1200000;
 
@@ -35,67 +35,63 @@ Resolution.getTarget = function(){
 };
 
 Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl){
-	alert('target: ' + target);
-	if(target > 0){
+	// alert('target: ' + target + " videoUrl:" + videoUrl);
+        var prefix = videoUrl.replace(/[^\/]+$/,"");
+        if (target > 0 && videoUrl.match(/\.m3u8/)){
 		$.support.cors = true;
 		 $.ajax(
 	   {
 	       type: 'GET',
 	       url: videoUrl,
-			timeout: 15000,
-	       success: function(data)
+	       timeout: 15000,
+	       success: function(data, status, xhr)
 	       {
-                                var bandwidths = [];
-                                var urls = [];
-				var sa = data.split("\n");
-				var ii = 0;
-				for (ii = 0; ii < sa.length; ii++) {
-					if(sa[ii].indexOf("#") > -1 && sa[ii].indexOf("#EXTM3U") < 0){
-						var bTag = "BANDWIDTH=";
-						var bandwidthString = sa[ii].substring(sa[ii].indexOf(bTag) + bTag.length);
-						bandwidthString = bandwidthString.substring(0, bandwidthString.indexOf(","));
-						bandwidths.push(bandwidthString);
-		        	}
-		        	else if(sa[ii].indexOf("#EXTM3U") < 0){
-		        		urls.push(sa[ii]);
-		        	}
-				}
-				var ij = 0;
-				var current = 0;
-				var currentId = 0;
-				for (ij = 0; ij < bandwidths.length; ij++) {
-					alert(bandwidths[ij]);
-					if(isLive == 0){
-						if(+bandwidths[ij] <= +target){
-							alert(bandwidths[ij]);
-							if(+bandwidths[ij] > +current){
-								alert(bandwidths[ij]);
-								current = bandwidths[ij];
-								currentId = ij;
-							}
-						}
-					}
-					else{
-						if(+bandwidths[ij] <= +livetarget){
-							alert(bandwidths[ij]);
-							if(+bandwidths[ij] > +current){
-								alert(bandwidths[ij]);
-								current = bandwidths[ij];
-								currentId = ij;
-							}
-						}
-					}
-				}
-				alert('current: ' + current);
-		   Player.setVideoURL(urls[currentId] + "|COMPONENT=HLS", srtUrl);
-				Player.playVideo();
-				
+                   // alert(xhr.responseText);
+		   var bandwidths = xhr.responseText.match(/^#.+BANDWIDTH=([0-9]+)/mg);
+                   var urls = xhr.responseText.match(/^([^#]+)$/mg);
+
+		   var ij = 0;
+		   var current = 0;
+		   var currentId = 0;
+		   for (ij = 0; ij < bandwidths.length; ij++) {
+                       bandwidths[ij]=bandwidths[ij].replace(/.*BANDWIDTH=/,"");
+		       if(isLive == 0){
+			   if(+bandwidths[ij] <= +target){
+			       // alert(bandwidths[ij]);
+			       if(+bandwidths[ij] > +current){
+				   // alert(bandwidths[ij]);
+				   current = bandwidths[ij];
+				   currentId = ij;
+			       }
+			   }
+		       }
+		       else{
+			   if(+bandwidths[ij] <= +livetarget){
+			       // alert(bandwidths[ij]);
+			       if(+bandwidths[ij] > +current){
+				   // alert(bandwidths[ij]);
+				   current = bandwidths[ij];
+				   currentId = ij;
+			       }
+			   }
+		       }
+		   }
+		   Log('current: ' + current);
+                   videoUrl = urls[currentId]
+                   if (!videoUrl.match(/^http/))
+                       videoUrl = prefix + videoUrl;
+		   Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl);
+		   Player.playVideo();
+		   
 	       }
 	   });
 	}
 	else{
-	    Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl);
-		Player.playVideo();
+            if (videoUrl.match(/\.m3u8/))
+	        Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl);
+            else
+	        Player.setVideoURL(videoUrl, srtUrl);
+	    Player.playVideo();
 	}
 
 };

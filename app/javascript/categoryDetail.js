@@ -6,18 +6,19 @@ var categoryDetail =
 
 categoryDetail.onLoad = function(refresh)
 {
-    var location = categoryDetail.getLocation(refresh);
-    if (location.indexOf("&tab_index=") == -1) {
-        categoryDetail.tabs = [];
-        categoryDetail.tab_index = 0;
-    } else {
-        categoryDetail.tab_index = +location.match(/&tab_index=([0-9]+)/)[1];
-    }
-
-    if (!detailsOnTop)
-	this.loadXml(this.Geturl(refresh));
     if (!refresh)
 	PathHistory.GetPath();
+
+    if (!detailsOnTop) {
+        var location = categoryDetail.getLocation(refresh);
+        if (location.indexOf("&tab_index=") == -1) {
+            categoryDetail.tabs = [];
+            categoryDetail.tab_index = 0;
+        } else {
+            categoryDetail.tab_index = +location.match(/&tab_index=([0-9]+)/)[1];
+        }
+	this.loadXml(this.Geturl(refresh), refresh);
+    }
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -33,14 +34,18 @@ categoryDetail.setNextLocation = function()
     var myNewLocation = myLocation;
     if (detailsOnTop)
         myNewLocation = getOldLocation();
-
-    myNewLocation = myNewLocation.replace(/([^\/]+\/&tab_index=[0-9]+)*$/, this.getNextName());
-    setLocation(myNewLocation + "/&tab_index=" + this.getNextTabIndex());
+    if (myNewLocation.match(/tab_index=[0-9]+/)) {
+        // Name to be replaced exists in History
+        myNewLocation = myNewLocation.replace(/[^\/]+\/$/, this.getNextName() + '/');
+    } else
+        myNewLocation = myNewLocation + this.getNextName() + '/';
+    myNewLocation = myNewLocation.replace(/(&tab_index=[0-9]+)?&history/,"&tab_index=" + this.getNextTabIndex() + "&history");
+    setLocation(myNewLocation);
 };
 
 categoryDetail.getNextName = function()
 {
-    return categoryDetail.tabs[this.getNextTabIndex()].name;
+    return categoryDetail.tabs[categoryDetail.getNextTabIndex()].name;
 };
 
 categoryDetail.getCategoryName = function()
@@ -75,26 +80,40 @@ categoryDetail.Geturl=function(refresh){
     {
 		// parse = url.substring(url.indexOf("=")+13,url.length);
 		parse = url.substring(url.indexOf("=")+1,url.length);
-		if (url.indexOf("&")>0)
+		if (url.indexOf("&history")>0)
 		{
-			name = parse.substring(0,parse.indexOf("&"));
+			name = parse.substring(0,parse.indexOf("&history"));
 			
 		}
 		else{
 			name = parse;
 		}
 	}
-    return name.replace("tvcategories\/", "");
+    return name.replace(/&tab_index=[0-9]+/, "");
 };
 
-categoryDetail.loadXml = function(url){
+categoryDetail.loadXml = function(url, refresh) {
+    $("#content-scroll").hide();
 
     if (categoryDetail.tabs.length > categoryDetail.tab_index &&
         url == categoryDetail.tabs[categoryDetail.tab_index].href) {
         categoryDetail.fixBButton();
     };
 
+    switch (channel) {
+    case "svt":
+        categoryDetail.loadSvt(url, refresh);
+        break;
+    case "viasat":
+        categoryDetail.loadViasat(url, refresh);
+        break;
+    }
+};
+
+categoryDetail.loadSvt = function(url, refresh) {
     requestUrl(url,
+               true,
+               refresh,
                function(status, data)
                {
                    data = data.responseText.split("ul class=\"play_category__tab");
@@ -156,17 +175,32 @@ categoryDetail.loadXml = function(url){
                        else
                            Section.decode_data(data, recommendedLinks);
                    }
-                   Log("itemCounter:" + itemCounter);
-                   restorePosition();
                }
               );
 };
 
+categoryDetail.loadViasat = function(url, refresh) {
+
+    var url = Viasat.getUrl(url);
+    requestUrl(url,
+               false,
+               null,
+               function(status, data)
+               {
+                   itemCounter = 0;
+                   Viasat.decodeCategoryDetails(data.responseText, url, false, false, 
+                                                function() {loadFinished(true, refresh)}
+                                               );
+               },
+               function(status, data) {
+                   loadFinished(false, refresh);
+               }
+              );
+};
 
 categoryDetail.decode_data = function (categoryData) {
 
     try {
-        var html;
         var Name;
         var Link;
         var ImgLink;
@@ -191,32 +225,17 @@ categoryDetail.decode_data = function (categoryData) {
             ImgLink = fixLink(ImgLink);
             categoryData[k] = "";
 
-            if(itemCounter % 2 == 0){
-		if(itemCounter > 0){
-		    html = '<div class="scroll-content-item topitem">';
-		}
-		else{
-		    html = '<div class="scroll-content-item selected topitem">';
-		}
-	    }
-	    else{
-		html = '<div class="scroll-content-item bottomitem">';
-	    }
-	    html += '<div class="scroll-item-img">';
-	    html += '<a href="showList.html?name=' + Link + '&history=' + document.title + encodeURIComponent(Name) + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-	    html += '</div>';
-	    html += '<div class="scroll-item-name">';
-	    html +=	'<p><a href="#">' + Name + '</a></p>';
-	    //html += '<span class="item-date">' + Description + '</span>';
-	    html += '</div>';
-	    html += '</div>';
-	    if(itemCounter % 2 == 0){
-		$('#topRow').append($(html));
-	    }
-	    else{
-		$('#bottomRow').append($(html));
-	    }
-	    itemCounter++;
+            toHtml({name:Name,
+                    duration:"",
+                    is_live:false,
+                    is_channel:false,
+                    running:null,
+                    starttime:null,
+                    link:Link,
+                    link_prefix:'<a href="showList.html?name=',
+                    description:"",
+                    thumb:ImgLink
+                   })
         }
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + categoryData[k]);

@@ -4,7 +4,11 @@ var live =
 
 live.onLoad = function(refresh)
 {
-    document.title = 'Kanaler & livesändningar'
+    if (channel == "svt")
+        document.title = 'Kanaler & livesändningar'
+    else if (channel == "viasat")
+        document.title = 'Kanaler'
+
     if (!refresh) {
 	Header.display(document.title);
     }
@@ -50,7 +54,31 @@ function getimg(param,arr)
 
 live.getChannelsJson = function(refresh) {
     $("#content-scroll").hide();
+    if (channel == "svt") {
+        live.getSvtChannelJson(refresh);
+    } else if (channel == "viasat") {
+        live.getViasatChannelJson(refresh);
+    }
+};
+
+live.getViasatChannelJson = function (refresh) {
+ 
+    requestUrl(Viasat.getUrl("channels"),
+               true,
+               refresh,
+               function(status, data)
+               {
+                   Viasat.decodeChannels(data.responseText);
+                   data = null
+               }
+              );
+};
+
+live.getSvtChannelJson = function (refresh) {
+
     requestUrl('http://www.svtplay.se/kanaler',
+               false,
+               null,
                function(status, data)
                {
                    var html;
@@ -90,37 +118,17 @@ live.getChannelsJson = function(refresh) {
                        starttime = tsToClock(starttime);
                        endtime   = tsToClock(endtime);
                        Name = starttime + "-" + endtime + " " + $($video.children()[0]).text();
-		       if (itemCounter % 2 == 0) {
-		           if(itemCounter > 0){
-		               html = '<div class="scroll-content-item topitem">';
-		           }
-		           else{
-		               html = '<div class="scroll-content-item selected topitem">';
-		           }
-		       }
-		       else{
-			   html = '<div class="scroll-content-item bottomitem">';
-		       }
-		       
-		       
-		       html += '<div class="scroll-item-img">';
-		       html += '<a href="details.html?ilink=' + Link + '&history=' + encodeURIComponent(document.title + '/' + Name) + '/" class="ilink" data-length="' + Duration + '" is-live><img src="' + ImgLink + '" width="240" height="135" alt="" /></a>';
-		       html += '</div>';
-		       html += '<div class="scroll-item-name">';
-		       html +=	'<p><a href="#">' + Name + '</a></p>';
-		       html += '</div>';
-		       html += '</div>';
-		       
-		       if(itemCounter % 2 == 0){
-			   $('#topRow').append($(html));
-		       }
-		       else{
-			   $('#bottomRow').append($(html));
-		       }
-	               $video = html = null;
-                       // Log(Name);
-		       itemCounter++;
-
+                       toHtml({name:Name,
+                               duration:Duration,
+                               is_live:false,
+                               is_channel:true,
+                               running:false,
+                               starttime:"",
+                               link:Link,
+                               link_prefix:'<a href="details.html?ilink=',
+                               description:"",
+                               thumb:ImgLink
+                              });
 	           });
                    data = null;
 	       },
@@ -135,6 +143,8 @@ live.getChannelsJson = function(refresh) {
 live.getLiveJson = function(refresh) {
 
     requestUrl('http://www.svtplay.se/live',
+               true,
+               refresh,
                function(status, data)
                {
                    data = data.responseText.split("<article");
@@ -142,14 +152,7 @@ live.getLiveJson = function(refresh) {
                    data = ("<article" + data);
                    // Log("items:" + data.length + ", channels:" + itemCounter);
                    Section.decode_data(data);
-                   data = null;
-                   Log("itemCounter:" + itemCounter);
-                   if (!restorePosition() && !refresh)
-                       $("#content-scroll").show();
-               },
-               function(status, data) {
-                   if (!refresh)
-                       $("#content-scroll").show();
+                   data = null
                }
               );
 };

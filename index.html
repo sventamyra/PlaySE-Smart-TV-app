@@ -11,6 +11,8 @@
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/API/Plugin.js"></script>
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/jquery.js"></script>
     <script type="text/javascript" src="$MANAGER_WIDGET/Common/af/2.0.0/loader.js"></script>
+    <script type="text/javascript" src="$MANAGER_WIDGET/Common/OpenSrc/json2.js" language="javascript" charset="UTF-8"></script>
+
     <!-- <script type="text/javascript" src="$MANAGER_WIDGET/Common/OpenSrc/jquery-1.4.2.min.js"></script> -->
     <!-- js/jquery.min.js -->
     <script type="text/javascript" src="app/javascript/Audio.js"></script>
@@ -33,6 +35,7 @@
     <script type="text/javascript" src="app/javascript/SearchList.js"></script>
     <script type="text/javascript" src="app/javascript/showList.js"></script>
     <script type="text/javascript" src="app/javascript/Utils.js"></script>
+    <script type="text/javascript" src="app/javascript/Viasat.js"></script>
 
     <object id="pluginPlayer"      border="0" classid="clsid:SAMSUNG-INFOLINK-PLAYER" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
     <object id="pluginAudio"       border="0" classid="clsid:SAMSUNG-INFOLINK-AUDIO" style="opacity: 0.0; background-color: #000; width: 0px; height: 0px;"></object>
@@ -114,5 +117,8 @@
     	</div>
     </div>
     <div id="loading" class="sf-ui-loading-circle sf-ui-loading-circle-1" style="display:none;"></div>
+    <div id="exitBlock">
+      <span id="exitId" class="confirmExit">PRESS ENTER TO EXIT</span>
+    </div>
 </body>
 </html>

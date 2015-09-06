@@ -46,16 +46,15 @@ return isSwedish;
 
 Language.setLang = function(){
 	var value = this.checkLanguage();
-	alert(value);
 	var src="url(images/name.png)";
         this.fixAButton(value);
         this.fixBButton(value);
+        this.fixCButton(value);
 	if(value == 'English'){
 		$('#english').addClass('checked');
 		$('#swedish').removeClass('checked');
 
 		src="url(images/name-english.png)";
-		$("#channels").text('Channels & live broadcasts');
 		$("#searchshow").text('Search shows');
 	
 
@@ -64,7 +63,6 @@ Language.setLang = function(){
 		$("#search").text('Search');
 		
 		var ltxt = $("#location").text();
-		alert(ltxt);
 		ltxt = ltxt.replace('Populärt', 'Popular');
 		ltxt = ltxt.replace('Kategorier', 'Categories');
 		ltxt = ltxt.replace('Kanaler & livesändningar', 'Channels & live broadcasts');
@@ -76,8 +74,6 @@ Language.setLang = function(){
 
 		$('#swedish').addClass('checked');
 		$('#english').removeClass('checked');
-
-		$("#channels").text('Kanaler & livesändningar');
 		$("#searchshow").text('Sök programtitlar');
 		
 		$("#write").val('');
@@ -192,33 +188,38 @@ Language.setLanguage = function(value)
 Language.fixAButton = function(language) {
     if (!language)
         language = this.checkLanguage();
-    if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
-        if(language == 'English'){
-	    $("#a-button").text('Last Chance');
-        } else {
-	    $("#a-button").text('Sista Chansen');
-        }
-    } else if((myRefreshLocation && (myRefreshLocation.indexOf("LastChance.html")) != -1) || myLocation.indexOf("LastChance.html") != -1) {
-        if(language == 'English'){
-	    $("#a-button").text('Latest');
-        } else {
-	    $("#a-button").text('Senaste');
-        }
-    } else if((myRefreshLocation && (myRefreshLocation.indexOf("Latest.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
-        if(language == 'English'){
-	    $("#a-button").text('Latest News');
-        } else {
-	    $("#a-button").text('Senaste Nyheter');
-        }
-    } else {
-        if(language == 'English'){
-	    $("#a-button").text('Popular');
-        } else {
-	    $("#a-button").text('Populärt');
-        }
 
+    if (channel == "svt") {
+        if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
+            if(language == 'English'){
+	        $("#a-button").text('Last Chance');
+            } else {
+	        $("#a-button").text('Sista Chansen');
+            }
+        } else if((myRefreshLocation && (myRefreshLocation.indexOf("LastChance.html")) != -1) || myLocation.indexOf("LastChance.html") != -1) {
+            if(language == 'English'){
+	        $("#a-button").text('Latest');
+            } else {
+	        $("#a-button").text('Senaste');
+            }
+        } else if((myRefreshLocation && (myRefreshLocation.indexOf("Latest.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
+            if(language == 'English'){
+	        $("#a-button").text('Latest News');
+            } else {
+	        $("#a-button").text('Senaste Nyheter');
+            }
+        } else {
+            if(language == 'English'){
+	        $("#a-button").text('Popular');
+            } else {
+	        $("#a-button").text('Populärt');
+            }
+
+        }
+    } else if (channel == "viasat") {
+        Viasat.fixAButton(language);
     }
-}
+};
 
 Language.fixBButton = function(language)
 {
@@ -239,4 +240,25 @@ Language.getBButtonText = function(language)
 Language.isBButtonChanged = function()
 {
     return $("#b-button").text() != this.getBButtonText();
-}
+};
+
+Language.fixCButton = function(language)
+{
+    $("#c-button").text(this.getCButtonText(language))
+};
+
+Language.getCButtonText = function(language)
+{
+    if (!language)
+        language = this.checkLanguage();
+
+    if (channel == "svt") {
+        if(language == 'English')
+	    return 'Channels & live broadcasts';
+        else
+            return 'Kanaler & livesändningar';
+    } else if (channel == "viasat") {
+        return Viasat.getCButtonText(language);
+
+    }
+};

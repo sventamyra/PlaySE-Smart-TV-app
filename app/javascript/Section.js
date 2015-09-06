@@ -6,22 +6,26 @@ var Section =
 Section.onLoad = function(location, refresh)
 {
     var locationUrl;
-    switch (location)
-    {
-    case "LastChance.html":
-        document.title = 'Sista Chansen'
-        locationUrl    = 'http://www.svtplay.se/sista-chansen?sida=1'
-        break;
+    if (channel == "svt") {
+        switch (location)
+        {
+        case "LastChance.html":
+            document.title = 'Sista Chansen'
+            locationUrl    = 'http://www.svtplay.se/sista-chansen?sida=1'
+            break;
 
-    case "Latest.html":
-        document.title = 'Senaste'
-        locationUrl    = 'http://www.svtplay.se/senaste?sida=1'
-        break
+        case "Latest.html":
+            document.title = 'Senaste'
+            locationUrl    = 'http://www.svtplay.se/senaste?sida=1'
+            break
 
-    case "LatestNews.html":
-        document.title = 'Senaste Nyheter'
-        locationUrl    = 'http://www.svtplay.se/nyheter?sida=1'
-        break
+        case "LatestNews.html":
+            document.title = 'Senaste Nyheter'
+            locationUrl    = 'http://www.svtplay.se/nyheter?sida=1'
+            break
+        }
+    } else if (channel == "viasat") {
+        locationUrl = Viasat.getUrl(location)
     }
 
     if (!refresh) {
@@ -33,19 +37,28 @@ Section.onLoad = function(location, refresh)
 };
 
 Section.loadXml = function(locationUrl, refresh){
-
+    $("#content-scroll").hide();
     requestUrl(locationUrl,
+               false,
+               null,
                function(status, data)
                {
-                   if (locationUrl.indexOf("nyheter") != -1) {
-                       data = data.responseText.split("<section class=\"play_js-tabs")[0];
-                       data = "<section class" + data.split("<section class")[1];
-                   } else {
-                       data = data.responseText.split("div id=\"gridpage-content")[1];
+                   if (channel == "svt") {
+                       if (locationUrl.indexOf("nyheter") != -1) {
+                           data = data.responseText.split("<section class=\"play_js-tabs")[0];
+                           data = "<section class" + data.split("<section class")[1];
+                       } else {
+                           data = data.responseText.split("div id=\"gridpage-content")[1];
+                       }
+                       Section.decode_data(data);
+                       loadFinished(true, refresh);
+                   } else if (channel == "viasat") {
+                       Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(true, refresh)});
                    }
-                   Section.decode_data(data);
-                   Log("itemCounter:" + itemCounter);
-                   restorePosition();
+               },
+               function(status, data)
+               {
+                   loadFinished(false, refresh);
                }
               );
 };
@@ -56,6 +69,7 @@ Section.decode_recommended = function(data) {
         var Titles;
         var Name;
         var Link;
+        var LinkPrefix;
         var Description;
         var Duration;
         var ImgLink;
@@ -82,43 +96,25 @@ Section.decode_recommended = function(data) {
 	    if(Description.length > 55){
 		Description = Description.substring(0, 52)+ "...";
 	    }
-	    if(itemCounter % 2 == 0){
-		if(itemCounter > 0){
-		    html = '<div class="scroll-content-item topitem">';
-		}
-		else{
-		    html = '<div class="scroll-content-item selected topitem">';
-		}
-	    }
-	    else{
-		html = '<div class="scroll-content-item bottomitem">';
-	    }
-	    html += '<div class="scroll-item-img">';
             if (Link.indexOf("/video/") != -1 ) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
-	        html += '<a href="details.html?ilink=' + Link + '&history=' + document.title.replace(/\/$/,"") + '/' + encodeURIComponent(Name) +'/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="'+ Name + '" /></a>';
-            } else
-	        html += '<a href="showList.html?name=' + Link + '&history=' + document.title.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/" class="ilink"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-            if (data[k].match(/play_graphics-live-top--visible/)) {
-		html += '<span class="topoverlayred">LIVE</span>';
-		// html += '<span class="bottomoverlayred">' + starttime + ' - ' + endtime + '</span>';
-		html += '<span class="bottomoverlayred"></span>';
-	    }
+                LinkPrefix = '<a href="details.html?ilink=';
+            } else {
+                LinkPrefix = '<a href="showList.html?name=';
+            }
+
+            toHtml({name:Name,
+                    duration:Duration,
+                    is_live:data[k].match(/play_graphics-live-top--visible/),
+                    running:data[k].match(/play_graphics-live-top--visible/),
+                    is_channel:false,
+                    starttime:"",
+                    link:Link,
+                    link_prefix:LinkPrefix,
+                    description:Description,
+                    thumb:ImgLink
+                   })
             data[k] = "";
-	    html += '</div>';
-	    html += '<div class="scroll-item-name">';
-	    html +=	'<p><a href="#">' + Name + '</a></p>';
-	    html += '<span class="item-date">' + Description + '</span>';
-	    html += '</div>';
-	    html += '</div>';
-	    if(itemCounter % 2 == 0){
-		$('#topRow').append($(html));
-	    }
-	    else{
-		$('#bottomRow').append($(html));
-	    }
-	    html = null;
-	    itemCounter++;
 	}
         return recommendedLinks;
     } catch(err) {
@@ -128,15 +124,13 @@ Section.decode_recommended = function(data) {
 
 Section.decode_data = function(data, filter) {
     try {
-        var html;
         var Name;
         var Duration;
         var IsLive;
-        var IsLiveText;
         var running;
         var starttime;
         var Link;
-        var LinkPrefx;
+        var LinkPrefix;
         var Description;
         var ImgLink;
 
@@ -165,55 +159,26 @@ Section.decode_data = function(data, filter) {
 	    if (Description.length > 55){
 		Description = Description.substring(0, 52)+ "...";
 	    }
-            LinkPrefx = '<a href="showList.html?name=';
+            LinkPrefix = '<a href="showList.html?name=';
             if (Link.search("/klipp/") != -1 || Link.search("/video/") != -1) {
                 Duration = Duration[1];
-                LinkPrefx = '<a href="details.html?ilink=';
+                LinkPrefix = '<a href="details.html?ilink=';
             }
             else {
                 Duration = 0;
             }
-	    if(itemCounter % 2 == 0){
-		if(itemCounter > 0){
-		    html = '<div class="scroll-content-item topitem">';
-		}
-		else{
-		    html = '<div class="scroll-content-item selected topitem">';
-		}
-	    }
-	    else{
-		html = '<div class="scroll-content-item bottomitem">';
-	    }
 
-            IsLiveText = (IsLive) ? " is-live" : "";
-	    html += '<div class="scroll-item-img">';
-	    html += LinkPrefx + Link + '&history=' + document.title.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/" class="ilink" data-length="' + Duration + '"' + IsLiveText + '><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-
-	    if (IsLive && !running) {
-		html += '<span class="topoverlay">LIVE</span>';
-		// html += '<span class="bottomoverlay">' + starttime + ' - ' + endtime + '</span>';
-		html += '<span class="bottomoverlay">' + starttime + '</span>';
-	    }
-	    else if (IsLive){
-		html += '<span class="topoverlayred">LIVE</span>';
-		// html += '<span class="bottomoverlayred">' + starttime + ' - ' + endtime + '</span>';
-		html += '<span class="bottomoverlayred">' + starttime + '</span>';
-	    }
-	    html += '</div>';
-	    html += '<div class="scroll-item-name">';
-	    html +=	'<p><a href="#">' + Name + '</a></p>';
-	    html += '<span class="item-date">' + Description + '</span>';
-	    html += '</div>';
-	    html += '</div>';
-	    
-	    if(itemCounter % 2 == 0){
-		$('#topRow').append($(html));
-	    }
-	    else{
-		$('#bottomRow').append($(html));
-	    }
-	    html = null;
-	    itemCounter++;
+            toHtml({name:Name,
+                    duration:Duration,
+                    is_live:IsLive,
+                    is_channel:false,
+                    running:running,
+                    starttime:starttime,
+                    link:Link,
+                    link_prefix:LinkPrefix,
+                    description:Description,
+                    thumb:ImgLink
+                   })
 	}
     } catch(err) {
         Log("Section.decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);

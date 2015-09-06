@@ -35,23 +35,28 @@ SearchList.Geturl=function(refresh){
     return name;
 };
 
-
 SearchList.setPath = function(name, count, refresh) {
     document.title = "Sökning: " + name;
     if (refresh)
         return;
     Header.display('');
-    var title = this.urldecode(name);
-    var html;
-    html = '<li class="root-item"><a href="index.html" class="active">Sökning: ' + title + '</a></li>';
+    var title = document.title;
     if (count != undefined)
-        html += '<li class="root-item"><a href="index.html" class="active"> ' + count + '</a></li>';
-    $('.dropdown').html($(html));
+        title = title + '/' + count + '/'
+    Header.display(title);
 };
 
 SearchList.loadXml = function(refresh) {
+    $("#content-scroll").hide();
     var parentThis = this;
+    if (channel == "viasat") {
+        Viasat.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,true,refresh)});
+        return
+    }
+
     requestUrl('http://www.svtplay.se/sok?q='+this.Geturl(refresh),
+               false,
+               null,
                function(status, data)
                {
                    data = data.responseText.split("id=\"search-categories");
@@ -59,12 +64,15 @@ SearchList.loadXml = function(refresh) {
                    data = data.split("id=\"search-");
                    data.shift();
                    Section.decode_data(data.join(""));
-                   Log("itemCounter:" + itemCounter);
-                   restorePosition();
+                   SearchList.finish(parentThis, true, refresh);
                },
-               null,
-               function() {
-                   parentThis.setPath(parentThis.Geturl(refresh), itemCounter, refresh);
+               function(status, data) {
+                   SearchList.finish(parentThis, true, refresh);
                }
               );
+};
+
+SearchList.finish = function(parent, success, refresh) {
+    loadFinished(success, refresh);
+    parent.setPath(parent.Geturl(refresh), itemCounter, refresh);
 };

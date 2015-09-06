@@ -4,10 +4,10 @@ var showList =
 
 showList.onLoad = function(refresh)
 {
-    if (!detailsOnTop)
-	this.loadXml(refresh);
     if (!refresh)
 	PathHistory.GetPath();
+    if (!detailsOnTop)
+	this.loadXml(refresh);
 //	widgetAPI.sendReadyEvent();
 };
 
@@ -22,36 +22,48 @@ showList.Geturl=function(refresh){
     if (refresh)
         url = myRefreshLocation;
     var name="";
-    if (url.indexOf("=")>0)
+    if (url.indexOf("name=")>0)
     {
-        name = url.substring(url.indexOf("=")+1,url.indexOf("&"));
+        name = url.match(/name=(.+)&history=/)[1];
     }
-    Log(name);
     return name;
 };
 
 showList.loadXml = function(refresh)
 {
-    requestUrl(this.Geturl(refresh),
+    $("#content-scroll").hide();
+    var gurl = this.Geturl(refresh);
+    requestUrl(gurl,
+               false,
+               null,
                function(status, data)
                {
-                   data = data.responseText.split("id=\"videos-in-same-category")[0];
-                   if (!data.match("play_js-tabs")) {
-                       data = data.split("<article").slice(1).join("<article");
-                       Section.decode_data("<article" + data);
-                   } else {
-                       data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
-                       showList.decode_data(data);
+                   switch (channel) {
+                   case "svt":
+                       data = data.responseText.split("id=\"videos-in-same-category")[0];
+                       if (!data.match("play_js-tabs")) {
+                           data = data.split("<article").slice(1).join("<article");
+                           Section.decode_data("<article" + data);
+                       } else {
+                           data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
+                           showList.decode_data(data);
+                       }
+                       loadFinished(true, refresh);
+                       break;
+
+                   case "viasat":
+                       Viasat.decode(data.responseText, gurl, true, function(){loadFinished(true, refresh)});
+                       break;
                    }
-                   Log("itemCounter:" + itemCounter);
-                   restorePosition();
+               },
+               function(status, data) {
+                   loadFinished(false, refresh);
                }
               );
 };
 
 showList.decode_data = function(showData) {
     try {
-        var html; 
         var Name;
         var Duration;
         var Link;
@@ -77,37 +89,17 @@ showList.decode_data = function(showData) {
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
             ImgLink = fixLink(ImgLink);
             showData[k] = "";
-	    // if(Description.length > 55){
-	    //     Description = Description.substring(0, 52)+ "...";
-	    // }
-	    if(itemCounter % 2 == 0){
-		if(itemCounter > 0){
-		    html = '<div class="scroll-content-item topitem">';
-		}
-		else{
-		    html = '<div class="scroll-content-item selected topitem">';
-		}
-	    }
-	    else{
-		html = '<div class="scroll-content-item bottomitem">';
-	    }
-	    html += '<div class="scroll-item-img">';
-	    html += '<a href="details.html?ilink=' + Link + '&history=' + document.title + encodeURIComponent(Name) + '/" class="ilink" data-length="' + Duration + '"><img src="' + ImgLink + '" width="240" height="135" alt="' + Name + '" /></a>';
-	    html += '</div>';
-	    html += '<div class="scroll-item-name">';
-	    html +=	'<p><a href="#">' + Name + '</a></p>';
-	    //html += '<span class="item-date">' + Description + '</span>';
-	    html += '</div>';
-	    html += '</div>';
-	    
-	    if(itemCounter % 2 == 0){
-		$('#topRow').append($(html));
-	    }
-	    else{
-		$('#bottomRow').append($(html));
-	    }
-	    html = null;
-	    itemCounter++;
+            toHtml({name:Name,
+                    duration:Duration,
+                    is_live:false,
+                    is_channel:false,
+                    running:null,
+                    starttime:null,
+                    link:Link,
+                    link_prefix:'<a href="details.html?ilink=',
+                    description:"",
+                    thumb:ImgLink
+                   })
 	}
     } catch(err) {
         Log("decode_data Exception:" + err.message + ". showData[" + k + "]:" + showData[k]);

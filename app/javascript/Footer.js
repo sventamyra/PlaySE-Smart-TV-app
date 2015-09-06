@@ -21,7 +21,7 @@ Footer.display = function(mute)
 	html+= rightcorner + leftcorner;
 	html+= '<div class="footer-box-r"><img src="images/green.png" alt="" border="0" /><span id="b-button" >Kategorier</span></div>';
 	html+= rightcorner + leftcorner; 
-	html+= '<div class="footer-box-r"><img src="images/yellow.png" alt="" border="0" /><span id="channels">Kanaler & livesändningar</span></div>';
+	html+= '<div class="footer-box-r"><img src="images/yellow.png" alt="" border="0" /><span id="c-button">Kanaler & livesändningar</span></div>';
 	html+= rightcorner + leftcorner; 
 	html+= '<div class="footer-box-r"><img src="images/blue.png" alt="" border="0" /><span id="searchshow">Sök programtitlar</span></div>';
 	html+= rightcorner;
