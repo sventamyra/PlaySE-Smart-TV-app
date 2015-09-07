@@ -761,7 +761,7 @@ Viasat.parseSubtitles = function (data) {
             {
                 start: Player.srtTimeToMS(start.replace(/:([0-9]+)$/,",$1")),
                 stop:  Player.srtTimeToMS(stop.replace(/:([0-9]+)$/,",$1")),
-                text:  text.join("<br />").replace(/<br \/>$/, "").replace(/([^.?!]+ )I([a-\xf6]+)/, "$1l$2").replace(/([a-\xf6]+)I/, "\\1l")
+                text:  text.join("<br />").replace(/<br \/>$/, "").replace(/([^.?!]+ )I([a-\xf6]+)/, "$1l$2").replace(/([a-\xf6]+)I/, "$1l")
             }
         )
     }
