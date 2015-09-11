@@ -8,6 +8,9 @@ Categories.onLoad = function(refresh)
     document.title = "Kategorier";
     if (channel == "viasat")
         Viasat.updateCategoryTitle();
+    else if (channel == "kanal5")
+        Kanal5.updateCategoryTitle();
+
     if (!refresh) {
 	Header.display(document.title);
     }
@@ -28,6 +31,9 @@ Categories.loadXml = function(refresh) {
         break;
     case "viasat":
         Categories.loadViasat(refresh);
+        break;
+    case "kanal5":
+        Categories.loadKanal5(refresh);
         break;
     }
 };
@@ -51,18 +57,11 @@ Categories.loadSvt = function(refresh) {
 	               var ImgLink  = $video.find('img').attr('data-imagename');
                        if (!ImgLink) ImgLink = $video.find('img').attr('src');
                        ImgLink = fixLink(ImgLink);
-
-                       toHtml({name:Name,
-                               duration:"",
-                               is_live:false,
-                               is_channel:false,
-                               running:null,
-                               starttime:null,
-                               link:Link,
-                               link_prefix:'<a href="categoryDetail.html?category=',
-                               description:"",
-                               thumb:ImgLink
-                              })
+                       showToHtml(Name,
+                                  ImgLink,
+                                  Link,
+                                  '<a href="categoryDetail.html?category='
+                                 );
 	               $tmpData = $video = null;
                    });
                    data = null;
@@ -83,13 +82,17 @@ Categories.loadViasat = function(refresh) {
                null,
                function(status, data)
                {
-                   Viasat.decodeCategories(data.responseText, url, function(){loadFinished(true, refresh)});
+                   Viasat.decodeCategories(data.responseText, url, function(){loadFinished(status, refresh)});
                    data = null;
                },
                function(status, data) {
-                   loadFinished(false, refresh);
+                   loadFinished(status, refresh);
                }
               );
+};
+
+Categories.loadKanal5 = function(refresh) {
+    Kanal5.getAllShows(function(){loadFinished("success", refresh)});
 };
 //window.location = 'categoryDetail.html?category=' + ilink + '&history=Kategorier/' + iname +'/';
 

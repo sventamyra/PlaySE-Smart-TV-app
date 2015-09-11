@@ -218,6 +218,8 @@ Language.fixAButton = function(language) {
         }
     } else if (channel == "viasat") {
         Viasat.fixAButton(language);
+    } else if (channel == "kanal5") {
+        Kanal5.fixAButton(language);
     }
 };
 
@@ -231,6 +233,9 @@ Language.getBButtonText = function(language)
     if (!language)
         language = this.checkLanguage();
 
+    if (channel == "kanal5")
+        return Kanal5.getBButtonText(language);
+  
     if(language == 'English')
         return 'Categories';
     else
@@ -259,6 +264,7 @@ Language.getCButtonText = function(language)
             return 'Kanaler & livesändningar';
     } else if (channel == "viasat") {
         return Viasat.getCButtonText(language);
-
+    } else if (channel == "kanal5") {
+        return Kanal5.getCButtonText(language);
     }
 };

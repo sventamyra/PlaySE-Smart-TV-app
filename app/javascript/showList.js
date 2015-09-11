@@ -34,8 +34,6 @@ showList.loadXml = function(refresh)
     $("#content-scroll").hide();
     var gurl = this.Geturl(refresh);
     requestUrl(gurl,
-               false,
-               null,
                function(status, data)
                {
                    switch (channel) {
@@ -48,16 +46,20 @@ showList.loadXml = function(refresh)
                            data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
                            showList.decode_data(data);
                        }
-                       loadFinished(true, refresh);
+                       loadFinished(status, refresh);
                        break;
 
                    case "viasat":
-                       Viasat.decode(data.responseText, gurl, true, function(){loadFinished(true, refresh)});
+                       Viasat.decode(data.responseText, gurl, true, function(){loadFinished(status, refresh)});
+                       break;
+
+                   case "kanal5":
+                       Kanal5.decode(data.responseText, {name:"showList", url:gurl}, true, function(){loadFinished(status, refresh)});
                        break;
                    }
                },
                function(status, data) {
-                   loadFinished(false, refresh);
+                   loadFinished(status, refresh);
                }
               );
 };

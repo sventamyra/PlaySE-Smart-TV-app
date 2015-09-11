@@ -188,12 +188,12 @@ categoryDetail.loadViasat = function(url, refresh) {
                function(status, data)
                {
                    itemCounter = 0;
-                   Viasat.decodeCategoryDetails(data.responseText, url, false, false, 
-                                                function() {loadFinished(true, refresh)}
-                                               );
+                   Viasat.decode_shows(data.responseText, url, false, false, 
+                                       function() {loadFinished(status, refresh)}
+                                      );
                },
                function(status, data) {
-                   loadFinished(false, refresh);
+                   loadFinished(status, refresh);
                }
               );
 };
@@ -224,18 +224,7 @@ categoryDetail.decode_data = function (categoryData) {
             }
             ImgLink = fixLink(ImgLink);
             categoryData[k] = "";
-
-            toHtml({name:Name,
-                    duration:"",
-                    is_live:false,
-                    is_channel:false,
-                    running:null,
-                    starttime:null,
-                    link:Link,
-                    link_prefix:'<a href="showList.html?name=',
-                    description:"",
-                    thumb:ImgLink
-                   })
+            showToHtml(Name, ImgLink, Link);
         }
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + categoryData[k]);

@@ -26,6 +26,8 @@ Section.onLoad = function(location, refresh)
         }
     } else if (channel == "viasat") {
         locationUrl = Viasat.getUrl(location)
+    } else if (channel == "kanal5") {
+        locationUrl = Kanal5.getUrl(location);
     }
 
     if (!refresh) {
@@ -39,8 +41,6 @@ Section.onLoad = function(location, refresh)
 Section.loadXml = function(locationUrl, refresh){
     $("#content-scroll").hide();
     requestUrl(locationUrl,
-               false,
-               null,
                function(status, data)
                {
                    if (channel == "svt") {
@@ -51,14 +51,16 @@ Section.loadXml = function(locationUrl, refresh){
                            data = data.responseText.split("div id=\"gridpage-content")[1];
                        }
                        Section.decode_data(data);
-                       loadFinished(true, refresh);
+                       loadFinished(status, refresh);
                    } else if (channel == "viasat") {
-                       Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(true, refresh)});
+                       Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(status, refresh)});
+                   } else if (channel == "kanal5") {
+                       Kanal5.decode(data.responseText, {tag:"section",url:locationUrl}, false, function() {loadFinished(status, refresh)});
                    }
                },
                function(status, data)
                {
-                   loadFinished(false, refresh);
+                   loadFinished(status, refresh);
                }
               );
 };

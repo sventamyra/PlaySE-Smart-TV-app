@@ -49,6 +49,9 @@ Main.loadXml = function(refresh){
     case "viasat":
         Main.loadViasat(refresh);
         break;
+    case "kanal5":
+        Main.loadKanal5(refresh);
+        break;
     }
 };
 
@@ -61,8 +64,6 @@ Main.getLocation = function (refresh)
     
 Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
-               false,
-               null,
                function(status, data)
                {
                    data = data.responseText.split("<section class=\"play_js-hovered-list play_videolist-group")[0];
@@ -78,13 +79,15 @@ Main.loadSvt = function(refresh) {
 
 Main.loadPopular = function(refresh){
     requestUrl('http://www.svtplay.se/populara?sida=1',
-               true,
-               refresh,
                function(status, data)
                {
                    data = data.responseText.split("div id=\"gridpage-content")[1];
                    Section.decode_data(data, recommendedLinks);
-               }
+               },
+               null,
+               null,
+               true,
+               refresh
               );
 };
 
@@ -94,11 +97,28 @@ Main.loadViasat = function(refresh) {
     if (newChannel)
         myHistory = [];
     requestUrl(Viasat.getUrl("main", newChannel),
-               true,
-               refresh,
                function(status, data)
                {
                    Viasat.decode(data.responseText);
+               },
+               null,
+               null,
+               true,
+               refresh,
+              );
+};
+
+Main.loadKanal5 = function(refresh) {
+    var newChannel = this.getLocation(refresh).match(/kanal5_channel=([0-9]+|reset)/);
+    newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
+    if (newChannel)
+        myHistory = [];
+    var url = Kanal5.getUrl("main", newChannel);
+    requestUrl(url,
+               function(status, data)
+               {
+                   Kanal5.decode(data.responseText, {tag:"main",url:url}, false,
+                                 function() {loadFinished(status, refresh)});
                }
               );
 };

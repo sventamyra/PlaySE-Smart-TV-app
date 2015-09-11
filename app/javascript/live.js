@@ -8,6 +8,8 @@ live.onLoad = function(refresh)
         document.title = 'Kanaler & livesändningar'
     else if (channel == "viasat")
         document.title = 'Kanaler'
+    else if (channel == "kanal5")
+        document.title = 'Kanaler'
 
     if (!refresh) {
 	Header.display(document.title);
@@ -58,27 +60,36 @@ live.getChannelsJson = function(refresh) {
         live.getSvtChannelJson(refresh);
     } else if (channel == "viasat") {
         live.getViasatChannelJson(refresh);
+    } else if (channel == "kanal5") {
+        live.getKanal5ChannelJson(refresh);
     }
+
 };
 
 live.getViasatChannelJson = function (refresh) {
  
     requestUrl(Viasat.getUrl("channels"),
-               true,
-               refresh,
                function(status, data)
                {
                    Viasat.decodeChannels(data.responseText);
                    data = null
-               }
+               },
+               null,
+               null,
+               true,
+               refresh
               );
+};
+
+live.getKanal5ChannelJson = function (refresh) {
+ 
+    Kanal5.decodeChannels();
+    loadFinished("success", refresh);
 };
 
 live.getSvtChannelJson = function (refresh) {
 
     requestUrl('http://www.svtplay.se/kanaler',
-               false,
-               null,
                function(status, data)
                {
                    var html;
@@ -143,8 +154,6 @@ live.getSvtChannelJson = function (refresh) {
 live.getLiveJson = function(refresh) {
 
     requestUrl('http://www.svtplay.se/live',
-               true,
-               refresh,
                function(status, data)
                {
                    data = data.responseText.split("<article");
@@ -153,7 +162,11 @@ live.getLiveJson = function(refresh) {
                    // Log("items:" + data.length + ", channels:" + itemCounter);
                    Section.decode_data(data);
                    data = null
-               }
+               },
+               null,
+               null,
+               true,
+               refresh
               );
 };
 

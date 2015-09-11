@@ -245,6 +245,7 @@ Buttons.keyHandleForList = function()
         }
         else {
             Log("Key repeated, first time is ignored: " + keyCode + " KeyHeld:" + keyHeld);
+            widgetAPI.blockNavigation(event)
             keyHeld = true;
             window.clearTimeout(keyTimer);
 	    keyTimer = window.setTimeout(this.clearKey, 600);
@@ -787,6 +788,12 @@ Buttons.handleMenuKeys = function(keyCode){
             } else {
 	        setLocation('Latest.html');
             }
+        } else if (channel == "kanal5") {
+	    if ($("#a-button").text().indexOf("Pop") != -1) {
+	        setLocation('index.html');
+            } else {
+	        setLocation('Latest.html');
+            }
         }
 
 	break;
@@ -797,6 +804,8 @@ Buttons.handleMenuKeys = function(keyCode){
 	        categoryDetail.setNextLocation();
             else if (channel == "viasat")
                 Categories.setNextLocation();
+            else if (channel == "kanal5")
+	        setLocation('categories.html');
         } else {
 	    setLocation('categories.html');
         }
@@ -853,6 +862,10 @@ Buttons.handleMenuKeys = function(keyCode){
     case tvKey.KEY_6:
     case tvKey.KEY_8:
         setChannel("viasat");
+        break;
+    case tvKey.KEY_5:
+    case tvKey.KEY_9:
+        setChannel("kanal5");
         break;
     }
 };

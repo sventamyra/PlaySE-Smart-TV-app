@@ -50,13 +50,13 @@ SearchList.loadXml = function(refresh) {
     $("#content-scroll").hide();
     var parentThis = this;
     if (channel == "viasat") {
-        Viasat.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,true,refresh)});
+        Viasat.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
+        return
+    } else if (channel == "kanal5") {
+        Kanal5.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
         return
     }
-
     requestUrl('http://www.svtplay.se/sok?q='+this.Geturl(refresh),
-               false,
-               null,
                function(status, data)
                {
                    data = data.responseText.split("id=\"search-categories");
@@ -64,15 +64,15 @@ SearchList.loadXml = function(refresh) {
                    data = data.split("id=\"search-");
                    data.shift();
                    Section.decode_data(data.join(""));
-                   SearchList.finish(parentThis, true, refresh);
+                   SearchList.finish(parentThis, status, refresh);
                },
                function(status, data) {
-                   SearchList.finish(parentThis, true, refresh);
+                   SearchList.finish(parentThis, status, refresh);
                }
               );
 };
 
-SearchList.finish = function(parent, success, refresh) {
-    loadFinished(success, refresh);
+SearchList.finish = function(parent, status, refresh) {
+    loadFinished(status, refresh);
     parent.setPath(parent.Geturl(refresh), itemCounter, refresh);
 };

@@ -53,6 +53,8 @@ Details.Geturl=function(detailsUrl){
     }
     if (channel == "viasat")
         name = Viasat.getDetailsUrl(name);
+    else if (channel == "kanal5")
+        name = Kanal5.getDetailsUrl(name);
     return name;
 };
 
@@ -158,6 +160,9 @@ Details.GetPlayUrl = function(){
     if (channel == "viasat") {
         Viasat.getPlayUrl(gurl);
         return 0;
+    } else if (channel == "kanal5") {
+        Kanal5.getPlayUrl(gurl);
+        return 0;
     }
         var url_param = '?output=json';
         var gurl = fixLink(this.Geturl());
@@ -238,7 +243,7 @@ Details.loadXml = function(isBackground) {
 		           html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
                        } else {
 		           html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
-                           if (Details.url.indexOf("oppetarkiv") == -1 && !programData.is_live)
+                           if (programData.avail_date)
 		               html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
 		           html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
                        }
@@ -294,6 +299,8 @@ Details.getData = function(url, data) {
         return Details.getSvtData(url, data);
     else if (channel == "viasat") 
         return Viasat.getDetailsData(url,data)
+    else if (channel == "kanal5") 
+        return Kanal5.getDetailsData(url,data)
 };
 
 Details.getSvtData = function(url, data) {
@@ -310,7 +317,7 @@ Details.getSvtData = function(url, data) {
     var DetailsImgLink="";
     var DetailsPlayTime="";
     var VideoLength = "";
-    var AvailDate="";
+    var AvailDate=null;
     var Description="";
     var onlySweden="";
     var $video;
@@ -401,13 +408,6 @@ Details.getSvtData = function(url, data) {
 	    Description = $($video.find('p')[0]).text();
 	    onlySweden = $video.find('section').find('a').attr('data-only-available-in-sweden');
         }
-        // Log("Name:" + Name);
-        // Log("DetailsImgLink:" + DetailsImgLink);
-        // Log("Description:" + Description);
-        // Log("DetailsPlayTime:" + DetailsPlayTime);
-        // Log("VideoLength:" + VideoLength);
-        // Log("onlySweden:" + onlySweden);
-
 	if(!Language.getisSwedish()){
 	    DetailsPlayTime=DetailsPlayTime.replace("igår","yesterday");
 	    DetailsPlayTime=DetailsPlayTime.replace("idag","today");
@@ -472,7 +472,6 @@ Details.getShowData = function(url, data) {
 
         Name  = $show.find('h1').text();
 	DetailsImgLink = fixLink($show.find('img').attr('data-imagename'));
-        // Log(DetailsImgLink);
 	Description = $($show.find('p.play_title-page-info__description')[1]).text();
         Genre = [];
         GenreData = $show.find('li.play_tag-list__tag').find("a");
@@ -484,13 +483,6 @@ Details.getShowData = function(url, data) {
             Genre = $($show.find('p.play_title-page-info__description')[0]).text();
         if (Genre == Description)
             Genre == "";
-        // Log("Name:" + Name);
-        // Log("DetailsImgLink:" + DetailsImgLink);
-        // Log("Description:" + Description);
-        // Log("DetailsPlayTime:" + DetailsPlayTime);
-        // Log("VideoLength:" + VideoLength);
-        // Log("onlySweden:" + onlySweden);
-
 
     } catch(err) {
         Log("Details Exception:" + err.message);
@@ -499,10 +491,6 @@ Details.getShowData = function(url, data) {
         Log("Description:" + Description);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
-    Log("Name:" + Name);
-    Log("Genre:" + Genre);
-    Log("Description:" + Description);
-    Log("DetailsImgLink:" + DetailsImgLink);
     $show = data = null;
     return {show          : true,
             name          : Name,
@@ -526,7 +514,6 @@ function dataLengthToVideoLength($video, duration)
     if (!duration && $video) {
         duration = $video.find('section').find('a').attr('data-length');
     }
-
     if (!duration)
         return VideoLength;
 
@@ -540,7 +527,7 @@ function dataLengthToVideoLength($video, duration)
         VideoLength = VideoLength + minutes + " min "
         duration = duration - (minutes*60)
     }
-    var seconds = Math.floor(duration/60);
+    var seconds = Math.round(duration - (hours*3600) - (minutes*60));
     if (seconds > 0) {
         VideoLength = VideoLength + seconds + " sek"
     }                      

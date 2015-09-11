@@ -23,6 +23,7 @@ setChannel = function(newChannel) {
         return
     channel = newChannel;
     Viasat.resetSubChannel();
+    Kanal5.resetSubChannel();
     myLocation = null;
     setLocation('index.html', undefined);
     myHistory = []; 
@@ -397,7 +398,7 @@ fixLink = function (ImgLink)
     }
 };
 
-requestUrl = function(url, callLoadFinished, refresh, cbSucces, cbError, cbComplete) {
+requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh) {
     var requestedLocation = {loc:myLocation, refLoc:myRefreshLocation, channel:channel};
     $.support.cors = true;
     $.ajax(
@@ -434,7 +435,7 @@ requestUrl = function(url, callLoadFinished, refresh, cbSucces, cbError, cbCompl
             {
                 callUrlCallBack(requestedLocation, cbComplete, status, xhr);
                 if (callLoadFinished && isRequestStillValid(requestedLocation))
-                    loadFinished(status=="success", refresh);
+                    loadFinished(status, refresh);
             }
         }
     );
@@ -451,6 +452,25 @@ isRequestStillValid = function (request) {
     return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==channel);
 }
 
+syncHttpRequest = function(url) {
+    var xhr = new XMLHttpRequest();
+    var success, status, data = null;
+    xhr.open("GET", url, false);
+    xhr.send();
+    success = (xhr.status === 200)
+    status = xhr.status;
+    if (success) {
+        Log('Success:' + url);
+        data = xhr.responseText;
+    } else {
+        Log('Failure:' + url + " status:" + status);
+    }
+
+    xhr.destroy();
+    xhr = null;
+    return {data:data, success:success, status:status}
+};
+
 getHistory = function(Name) {
     var Prefix = document.title;
     if (myRefreshLocation)
@@ -458,9 +478,9 @@ getHistory = function(Name) {
     return Prefix.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/';
 }
 
-loadFinished = function(success, refresh) {
+loadFinished = function(status, refresh) {
 
-    if (success) {
+    if (status == "success") {
         Log("itemCounter:" + itemCounter);
         if (!restorePosition() && !refresh)
             $("#content-scroll").show();
@@ -469,6 +489,23 @@ loadFinished = function(success, refresh) {
             $("#content-scroll").show();
     }
 }
+
+showToHtml = function(Name, Thumb, Link, LinkPrefix) {
+    if (!LinkPrefix)
+        LinkPrefix = '<a href="showList.html?name='
+
+    toHtml({name: Name,
+            link: Link,
+            link_prefix: LinkPrefix,
+            thumb: Thumb,
+            description: "",
+            duration:"",
+            is_live:false,
+            is_channel:false,
+            running:null,
+            starttime:null
+           });
+};
 
 toHtml = function(Item) {
 

@@ -9,9 +9,10 @@ Header.addPrefix = function(location) {
         location = location + '/';
     if (channel == "svt")
         return "SVT/" + location;
-    else if (channel = "viasat")
+    else if (channel == "viasat")
         return Viasat.getHeaderPrefix() + '/' + location;
-    
+    else if (channel == "kanal5")
+        return Kanal5.getHeaderPrefix() + '/' + location;
 }
 
 Header.urldecode = function(str) {

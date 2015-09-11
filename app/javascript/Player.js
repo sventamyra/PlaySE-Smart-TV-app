@@ -896,7 +896,10 @@ Player.GetPlayUrl = function(gurl, isLive) {
     if (channel == "viasat") {
         Viasat.getPlayUrl(gurl);
         return 0;
-    }
+    } else if (channel == "kanal5") {
+        Kanal5.getPlayUrl(gurl);
+        return 0;
+    };
 
     var url_param = '?output=json';
 
@@ -1001,6 +1004,8 @@ Player.getSubtitlesEnabled = function () {
 Player.fetchSubtitle = function (srtUrl) {
     if (channel == "viasat")
         return Viasat.fetchSubtitle(srtUrl)
+    else if (channel == "kanal5")
+        return Kanal5.fetchSubtitle(srtUrl)
 
     var subtitleXhr = new XMLHttpRequest();
 
