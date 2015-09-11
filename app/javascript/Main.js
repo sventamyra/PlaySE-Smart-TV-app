@@ -104,7 +104,7 @@ Main.loadViasat = function(refresh) {
                null,
                null,
                true,
-               refresh,
+               refresh
               );
 };
 
