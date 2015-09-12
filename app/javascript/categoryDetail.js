@@ -112,8 +112,6 @@ categoryDetail.loadXml = function(url, refresh) {
 
 categoryDetail.loadSvt = function(url, refresh) {
     requestUrl(url,
-               true,
-               refresh,
                function(status, data)
                {
                    data = data.responseText.split("ul class=\"play_category__tab");
@@ -175,7 +173,11 @@ categoryDetail.loadSvt = function(url, refresh) {
                        else
                            Section.decode_data(data, recommendedLinks);
                    }
-               }
+               },
+               null,
+               null,
+               true,
+               refresh
               );
 };
 
@@ -183,8 +185,6 @@ categoryDetail.loadViasat = function(url, refresh) {
 
     var url = Viasat.getUrl(url);
     requestUrl(url,
-               false,
-               null,
                function(status, data)
                {
                    itemCounter = 0;

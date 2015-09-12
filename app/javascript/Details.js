@@ -220,8 +220,6 @@ Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
     Details.url = fixLink(this.Geturl());
     requestUrl(Details.url,
-               false,
-               null,
                function(status, data)
                {
                    var html;

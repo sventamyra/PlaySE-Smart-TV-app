@@ -40,8 +40,6 @@ Categories.loadXml = function(refresh) {
 
 Categories.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se/program',
-               true,
-               refresh,
                function(status, data)
                {
                    data = data.responseText.split("<section class=\"play_alphabetic-group")[1];
@@ -65,7 +63,11 @@ Categories.loadSvt = function(refresh) {
 	               $tmpData = $video = null;
                    });
                    data = null;
-               }
+               },
+               null,
+               null,
+               true,
+               refresh
               );
 };
 
@@ -78,8 +80,6 @@ Categories.loadViasat = function(refresh) {
     url = Viasat.getUrl("categories")
     Viasat.toggleBButton();
     requestUrl(url,
-               false,
-               null,
                function(status, data)
                {
                    Viasat.decodeCategories(data.responseText, url, function(){loadFinished(status, refresh)});
