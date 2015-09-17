@@ -53,6 +53,8 @@ Details.Geturl=function(detailsUrl){
     }
     if (channel == "viasat")
         name = Viasat.getDetailsUrl(name);
+    else if (channel == "tv4")
+        name = Tv4.getDetailsUrl(name);
     else if (channel == "kanal5")
         name = Kanal5.getDetailsUrl(name);
     return name;
@@ -158,10 +160,13 @@ Details.CountDown = function()
 
 Details.GetPlayUrl = function(){
     if (channel == "viasat") {
-        Viasat.getPlayUrl(gurl);
+        Viasat.getPlayUrl(gurl, isLive);
+        return 0;
+    } else if (channel == "tv4") {
+        Tv4.getPlayUrl(gurl,isLive);
         return 0;
     } else if (channel == "kanal5") {
-        Kanal5.getPlayUrl(gurl);
+        Kanal5.getPlayUrl(gurl,isLive);
         return 0;
     }
         var url_param = '?output=json';
@@ -243,7 +248,10 @@ Details.loadXml = function(isBackground) {
 		           html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
                            if (programData.avail_date)
 		               html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
-		           html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
+                           if (programData.duration)
+		               html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
+                           else 
+                               html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
                        }
 		       html+='<div class="project-desc">'+programData.description+'</div>';
 		       html+='<div class="bottom-buttons">';
@@ -283,6 +291,7 @@ Details.fetchData = function(detailsUrl) {
     detailsUrl = fixLink(this.Geturl(detailsUrl));
     detailsXhr.onreadystatechange = function () {
         if (detailsXhr.readyState == 4) {
+            Log("Details Success:" + detailsUrl);
             Details.fetchedDetails = Details.getData(detailsUrl,detailsXhr);
             detailsXhr.destroy();
         }
@@ -297,6 +306,8 @@ Details.getData = function(url, data) {
         return Details.getSvtData(url, data);
     else if (channel == "viasat") 
         return Viasat.getDetailsData(url,data)
+    else if (channel == "tv4") 
+        return Tv4.getDetailsData(url,data)
     else if (channel == "kanal5") 
         return Kanal5.getDetailsData(url,data)
 };

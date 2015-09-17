@@ -17,23 +17,23 @@ Language.init = function()
 	html += '</div>';
 	html += '<div class="res-content">';
 	html += '<ul>';
-	html += '<li class="title"><a href="#">Resolution / Upplösning:</a></li>';
+	html += '<li class="title"><a href="#">Bandwith / Bandbredd:</a></li>';
 	html += '<li id="resauto" class="unselected"><a href="#">Auto</a></li>';
-	html += '<li id="res1" class="unselected"><a href="#">256x144</a></li>';
-	html += '<li id="res2" class="unselected"><a href="#">512x288</a></li>';
-	html += '<li id="res3" class="unselected"><a href="#">768x432</a></li>';
-	html += '<li id="res4" class="unselected"><a href="#">1024x576</a></li>';
-	html += '<li id="res5" class="unselected"><a href="#">1280x720</a></li>';
+	html += '<li id="res1" class="unselected"><a href="#">Min</a></li>';
+	html += '<li id="res2" class="unselected"><a href="#">0.5Mbps</a></li>';
+	html += '<li id="res3" class="unselected"><a href="#">1.5Mbps</a></li>';
+	html += '<li id="res4" class="unselected"><a href="#">3Mbps</a></li>';
+	html += '<li id="res5" class="unselected"><a href="#">Max</a></li>';
 	html += '</ul>';
 	html += '</div>';
 	html += '<div class="res-live-content">';
 	html += '<ul>';
-	html += '<li class="title"><a href="#">Resolution / Upplösning (Live):</a></li>';
-	html += '<li id="resl1" class="unselected"><a href="#">256x144</a></li>';
-	html += '<li id="resl2" class="unselected"><a href="#">512x288</a></li>';
-	html += '<li id="resl3" class="unselected"><a href="#">768x432</a></li>';
-	html += '<li id="resl4" class="unselected"><a href="#">1024x576</a></li>';
-	html += '<li id="resl5" class="unselected"><a href="#">1280x720</a></li>';
+	html += '<li class="title"><a href="#">Bandwith / Bandbredd (Live):</a></li>';
+	html += '<li id="resl1" class="unselected"><a href="#">Min</a></li>';
+	html += '<li id="resl2" class="unselected"><a href="#">0.5Mbps</a></li>';
+	html += '<li id="resl3" class="unselected"><a href="#">1.5Mbps</a></li>';
+	html += '<li id="resl4" class="unselected"><a href="#">3Mbps</a></li>';
+	html += '<li id="resl5" class="unselected"><a href="#">Max</a></li>';
 	html += '</ul>';
 	html += '</div>';
 	$(".slider-language").html(html);
@@ -218,6 +218,8 @@ Language.fixAButton = function(language) {
         }
     } else if (channel == "viasat") {
         Viasat.fixAButton(language);
+    } else if (channel == "tv4") {
+        Tv4.fixAButton(language);
     } else if (channel == "kanal5") {
         Kanal5.fixAButton(language);
     }
@@ -264,6 +266,8 @@ Language.getCButtonText = function(language)
             return 'Kanaler & livesändningar';
     } else if (channel == "viasat") {
         return Viasat.getCButtonText(language);
+    } else if (channel == "tv4") {
+        return Tv4.getCButtonText(language);
     } else if (channel == "kanal5") {
         return Kanal5.getCButtonText(language);
     }

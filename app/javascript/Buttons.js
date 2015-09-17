@@ -24,18 +24,22 @@ var Buttons =
 };
 Buttons.keyDown = function()
 {
-        if($('#exitBlock').is(':visible')) {
+        // Log("index:" + index + " exit:" + $('#exitBlock').is(':visible') + " error:" + $(".slider-error").is(':visible')); 
+	if(index == 2){
+	    this.keyHandleForPlayer();
+	}
+        else if($('#exitBlock').is(':visible')) {
                 this.keyHandleForExit();
         }
-	else if(index == 0){
+        else if ($(".slider-error").is(':visible') || index == 9) {
+		this.keyHandleForConnectionError();
+	} 
+        else if(index == 0){
 		this.keyHandleForList();
 	}
 	else if(index == 1)
 	{
 		this.keyHandleForDetails();
-	}
-	else if(index == 2){
-		this.keyHandleForPlayer();
 	}
 	else if(index == 3){
 		this.keyHandleForKanaler();
@@ -55,9 +59,6 @@ Buttons.keyDown = function()
 	}
 	else if(index == 8){
 		this.keyHandleForGeofilter();
-	}
-	else if(index == 9){
-		this.keyHandleForConnectionError();
 	}
 };
 
@@ -317,7 +318,6 @@ Buttons.keyHandleForDetails = function()
     {
     case tvKey.KEY_ENTER:
     case tvKey.KEY_PANEL_ENTER:
-	Log("enter");
 	if($('#enterShowButton').is(':visible')) {
 	    setLocation(itemSelected.find('.ilink').attr("href"));
 	}
@@ -381,7 +381,6 @@ Buttons.keyHandleForLanguage = function()
 				break;
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
-				Log("enter");
 				if(lSel == 1){
 					$('#swedish').addClass('checked');
 					$('#swedish').addClass('selected');
@@ -436,7 +435,6 @@ Buttons.keyHandleForLanguage = function()
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
 				if(cSel > -1){
-					Log("enter");
 					var rj = 0;
 					for(rj = 0; rj < resButton.length; rj++){
 						if($(resButton[rj]).hasClass('checked')){
@@ -492,7 +490,6 @@ Buttons.keyHandleForLanguage = function()
 			case tvKey.KEY_ENTER:
 			case tvKey.KEY_PANEL_ENTER:
 				if(cSel > -1){
-					Log("enter");
 					var rj = 0;
 					for(rj = 0; rj < reslButton.length; rj++){
 						if($(reslButton[rj]).hasClass('checked')){
@@ -758,9 +755,8 @@ Buttons.keyHandleForConnectionError = function()
 		
 		case tvKey.KEY_ENTER:
 		case tvKey.KEY_PANEL_ENTER:
-			location.reload(true);
+			// location.reload(true);
 			break;
-		
 	}
 	this.handleMenuKeys(keyCode);
 
@@ -788,6 +784,16 @@ Buttons.handleMenuKeys = function(keyCode){
             } else {
 	        setLocation('Latest.html');
             }
+        } else if (channel == "tv4") {
+	    if ($("#a-button").text().match(/Pop.*lip/)) {
+	        setLocation('PopularClips.html');
+            } else if ($("#a-button").text().match(/lip/)) {
+	        setLocation('LatestClips.html');
+            } else if ($("#a-button").text().match(/Pop/)) {
+	        setLocation('index.html');
+            } else {
+	        setLocation('Latest.html');
+            }
         } else if (channel == "kanal5") {
 	    if ($("#a-button").text().indexOf("Pop") != -1) {
 	        setLocation('index.html');
@@ -804,7 +810,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	        categoryDetail.setNextLocation();
             else if (channel == "viasat")
                 Categories.setNextLocation();
-            else if (channel == "kanal5")
+            else if (channel == "tv4" || channel == "kanal5")
 	        setLocation('categories.html');
         } else {
 	    setLocation('categories.html');
@@ -827,13 +833,15 @@ Buttons.handleMenuKeys = function(keyCode){
 	else if(index == 4){
 	    Search.hide();
 	}
-	else if(myHistory.length > 0) {
+	else if(index == 9 || $(".slider-error").is(':visible')) {
+            ConnectionError.show(true);
+        }
+        else if(myHistory.length > 0) {
 	    // else if(ifound < 0){
 	    goBack();
 	}
 	else{
             $("#exitBlock").show();
-	    //terminate app
 	}
 	break;
     case tvKey.KEY_EXIT:
@@ -862,6 +870,9 @@ Buttons.handleMenuKeys = function(keyCode){
     case tvKey.KEY_6:
     case tvKey.KEY_8:
         setChannel("viasat");
+        break;
+    case tvKey.KEY_4:
+        setChannel("tv4");
         break;
     case tvKey.KEY_5:
     case tvKey.KEY_9:
@@ -1016,10 +1027,6 @@ Buttons.runNextItem = function(direction, play) {
                 }
             );
         }
-        if (play) {
-            Player.stopVideo();
-            this.playItem()
-        }
         if (myLocation.match(/details.html/)) {
             // refresh Details
             myLocation = itemSelected.find('.ilink').attr("href");
@@ -1029,6 +1036,11 @@ Buttons.runNextItem = function(direction, play) {
             }
             Details.refresh(play);
         }
+        if (play) {
+            Player.stopVideo();
+            this.playItem()
+        }
+
     } else {
         // Log("No more items");
         return -1;

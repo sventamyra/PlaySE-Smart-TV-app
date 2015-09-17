@@ -52,6 +52,9 @@ SearchList.loadXml = function(refresh) {
     if (channel == "viasat") {
         Viasat.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
         return
+    } else if (channel == "tv4") {
+        Tv4.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
+        return
     } else if (channel == "kanal5") {
         Kanal5.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
         return

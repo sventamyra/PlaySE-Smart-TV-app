@@ -1,9 +1,6 @@
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
-var bwidths = [0, 400000, 700000, 1200000, 2000000, 4000000];
-var lbwidths = [400000, 700000, 1200000, 2000000, 4000000];
-var target = 1200000;
-var livetarget = 1200000;
-
+var bwidths = ["Auto", "Min", 500000, 1500000, 3000000, "Max"];
+var lbwidths = ["Min", 500000, 1500000, 3000000, "Max"];
 
 var Resolution =
 {
@@ -20,71 +17,62 @@ Resolution.init = function()
 
 Resolution.displayRes = function(){
 	var value = this.checkRes();
-	alert(resButton[value]);
 	$(resButton[value]).addClass('checked');
-	target = bwidths[value];
 	value = this.checkLiveRes();
-	alert(reslButton[value]);
 	$(reslButton[value]).addClass('checked');
-	livetarget = lbwidths[value];
 };
 
-Resolution.getTarget = function(){
-	return target;
-	
+Resolution.getTarget = function(IsLive){
+    if (IsLive)
+        return lbwidths[Resolution.checkLiveRes()];
+    else
+        return bwidths[Resolution.checkRes()];
 };
 
 Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl){
-	// alert('target: ' + target + " videoUrl:" + videoUrl);
+	// alert('target: ' + target + " videoUrl:" + videoUrl  + " isLive:" + isLive + " srtUrl:" + srtUrl);
         var prefix = videoUrl.replace(/[^\/]+$/,"");
-        if (target > 0 && videoUrl.match(/\.m3u8/)){
-		$.support.cors = true;
-		 $.ajax(
-	   {
-	       type: 'GET',
-	       url: videoUrl,
-	       timeout: 15000,
-	       success: function(data, status, xhr)
-	       {
-                   // alert(xhr.responseText);
-		   var bandwidths = xhr.responseText.match(/^#.+BANDWIDTH=([0-9]+)/mg);
-                   var urls = xhr.responseText.match(/^([^#]+)$/mg);
-
-		   var ij = 0;
-		   var current = 0;
-		   var currentId = 0;
-		   for (ij = 0; ij < bandwidths.length; ij++) {
-                       bandwidths[ij]=bandwidths[ij].replace(/.*BANDWIDTH=/,"");
-		       if(isLive == 0){
-			   if(+bandwidths[ij] <= +target){
-			       // alert(bandwidths[ij]);
-			       if(+bandwidths[ij] > +current){
-				   // alert(bandwidths[ij]);
-				   current = bandwidths[ij];
-				   currentId = ij;
-			       }
-			   }
-		       }
-		       else{
-			   if(+bandwidths[ij] <= +livetarget){
-			       // alert(bandwidths[ij]);
-			       if(+bandwidths[ij] > +current){
-				   // alert(bandwidths[ij]);
-				   current = bandwidths[ij];
-				   currentId = ij;
-			       }
-			   }
-		       }
-		   }
-		   Log('current: ' + current);
-                   videoUrl = urls[currentId]
-                   if (!videoUrl.match(/^http/))
-                       videoUrl = prefix + videoUrl;
-		   Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl);
-		   Player.playVideo();
-		   
-	       }
-	   });
+        var target = Resolution.getTarget(isLive);
+        if (target != "Auto" && videoUrl.match(/\.m3u8/)) {
+            requestUrl(videoUrl,
+                       function(status, data)
+	               {
+                           // alert(data.responseText);
+		           var bandwidths = data.responseText.match(/^#.+BANDWIDTH=([0-9]+)/mg);
+                           var urls = data.responseText.match(/^([^#\r\n]+)$/mg);
+                           var streams = [];
+		           for (var i = 0; i < bandwidths.length; i++) {
+                               bandwidths[i]=bandwidths[i].replace(/.*BANDWIDTH=/,"");
+                               streams.push({bandwidth:+bandwidths[i], url:urls[i]});
+                           }
+                           streams.sort(function(a, b){
+                               if (a.bandwidth > b.bandwidth)
+                                   return 1
+                               else
+                                   return -1
+                           });
+                           var current = 0;
+		           var currentId = 0;
+                           if (target == "Max")
+                               currentId = streams.length-1;
+                           else if (target == "Min")
+                               currentId = 0
+                           else {
+		               for (var i = 0; i < streams.length; i++) {
+                                   if (+target >= streams[i].bandwidth)
+                                       currentId = i;
+                                   else 
+                                       break
+                               }
+		           }
+		           Log('current: ' + streams[currentId].bandwidth);
+                           videoUrl = streams[currentId].url;
+                           if (!videoUrl.match(/^http/))
+                               videoUrl = prefix + videoUrl;
+		           Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl, streams[currentId].bandwidth);
+		           Player.playVideo();
+	               }
+                      );
 	}
 	else{
             if (videoUrl.match(/\.m3u8/))
@@ -112,8 +100,7 @@ else
 
 Resolution.setRes = function(value)
 {
-	setCookie('res', value, 1000);
-	target = bwidths[value];
+    setCookie('res', value, 1000);
 };
 
 Resolution.checkLiveRes = function()
@@ -133,6 +120,5 @@ else
 Resolution.setLiveRes = function(value)
 {
 	setCookie('liveres', value, 1000);
-	target = bwidths[value];
 };
 

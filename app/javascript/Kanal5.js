@@ -249,7 +249,7 @@ Kanal5.decode_search_hits = function(data) {
             Name = data[k].programName.trim() + " - " + data[k].name.trim();;
             Description = data[k].description.trim();
             Duration = (data[k].videoLength)/1000;
-            ImgLink = data[k].image;
+            ImgLink = Kanal5.fixThumb(data[k].image);
             AirDate = data[k].date;
             Link = Kanal5.makeApiUrl('getVideo?videoId=' + data[k].id + "&format=IPHONE");
 	    if (Description.length > 55){
@@ -319,7 +319,7 @@ Kanal5.decode = function(data, target, stripShow, completeFun, isNext) {
                     Name = data[k].program.name.trim() + " - " + Name;
                 }
                 Duration = (data[k].length)/1000;
-                ImgLink = data[k].posterUrl;
+                ImgLink = Kanal5.fixThumb(data[k].posterUrl);
                 AirDate = data[k].shownOnTvDateTimestamp;
                 Link = Kanal5.makeApiUrl('getVideo?videoId=' + data[k].id + "&format=IPHONE");
 	        if (Description.length > 55){
@@ -394,6 +394,7 @@ Kanal5.decode_show = function(data, query, sort, allShows) {
                 ImgLink = showData.photoUrl;
             if (!ImgLink)
                 ImgLink = showData.image;
+            ImgLink = Kanal5.fixThumb(ImgLink);
             Name = showData.name.trim();
             if (Kanal5.show_names.indexOf(Name) != -1)
                 continue;
@@ -446,6 +447,7 @@ Kanal5.decode_season = function(data, completeFun) {
                 ImgLink = data.photoWithLogoUrl;
                 if (!ImgLink)
                     ImgLink = data.photoUrl;
+                ImgLink = Kanal5.fixThumb(ImgLink);
                 showToHtml(Name, ImgLink, Link, '<a href="showList.html?season=1&name=');
             }
         }
@@ -493,14 +495,10 @@ Kanal5.getDetailsData = function(url, data) {
     var Name="";
     var Title = Name;
     var DetailsImgLink="";
-    var DetailsPlayTime="";
+    var AirDate="";
     var AvailDate=null;
     var VideoLength = "";
     var Description="";
-    var onlySweden="";
-    var isChannel=false;
-    var NotAvailable=false;
-    var startTime=0;
     try {
 
         data = JSON.parse(data.responseText);
@@ -508,58 +506,53 @@ Kanal5.getDetailsData = function(url, data) {
         Name = data.title.trim();
         Title = (data.program.name + " - " + data.episodeText).trim();
 	DetailsImgLink = data.posterUrl;
-        DetailsPlayTime = data.shownOnTvTime;
+        AirDate = data.shownOnTvTime;
         VideoLength = dataLengthToVideoLength(null, (data.length)/1000);
 	Description = data.description.trim();
         if (data.playableUntilTimestamp) {
             AvailDate = new Date(+data.playableUntilTimestamp);
             AvailDate = dateToString(AvailDate,"-");
         }
-        startTime = 0;
         Details.duration = VideoLength;
-        Details.startTime = startTime;
+        Details.startTime = 0;
 
     } catch(err) {
         Log("Kanal5.getDetailsData Exception:" + err.message);
         Log("Name:" + Name);
-        Log("DetailsPlayTime:" + DetailsPlayTime);
+        Log("AirDate:" + AirDate);
         Log("VideoLength:" + VideoLength);
         Log("Description:" + Description);
-        Log("NotAvailable:" + NotAvailable);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
     data = null;
     return {name          : Name,
             title         : Title,
             is_live       : isLive,
-            air_date      : DetailsPlayTime,
+            air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : startTime,
+            start_time    : null,
             duration      : VideoLength,
             description   : Description,
-            not_available : NotAvailable,
+            not_available : false,
             thumb         : DetailsImgLink
     }
 };
 
 Kanal5.getShowData = function(url, data) {
     var Name="";
-    var Genre = "";
     var DetailsImgLink="";
     var Description="";
 
     try {
 
         data = JSON.parse(data.responseText).program;
-
         Name = data.name;
-	DetailsImgLink = data.photoUrl;
+	DetailsImgLink = data.photoUrl+"=s600";
         Description = data.description.trim();
 
     } catch(err) {
         Log("Kanal5.getShowData exception:" + err.message);
         Log("Name:" + Name);
-        Log("Genre:" + Genre);
         Log("Description:" + Description);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
@@ -567,10 +560,9 @@ Kanal5.getShowData = function(url, data) {
     return {show          : true,
             name          : Name,
             description   : Description,
-            genre         : Genre,
+            genre         : "",
             thumb         : DetailsImgLink
            };
-    
 };
 
 Kanal5.getDetailsUrl = function(streamUrl) {
@@ -581,18 +573,15 @@ Kanal5.getPlayUrl = function(streamUrl) {
     requestUrl(streamUrl,
                function(status, data)
                {
-                   var srtUrl = null;
-                  
-                   data = JSON.parse(data.responseText);
-                   if (data.hasSubtitle)
-                       srtUrl = streamUrl.replace(/api\/.+videoId=([0-9]+).*/,"api/subtitles/$1")
-                   Resolution.getCorrectStream(data.streams[0].source, false, srtUrl);
-               },
-               function(xhr, status)
-               {
-                   $('.bottomoverlaybig').html('Network Error!');
-               }
-              );
+                   if (Player.checkPlayUrlStillValid(streamUrl)) {
+                       var srtUrl = null;
+                       
+                       data = JSON.parse(data.responseText);
+                       if (data.hasSubtitle)
+                           srtUrl = streamUrl.replace(/api\/.+videoId=([0-9]+).*/,"api/subtitles/$1")
+                       Resolution.getCorrectStream(data.streams[0].source, false, srtUrl);
+                   }
+               });
 }
 
 Kanal5.fetchSubtitle = function (srtUrl) {
@@ -623,6 +612,12 @@ Kanal5.parseSubtitles = function (data) {
 
 Kanal5.requestNextPage = function(url, callback) {
     requestUrl(url,callback,callback);
+}
+
+Kanal5.fixThumb = function(thumb) {
+    if (thumb)
+        thumb = thumb + "=s240";
+    return thumb
 }
 
 

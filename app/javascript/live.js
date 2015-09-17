@@ -8,6 +8,8 @@ live.onLoad = function(refresh)
         document.title = 'Kanaler & livesändningar'
     else if (channel == "viasat")
         document.title = 'Kanaler'
+    else if (channel == "tv4")
+        document.title = 'Livesändningar'
     else if (channel == "kanal5")
         document.title = 'Kanaler'
 
@@ -60,6 +62,8 @@ live.getChannelsJson = function(refresh) {
         live.getSvtChannelJson(refresh);
     } else if (channel == "viasat") {
         live.getViasatChannelJson(refresh);
+    } else if (channel == "tv4") {
+        live.getTv4LiveJson(refresh);
     } else if (channel == "kanal5") {
         live.getKanal5ChannelJson(refresh);
     }
@@ -72,6 +76,21 @@ live.getViasatChannelJson = function (refresh) {
                function(status, data)
                {
                    Viasat.decodeChannels(data.responseText);
+                   data = null
+               },
+               null,
+               null,
+               true,
+               refresh
+              );
+};
+
+live.getTv4LiveJson = function (refresh) {
+ 
+    requestUrl(Tv4.getUrl("live"),
+               function(status, data)
+               {
+                   Tv4.decode(data.responseText);
                    data = null
                },
                null,

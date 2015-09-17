@@ -26,6 +26,8 @@ Section.onLoad = function(location, refresh)
         }
     } else if (channel == "viasat") {
         locationUrl = Viasat.getUrl(location)
+    } else if (channel == "tv4") {
+        locationUrl = Tv4.getUrl(location)
     } else if (channel == "kanal5") {
         locationUrl = Kanal5.getUrl(location);
     }
@@ -54,6 +56,8 @@ Section.loadXml = function(locationUrl, refresh){
                        loadFinished(status, refresh);
                    } else if (channel == "viasat") {
                        Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(status, refresh)});
+                   } else if (channel == "tv4") {
+                       Tv4.decode(data.responseText, false, function() {loadFinished(status, refresh)});
                    } else if (channel == "kanal5") {
                        Kanal5.decode(data.responseText, {tag:"section",url:locationUrl}, false, function() {loadFinished(status, refresh)});
                    }
@@ -98,7 +102,7 @@ Section.decode_recommended = function(data) {
 	    if(Description.length > 55){
 		Description = Description.substring(0, 52)+ "...";
 	    }
-            if (Link.indexOf("/video/") != -1 ) {
+            if (Link.match(/\/(video|klipp)\//)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
             } else {

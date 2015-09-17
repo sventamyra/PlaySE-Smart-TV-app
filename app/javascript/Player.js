@@ -36,6 +36,8 @@ var Player =
     offset:0,
     durationOffset:0,
 
+    bw:"",
+
     repeat:0,
     REPEAT_OFF:0,
     REPEAT_ONE:1,
@@ -148,11 +150,18 @@ Player.setFullscreen = function()
     this.plugin.SetDisplayArea(0, 0, 960, 540);
 };
 
-Player.setVideoURL = function(url, srtUrl)
+Player.setVideoURL = function(url, srtUrl, bw)
 {
     if (srtUrl && srtUrl.length > 0) {
         this.fetchSubtitle(srtUrl);
     }
+
+    if (bw && +bw >= 1000000) {
+        this.bw = " " + (+bw/1000000).toFixed(1) + " mbps";
+    } else if (bw) {
+        this.bw = " " + Math.round(+bw/1000) + " kbps";
+    } else
+        this.bw = "";
 
     videoUrl = url;
     Log("URL = " + videoUrl);
@@ -706,7 +715,7 @@ Player.toggleRepeat = function() {
 Player.setTopOSDText = function(init_text) {
     var resolution_text = init_text;
     if (resolution_text == undefined) {
-        resolution_text = $('.topoverlayresolution').text().replace(/^([^)]+\))*.*/, "$1");
+        resolution_text = $('.topoverlayresolution').text().replace(/^([^)]+\)(.*bps)?)*.*/, "$1");
     }
     resolution_text = resolution_text + this.getAspectModeText() + this.getRepeatText();
     $('.topoverlayresolution').html(resolution_text.replace(/^(&nbsp;)*/,""));
@@ -747,7 +756,7 @@ Player.setResolution = function (videoWidth, videoHeight) {
         else {
             aspect = aspect.toFixed(2) + ":1";
         }
-        Player.setTopOSDText(videoWidth + "x" + videoHeight + " (" + aspect + ")");
+        Player.setTopOSDText(videoWidth + "x" + videoHeight + " (" + aspect + ")" + this.bw);
         this.setAspectRatio(videoWidth, videoHeight);
     }
 };
@@ -892,25 +901,35 @@ Player.startTimeToMinutes = function (startTime) {
     return (start_mins + startTime.match(/[:.]([0-9]+)/)[1]*1);
 };
 
+Player.checkPlayUrlStillValid = function(gurl) {
+    if (requestedUrl != gurl) {
+        Log("gurl skipped:" + gurl + " requestedUrl:" + requestedUrl);
+        return false;
+    }
+    return true;
+};
+
 Player.GetPlayUrl = function(gurl, isLive) {
+    gurl = fixLink(gurl);
+    // Log("gurl:" + gurl);
+    requestedUrl = gurl;
     if (channel == "viasat") {
-        Viasat.getPlayUrl(gurl);
+        Viasat.getPlayUrl(gurl, isLive);
+        return 0;
+    } else if (channel == "tv4") {
+        Tv4.getPlayUrl(gurl, isLive);
         return 0;
     } else if (channel == "kanal5") {
-        Kanal5.getPlayUrl(gurl);
+        Kanal5.getPlayUrl(gurl, isLive);
         return 0;
     };
 
     var url_param = '?output=json';
 
-    gurl = fixLink(gurl);
-    Log("gurl:" + gurl);
     if (gurl.indexOf('?') != -1)
         url_param = '&output=json'; 
-    requestedUrl = gurl;
     $.getJSON(gurl+url_param, function(data) {
-	if (requestedUrl != gurl) {
-            Log("gurl skipped:" + gurl + " requestedUrl:" + requestedUrl);
+            if (!Player.checkPlayUrlStillValid(gurl)) {
             return -1;
         }
 	$.each(data, function(key, val) {
@@ -1004,6 +1023,8 @@ Player.getSubtitlesEnabled = function () {
 Player.fetchSubtitle = function (srtUrl) {
     if (channel == "viasat")
         return Viasat.fetchSubtitle(srtUrl)
+    else if (channel == "tv4")
+        return Tv4.fetchSubtitle(srtUrl)
     else if (channel == "kanal5")
         return Kanal5.fetchSubtitle(srtUrl)
 

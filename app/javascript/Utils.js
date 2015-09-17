@@ -17,17 +17,20 @@ var loadingTimer = 0;
 var detailsOnTop = false;
 
 setChannel = function(newChannel) {
-    if (channel == newChannel && 
-        (channel != 'viasat' || !Viasat.anySubChannel())
+    if (channel != newChannel || 
+        ((channel == 'viasat' && Viasat.anySubChannel()) ||
+         (channel == 'kanal5' && Kanal5.anySubChannel())
+        )
        )
-        return
-    channel = newChannel;
-    Viasat.resetSubChannel();
-    Kanal5.resetSubChannel();
-    myLocation = null;
-    setLocation('index.html', undefined);
-    myHistory = []; 
-    Language.setLang();
+    {
+        channel = newChannel;
+        Viasat.resetSubChannel();
+        Kanal5.resetSubChannel();
+        myLocation = null;
+        setLocation('index.html', undefined);
+        myHistory = []; 
+        Language.setLang();
+    }
 }
 
 getDeviceYear = function() {
@@ -162,6 +165,10 @@ setLocation = function(location, oldPos, skipHistory)
 };
 
 dispatch = function(NewLocation, Refresh) {
+
+    if (!Refresh && $(".slider-error").is(':visible'))
+        ConnectionError.show(true);
+
     switch (NewLocation.match(/([a-zA-Z]+)\.html/)[1])
     {
     case "details":
@@ -192,15 +199,9 @@ dispatch = function(NewLocation, Refresh) {
         SearchList.onLoad(Refresh);
         break;
 
-    case "LastChance":
-    case "Latest":
-    case "LatestNews":
-    case "LatestClips":
+    default:
         Section.onLoad(NewLocation, Refresh);
         break;
-
-    default:
-        Log("Unknown loaction!!!!" + NewLocation);
     }
 };
 
@@ -307,7 +308,7 @@ setOffsets = function() {
                 }
             }
             var newClockOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
-            Log("Clock Offset hours:" + newClockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
+            // Log("Clock Offset hours:" + newClockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
             if (checkOffsetTimer == null || checkOffsetCounter > 0) {
                 if (checkOffsetTimer == null) {
                     checkOffsetCounter = 5;
@@ -353,7 +354,7 @@ setDateOffset = function () {
                 tsSeconds = tsSeconds + 24*3600
             }
             var newDateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
-            Log("dateOffset (hours):" + newDateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " ts:" + data.match(/data-starttime=\"([0-9]+)/)[1] + " starttime:" + actualData[0]);
+            // Log("dateOffset (hours):" + newDateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " ts:" + data.match(/data-starttime=\"([0-9]+)/)[1] + " starttime:" + actualData[0]);
             dateOffset = newDateOffset;
             timeXhr.destroy();
             timeXhr = null;
@@ -399,7 +400,8 @@ fixLink = function (ImgLink)
 };
 
 requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh) {
-    var requestedLocation = {loc:myLocation, refLoc:myRefreshLocation, channel:channel};
+
+    var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
     $.support.cors = true;
     $.ajax(
         {
@@ -416,18 +418,20 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
                 xhr.destroy();
                 xhr = null;
             },
-            error: function(XMLHttpRequest, textStatus, errorThrown)
+            error: function(xhr, textStatus, errorThrown)
             {
                 if (isRequestStillValid(requestedLocation)) {
 
                     this.tryCount++;
-          	    if (textStatus == 'timeout' && this.tryCount <= this.retryLimit) {
+          	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
+                        this.tryCount <= this.retryLimit) 
+                    {
                         //try again
                         return $.ajax(this);
                     } else {
-        	        Log('Failure:' + this.url + " status:" + textStatus + " error:" + errorThrown);
+        	        Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown);
         	        ConnectionError.show();
-                        callUrlCallBack(requestedLocation, cbError, status, errorThrown);
+                        callUrlCallBack(requestedLocation, cbError, textStatus, errorThrown);
         	    }
                 }
             },
@@ -445,7 +449,7 @@ callUrlCallBack = function(requestedLocation,cb,status,xhr) {
     if (cb && isRequestStillValid(requestedLocation))
         cb(status, xhr);
     else if (cb)
-        Log("url skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " Now:" + myLocation + " " +  myRefreshLocation);
+        Log("url: " + requestedLocation.url + " skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " Now:" + myLocation + " " +  myRefreshLocation);
 };
 
 isRequestStillValid = function (request) {

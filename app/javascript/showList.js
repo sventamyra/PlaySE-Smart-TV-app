@@ -53,6 +53,10 @@ showList.loadXml = function(refresh)
                        Viasat.decode(data.responseText, gurl, true, function(){loadFinished(status, refresh)});
                        break;
 
+                   case "tv4":
+                       Tv4.decode(data.responseText, true, function(){loadFinished(status, refresh)});
+                       break;
+
                    case "kanal5":
                        Kanal5.decode(data.responseText, {name:"showList", url:gurl}, true, function(){loadFinished(status, refresh)});
                        break;

@@ -32,6 +32,9 @@ Categories.loadXml = function(refresh) {
     case "viasat":
         Categories.loadViasat(refresh);
         break;
+    case "tv4":
+        Categories.loadTv4(refresh);
+        break;
     case "kanal5":
         Categories.loadKanal5(refresh);
         break;
@@ -88,6 +91,20 @@ Categories.loadViasat = function(refresh) {
                function(status, data) {
                    loadFinished(status, refresh);
                }
+              );
+};
+
+Categories.loadTv4 = function(refresh) {
+    requestUrl(Tv4.getUrl("categories"),
+               function(status, data)
+               {
+                   Tv4.decodeCategories(data.responseText);
+                   data = null;
+               },
+               null,
+               null,
+               true,
+               refresh
               );
 };
 

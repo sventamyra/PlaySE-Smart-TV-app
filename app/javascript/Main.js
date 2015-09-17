@@ -49,6 +49,9 @@ Main.loadXml = function(refresh){
     case "viasat":
         Main.loadViasat(refresh);
         break;
+    case "tv4":
+        Main.loadTv4(refresh);
+        break;
     case "kanal5":
         Main.loadKanal5(refresh);
         break;
@@ -100,6 +103,19 @@ Main.loadViasat = function(refresh) {
                function(status, data)
                {
                    Viasat.decode(data.responseText);
+               },
+               null,
+               null,
+               true,
+               refresh
+              );
+};
+
+Main.loadTv4 = function(refresh) {
+    requestUrl(Tv4.getUrl("main"),
+               function(status, data)
+               {
+                   Tv4.decode(data.responseText);
                },
                null,
                null,

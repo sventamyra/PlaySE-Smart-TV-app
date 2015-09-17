@@ -236,7 +236,7 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
             Name = data[k].title.trim();
             if (stripShow && data[k].format_title != Name) {
                 Name = Name.replace(data[k].format_title,"").replace(/^[,. :\-]*/,"").trim();
-                Name[0] = Name[0].toUpperCase();
+                Name = Name.replace(/^./,Name[0].toUpperCase());
                 Name = Name.replace(/^([Ss][0-9]+)?[Ee][0]*([0-9]+)$/,"Avsnitt $2")
             }
             ImgLink = Viasat.fixThumb(data[k]._links.image.href); 
@@ -560,14 +560,10 @@ Viasat.getDetailsData = function(url, data) {
     var Name="";
     var Title = Name;
     var DetailsImgLink="";
-    var DetailsPlayTime="";
+    var AirDate="";
     var VideoLength = "";
     var AvailDate=null;
     var Description="";
-    var onlySweden="";
-    var isChannel=false;
-    var NotAvailable=false;
-    var startTime=0;
     try {
 
         data = JSON.parse(data.responseText);
@@ -575,9 +571,9 @@ Viasat.getDetailsData = function(url, data) {
         Name = data.title;
         Title = Name;
 	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "994x560");
-        DetailsPlayTime = data.publish_at.replace(/T.+/,"");
-        // if (DetailsPlayTime.indexOf(DetailsClock.replace(":", ".")) == -1)
-        //     DetailsPlayTime  = DetailsPlayTime + " " + DetailsClock;
+        AirDate = data.publish_at.replace(/T.+/,"");
+        // if (AirDate.indexOf(DetailsClock.replace(":", ".")) == -1)
+        //     AirDate  = AirDate + " " + DetailsClock;
         if (data.unpublish_at || data.premium.time_left.days) {
             if (data.unpublish_at) {
                 AvailDate = data.unpublish_at;
@@ -597,38 +593,35 @@ Viasat.getDetailsData = function(url, data) {
 	    Description = data.summary;
 
         Details.duration = VideoLength;
-        startTime = 0;
-        Details.startTime = startTime;
+        Details.startTime = 0;
 
     } catch(err) {
         Log("Viasat.getDetailsData Exception:" + err.message);
         Log("Name:" + Name);
-        Log("DetailsPlayTime:" + DetailsPlayTime);
+        Log("AirDate:" + AirDate);
         Log("AvailDate:" + AvailDate);
         Log("VideoLength:" + VideoLength);
         Log("Description:" + Description);
-        Log("NotAvailable:" + NotAvailable);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
     data = null;
     return {name          : Name,
             title         : Title,
             is_live       : isLive,
-            air_date      : DetailsPlayTime,
+            air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : startTime,
+            start_time    : null,
             duration      : VideoLength,
             description   : Description,
-            not_available : NotAvailable,
+            not_available : false,
             thumb         : DetailsImgLink
     }
 };
 
 Viasat.getShowData = function(url, data) {
+
     var Name="";
-    var Genre = "";
     var DetailsImgLink="";
-    var Description="";
 
     try {
 
@@ -640,15 +633,13 @@ Viasat.getShowData = function(url, data) {
     } catch(err) {
         Log("Viasat.getShowData exception:" + err.message);
         Log("Name:" + Name);
-        Log("Genre:" + Genre);
-        Log("Description:" + Description);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
     data = null;
     return {show          : true,
             name          : Name,
-            description   : Description,
-            genre         : Genre,
+            description   : "",
+            genre         : "",
             thumb         : DetailsImgLink
            };
     
@@ -658,28 +649,25 @@ Viasat.getDetailsUrl = function(streamUrl) {
     return streamUrl.replace(/\/stream/, "").replace(/(seasons|videos)\?format=([0-9]+).*/, "formats/$2");
 };
 
-Viasat.getPlayUrl = function(streamUrl) {
-    streamUrl = streamUrl.replace(/videos\/([0-9]+)/, "videos/stream/$1");
+Viasat.getPlayUrl = function(orgStreamUrl) {
+    var streamUrl = orgStreamUrl.replace(/videos\/([0-9]+)/, "videos/stream/$1");
 
     requestUrl(streamUrl,
                function(status, data)
                {
-                   var stream
-                   data = JSON.parse(data.responseText);
-                   if (data.streams.hls)
-                       stream = data.streams.hls;
-                   else if (data.streams.high)
-                       stream = data.streams.high;
-                   else
-                       stream = data.streams.medium;
-                   
-                   Resolution.getCorrectStream(stream, false, Viasat.getDetailsUrl(streamUrl));
-               },
-               function(xhr, status)
-               {
-                   $('.bottomoverlaybig').html('Network Error!');
-               }
-              );
+                   if (Player.checkPlayUrlStillValid(orgStreamUrl)) {
+                       var stream
+                       data = JSON.parse(data.responseText);
+                       if (data.streams.hls)
+                           stream = data.streams.hls;
+                       else if (data.streams.high)
+                           stream = data.streams.high;
+                       else
+                           stream = data.streams.medium;
+                       
+                       Resolution.getCorrectStream(stream, false, Viasat.getDetailsUrl(streamUrl));
+                   }
+               });
 }
 
 Viasat.fixThumb = function(thumb, size) {

@@ -107,6 +107,9 @@ categoryDetail.loadXml = function(url, refresh) {
     case "viasat":
         categoryDetail.loadViasat(url, refresh);
         break;
+    case "tv4":
+        categoryDetail.loadTv4(url, refresh);
+        break;
     }
 };
 
@@ -195,6 +198,21 @@ categoryDetail.loadViasat = function(url, refresh) {
                function(status, data) {
                    loadFinished(status, refresh);
                }
+              );
+};
+
+categoryDetail.loadTv4 = function(url, refresh) {
+    requestUrl(Tv4.getUrl(url),
+               function(status, data)
+               {
+                   itemCounter = 0;
+                   Tv4.decode_shows(data.responseText);
+                   data = null
+               },
+               null,
+               null,
+               true,
+               refresh
               );
 };
 
