@@ -585,12 +585,11 @@ Kanal5.getPlayUrl = function(streamUrl) {
 }
 
 Kanal5.fetchSubtitle = function (srtUrl) {
-    var result = syncHttpRequest(srtUrl);
-    if (result.success) { 
-        Kanal5.parseSubtitles(JSON.parse(result.data));
-    } else {
-        Log("Kanal5.fetchSubtitle details failed: " + result.status);
-    }
+    asyncHttpRequest(srtUrl,
+                     function(data) {
+                         Kanal5.parseSubtitles(JSON.parse(data));
+                     }
+                    );
 };
 
 Kanal5.parseSubtitles = function (data) {

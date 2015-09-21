@@ -287,17 +287,13 @@ Details.fetchData = function(detailsUrl) {
     // Log("Details.fetchData");
     Details.init();
     Details.fetchedDetails = null;
-    var detailsXhr = new XMLHttpRequest();
     detailsUrl = fixLink(this.Geturl(detailsUrl));
-    detailsXhr.onreadystatechange = function () {
-        if (detailsXhr.readyState == 4) {
-            Log("Details Success:" + detailsUrl);
-            Details.fetchedDetails = Details.getData(detailsUrl,detailsXhr);
-            detailsXhr.destroy();
-        }
-    };
-    detailsXhr.open("GET", detailsUrl);
-    detailsXhr.send();
+    asyncHttpRequest(detailsUrl,
+                     function(data) 
+                     {
+                         Details.fetchedDetails = Details.getData(detailsUrl,{responseText:data});
+                     }
+                    );
 };
 
 Details.getData = function(url, data) {

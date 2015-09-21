@@ -488,11 +488,7 @@ Player.showControls = function(){
 Player.setClock = function() {
     // Log("setClock");
     var time = getCurrentDate();
-    var hour = time.getHours();
-    var minutes = time.getMinutes();
-    if (hour < 10) hour = "0" + hour;
-    if (minutes < 10) minutes = "0" + minutes;
-    $('.topoverlayclock').html(hour + ":" + minutes);
+    $('.topoverlayclock').html(msToClock(time.getTime()));
     window.clearTimeout(clockTimer);
     clockTimer = window.setTimeout(Player.setClock, (60-time.getSeconds())*1000);
 }
@@ -1028,26 +1024,18 @@ Player.fetchSubtitle = function (srtUrl) {
     else if (channel == "kanal5")
         return Kanal5.fetchSubtitle(srtUrl)
 
-    var subtitleXhr = new XMLHttpRequest();
-
-    subtitleXhr.onreadystatechange = function () {
-        if (subtitleXhr.readyState === 4) {
-            if (subtitleXhr.status === 200) {
-                Player.parseSubtitle(subtitleXhr);
-                subtitleXhr.destroy();
-                subtitleXhr = null;
-            }
-        }
-    };
-    subtitleXhr.open("GET", srtUrl);
-    subtitleXhr.send();
+    asyncHttpRequest(srtUrl,
+                     function(data) {
+                         Player.parseSubtitle(data);
+                         
+                     }
+                    );
 };
 
-Player.parseSubtitle = function (xhr) {
+Player.parseSubtitle = function (data) {
     try {
         subtitles = [];
-        var srtdata    = xhr.responseText;
-        var srtContent = this.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
+        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
         srtContent     = srtContent.split('\n\n');
         for (var i = 0; i < srtContent.length; i++) {
             this.parseSrtRecord(srtContent[i]);

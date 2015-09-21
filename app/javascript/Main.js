@@ -69,7 +69,7 @@ Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
                function(status, data)
                {
-                   data = data.responseText.split("<section class=\"play_js-hovered-list play_videolist-group")[0];
+                   data = data.responseText.split("<section class=")[0];
                    recommendedLinks = Section.decode_recommended(data);
                },
                null,

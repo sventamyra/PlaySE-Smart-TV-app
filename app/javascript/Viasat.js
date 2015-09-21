@@ -677,28 +677,27 @@ Viasat.fixThumb = function(thumb, size) {
 }
 
 Viasat.fetchSubtitle = function (detailsUrl) {
-    var result = syncHttpRequest(detailsUrl);
-    if (result.success) { 
-        var json = JSON.parse(result.data);
-        var subUrls = []
-        if (json.sami_path) subUrls.push(json.sami_path); 
-        if (json.subtitles_for_hearing_impaired) subUrls.push(json.subtitles_for_hearing_impaired); 
-        if (subUrls.length > 0) {
-            var rawData = ""
-            for (var i=0; i < subUrls.length; i++) {
-                result = syncHttpRequest(subUrls[i]);
-                if (result.success) { 
-                    rawData = rawData + result.data;
-                } else {
-                    Log("Viasat.fetchSubtitle sub failed: " + result.status);
-                }
-            }
-            if (rawData.length > 0)
-                Viasat.parseSubtitles(rawData);
-        }
-    } else {
-        Log("Viasat.fetchSubtitle details failed: " + result.status);
-    }
+    asyncHttpRequest(detailsUrl,
+                     function(data) {
+                         var json = JSON.parse(data);
+                         var subUrls = []
+                         if (json.sami_path) subUrls.push(json.sami_path); 
+                         if (json.subtitles_for_hearing_impaired) subUrls.push(json.subtitles_for_hearing_impaired); 
+                         if (subUrls.length > 0) {
+                             var rawData = ""
+                             for (var i=0; i < subUrls.length; i++) {
+                                 result = syncHttpRequest(subUrls[i]);
+                                 if (result.success) { 
+                                     rawData = rawData + result.data;
+                                 } else {
+                                     Log("Viasat.fetchSubtitle sub failed: " + result.status);
+                                 }
+                             }
+                             if (rawData.length > 0)
+                                 Viasat.parseSubtitles(rawData);
+                         }
+                     }
+                    );
 };
 
 Viasat.parseSubtitles = function (data) {

@@ -1,13 +1,71 @@
 var Tv4 =
 {
-    result:[]
+    result:[],
+    drmShows:[],
+    updatingDrmShows:false
 };
+
+Tv4.fetchDrmShows = function() {
+    var savedShows = getCookie("tv4DrmShows");
+    if (savedShows) {
+        Tv4.drmShows = savedShows.split(";");
+        Log("Found saved DRM shows, length:" + Tv4.drmShows.length);
+    } else {
+        Tv4.refreshdDrmShows();
+    }
+}
+
+Tv4.refreshdDrmShows = function() {
+    if (Tv4.updatingDrmShows)
+        // Already updating
+        return;
+    Tv4.updatingDrmShows = true;
+    asyncHttpRequest(Tv4.getUrl("allShows"),
+                     function(data) {
+                         Tv4.drmShows = [];
+                         data = JSON.parse(data);
+                         var i = 0;
+                         return Tv4.checkDrm(i, data.results);
+                     },
+                     true
+                    );
+};
+
+Tv4.checkDrm = function(i, data) {
+    if (i < data.length)
+    {
+        asyncHttpRequest(Tv4.getUrl("episodes") + data[i].nid,
+                         function(episode) {
+                             episode = JSON.parse(episode).results;
+                             var anyNonDrm = false;
+                             for (var k=0; k < episode.length; k++) {
+                                 if (Tv4.isViewable(episode[k])) {
+                                     anyNonDrm = true
+                                     break;
+                                 }
+                             }
+                             if (!anyNonDrm) {
+                                 Tv4.drmShows.push(data[i].nid)
+                             }
+                             return Tv4.checkDrm(i+1, data);
+                         },
+                         true
+                        );
+    }
+    else {
+        Log("Saving DRM shows, length:" + Tv4.drmShows.length);
+        setCookie("tv4DrmShows", Tv4.drmShows.join(";", 30))
+        Tv4.updatingDrmShows = false;
+        data = null;
+    }
+}
 
 Tv4.getUrl = function(name) {
     var type = "episode"
     switch (name)
     {
     case "main":
+        Tv4.fetchDrmShows();
     case "PopularClips.html":
         if (name == "PopularClips.html") {
             document.title = 'Populära Klipp'; 
@@ -29,6 +87,10 @@ Tv4.getUrl = function(name) {
 
     case "categoryDetail":
         return 'http://webapi.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false&category='
+        break;
+
+    case "allShows":
+        return 'http://webapi.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false'
         break;
 
     case "episodes":
@@ -147,13 +209,12 @@ Tv4.decode = function(data, stripShow, completeFun) {
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
             IsLive = data[k].is_live;
-            if (data[k].is_premium || data[k].is_drm_protected || (data[k].availability.availability_group_free == "0" || !data[k].availability.availability_group_free))
+            if (!Tv4.isViewable(data[k]))
                 // Premium/DRM
                 continue;
 
             starttime = (IsLive) ? Tv4.getStartTime(data[k].broadcast_date_time) : "";
-            running = starttime && !starttime.match(/ /) && (tsToClock(getCurrentDate().getTime()) > starttime);
-            starttime = starttime.replace(/.+ /,"");
+            running = IsLive && starttime && !starttime.match(/ /) && (getClock() > starttime);
 
             if (stripShow) {
                 Name = Name.replace(data[k].program.name,"").replace(/^[,. :\-]*/,"").trim();
@@ -242,7 +303,6 @@ Tv4.decodeCategories = function(data) {
     try {
         var Name;
 	var Link;
-	var ImgLink;
 
         data = JSON.parse(data);
 
@@ -283,6 +343,9 @@ Tv4.decode_shows = function(data, query, completeFun) {
         for (var k=0; k < data.length; k++) {
             Name = data[k].name;
             if (queryTest && !queryTest.test(Name))
+                continue;
+            if (Tv4.drmShows.indexOf(data[k].nid) != -1)
+                // Only drm episodes
                 continue;
             ImgLink = Tv4.fixThumb(data[k].program_image);
             Link = Tv4.getUrl("episodes") + data[k].nid
@@ -337,7 +400,7 @@ Tv4.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = data.image;
+	DetailsImgLink = Tv4.fixThumb(data.image, "300x168");
         Description  = (data.description) ? data.description.trim() : "";
         AirDate = Tv4.getStartTime(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
@@ -349,7 +412,7 @@ Tv4.getDetailsData = function(url, data) {
         if (IsLive) 
             startTime = Tv4.getStartTime(data.broadcast_date_time);
         Details.startTime = startTime;
-        NotAvailable = IsLive && (startTime.match(/ /) || startTime > tsToClock(getCurrentDate().getTime()));
+        NotAvailable = IsLive && (startTime.match(/ /) || startTime > getClock());
 
     } catch(err) {
         Log("Tv4.getDetailsData Exception:" + err.message);
@@ -386,7 +449,7 @@ Tv4.getShowData = function(url, data) {
         data = JSON.parse(data.responseText)[0];
         Name = data.name;
         Description = data.description.trim();
-	DetailsImgLink = data.program_image;
+	DetailsImgLink = Tv4.fixThumb(data.program_image, "300x168");
         for (var i=0; i < data.genres.length; i++) {
             Genre.push(data.genres[i])
         }
@@ -440,24 +503,31 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
               );
 }
 
-Tv4.fixThumb = function(thumb) {
-    return "https://img3.tv4cdn.se/?format=jpeg&quality=40&resize=240x135&retina=true&shape=cut&source=" + thumb;
+Tv4.fixThumb = function(thumb, size) {
+    if (!size)
+        size = "120x68"
+    return "https://img3.tv4cdn.se/?format=jpeg&quality=40&resize=" + size + "&retina=true&shape=cut&source=" + thumb;
+};
+
+Tv4.isViewable = function (data) {
+    if (data.is_premium || data.is_drm_protected || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free))
+        return false;
+    else
+        return true;        
 }
 
 Tv4.fetchSubtitle = function (detailsUrl) {
-    var result = syncHttpRequest(detailsUrl);
-    if (result.success) { 
-        subtitles = [];
-        var srtdata    = result.data;
-        var srtContent = Player.strip(srtdata.replace(/\r\n|\r|\n/g, '\n').replace(/(.+-->.+)$/mg,"1\n$1").replace(/.*WEBVTT.*\n+/,"").replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1"));
-        srtContent     = srtContent.split('\n\n');
-        for (var i = 0; i < srtContent.length; i++) {
-            Player.parseSrtRecord(srtContent[i]);
-        }
-        // for (var i = 0; i < 10 && i < subtitles.length; i++) {
-        //     alert("start:" + subtitles[i].start + " stop:" + subtitles[i].stop + " text:" + subtitles[i].text);
-     // };
-    };
+    asyncHttpRequest(detailsUrl,
+                     function(data)
+                     {
+                         subtitles = [];
+                         var srtContent = Player.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/(.+-->.+)$/mg,"1\n$1").replace(/.*WEBVTT.*\n+/,"").replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1"));
+                         srtContent     = srtContent.split('\n\n');
+                         for (var i = 0; i < srtContent.length; i++) {
+                             Player.parseSrtRecord(srtContent[i]);
+                         }
+                     }
+                    );
 };
 
 Tv4.getStartTime = function(broadcastTime) {
