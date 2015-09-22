@@ -54,7 +54,7 @@ Tv4.checkDrm = function(i, data) {
     }
     else {
         Log("Saving DRM shows, length:" + Tv4.drmShows.length);
-        setCookie("tv4DrmShows", Tv4.drmShows.join(";", 30))
+        setCookie("tv4DrmShows", Tv4.drmShows.join(";"), 30)
         Tv4.updatingDrmShows = false;
         data = null;
     }
@@ -400,7 +400,7 @@ Tv4.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = Tv4.fixThumb(data.image, "300x168");
+	DetailsImgLink = Tv4.fixThumb(data.image, "600x336");
         Description  = (data.description) ? data.description.trim() : "";
         AirDate = Tv4.getStartTime(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
@@ -449,7 +449,7 @@ Tv4.getShowData = function(url, data) {
         data = JSON.parse(data.responseText)[0];
         Name = data.name;
         Description = data.description.trim();
-	DetailsImgLink = Tv4.fixThumb(data.program_image, "300x168");
+	DetailsImgLink = Tv4.fixThumb(data.program_image, "600x336");
         for (var i=0; i < data.genres.length; i++) {
             Genre.push(data.genres[i])
         }
@@ -504,9 +504,10 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
 }
 
 Tv4.fixThumb = function(thumb, size) {
-    if (!size)
-        size = "120x68"
-    return "https://img3.tv4cdn.se/?format=jpeg&quality=40&resize=" + size + "&retina=true&shape=cut&source=" + thumb;
+    if (!size) {
+        size = "240x135";
+    }
+    return "https://img3.tv4cdn.se/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb;
 };
 
 Tv4.isViewable = function (data) {

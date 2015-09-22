@@ -22,8 +22,8 @@ ConnectionError.init = function()
 
 ConnectionError.show = function(hide)
 {
-	
 	if (Buttons.getKeyHandleID() != 9 && !hide) {
+            loadingStop();
             if ($('.bottomoverlaybig').is(':visible')) {
                 $('.bottomoverlaybig').html('Network Error!');
                 return;

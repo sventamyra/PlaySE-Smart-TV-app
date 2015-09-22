@@ -583,6 +583,6 @@ toHtml = function(Item) {
 
 Log = function (msg) 
 {
-    asyncHttpRequest("http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'", null, true);
-    alert(msg);
+    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'", null, true);
+    // alert(msg);
 };
