@@ -74,6 +74,12 @@ showList.decode_data = function(showData) {
         var Duration;
         var Link;
         var ImgLink;
+        var Season;
+        var Episode;
+        var Variant;
+        var Shows = [];
+        var Names = [];
+        var AnyNonInfoEpisode = false;
 
         showData = showData.split("</article>");
         showData.pop();
@@ -95,21 +101,69 @@ showList.decode_data = function(showData) {
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
             ImgLink = fixLink(ImgLink);
             showData[k] = "";
-            toHtml({name:Name,
-                    duration:Duration,
-                    is_live:false,
-                    is_channel:false,
-                    running:null,
-                    starttime:null,
-                    link:Link,
-                    link_prefix:'<a href="details.html?ilink=',
-                    description:"",
-                    thumb:ImgLink
-                   })
-	}
+            Season  = Name.match(/s[^s]+song[	 ]*([0-9]+)/i);
+            Episode = Name.match(/avsnitt[	 ]*([0-9]+)/i);
+            Variant = Name.match(/(textat|syntolkat|teckenspr[^k]+kstolkat|originalspr[^k]+k)/i);
+            Season  = (Season) ? +Season[1] : null;
+            Episode = (Episode) ? +Episode[1] : null;
+            Variant = (Variant) ? Variant[1] : null;
+            AnyNonInfoEpisode = (AnyNonInfoEpisode) ? AnyNonInfoEpisode : !IsClip({link:Link}) && !Episode;
+            Names.push(Name);
+            Shows.push({name:Name,
+                        duration:Duration,
+                        link:Link,
+                        link_prefix:'<a href="details.html?ilink=',
+                        description:"",
+                        thumb:ImgLink,
+                        season:Season,
+                        episode:Episode,
+                        variant:Variant
+                       })
+        }
+
+        Shows.sort(function(a, b){
+            if (IsClip(a) && IsClip(b)) {
+                // Keep SVT sorting amongst clips
+                return Names.indexOf(a.name) - Names.indexOf(b.name)
+            } else if(IsClip(a)) {
+                // Clips has lower prio
+                return 1
+            } else if(IsClip(b)) {
+                // Clips has lower prio
+                return -1
+            } else if (a.variant == b.variant) {
+                if (AnyNonInfoEpisode)
+                    // Keep SVT sorting in case not all videos has an episod number.
+                    return Names.indexOf(a.name) - Names.indexOf(b.name)
+                else if (IsNewer(a,b))
+                    return -1
+                else
+                    return 1
+            } else if (!a.variant || (b.variant && b.variant > a.variant)) {
+                return -1
+            } else {
+                return 1
+            }
+        });
+        for (var k=0; k < Shows.length; k++) {
+            toHtml(Shows[k])
+        };
     } catch(err) {
         Log("decode_data Exception:" + err.message + ". showData[" + k + "]:" + showData[k]);
     }
 };
+
+IsNewer = function(a,b) {
+    if (a.season == b.season) {
+        return a.episode > b.episode
+    } else if (b.season && a.season) {
+        return a.season > b.season
+    } else
+        return a.season
+}
+
+IsClip = function(a) {
+    return a.link.match(/\/klipp\//)
+}
 
 //window.location = 'project.html?ilink=' + ilink + '&history=' + historyPath + iname + '/';
