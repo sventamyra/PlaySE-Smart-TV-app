@@ -683,10 +683,7 @@ Buttons.keyHandleForPlayer = function(){
     case tvKey.KEY_EXIT:
     case tvKey.KEY_INFOLINK:
     case tvKey.KEY_HOME:
-    case tvKey.KEY_MENU:
-    case tvKey.KEY_PANEL_MENU:
     case tvKey.KEY_12:
-    case tvKey.KEY_DISC_MENU:
 	Player.stopVideo();
 	// Terminated by force
 	break;

@@ -252,9 +252,6 @@ Kanal5.decode_search_hits = function(data) {
             ImgLink = Kanal5.fixThumb(data[k].image);
             AirDate = data[k].date;
             Link = Kanal5.makeApiUrl('getVideo?videoId=' + data[k].id + "&format=IPHONE");
-	    if (Description.length > 55){
-		Description = Description.substring(0, 52)+ "...";
-	    }
             Kanal5.other_result.push({name:Name, 
                                       episode:null,
                                       duration:Duration, 
@@ -322,9 +319,6 @@ Kanal5.decode = function(data, target, stripShow, completeFun, isNext) {
                 ImgLink = Kanal5.fixThumb(data[k].posterUrl);
                 AirDate = data[k].shownOnTvDateTimestamp;
                 Link = Kanal5.makeApiUrl('getVideo?videoId=' + data[k].id + "&format=IPHONE");
-	        if (Description.length > 55){
-		    Description = Description.substring(0, 52)+ "...";
-	        }
                 Episode = data[k].episodeNumber
                 Kanal5.other_result.push({name:Name, 
                                           episode:Episode,

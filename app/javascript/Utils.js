@@ -566,6 +566,10 @@ toHtml = function(Item) {
     html += '</div>';
     html += '<div class="scroll-item-name">';
     html +=	'<p><a href="#">' + Item.name + '</a></p>';
+    var MaxLen = (Item.name.length > 45) ? 45 : 90;
+        if (Item.description.length > MaxLen){
+		Item.description = Item.description.substring(0, MaxLen-3)+ "...";
+    }
     html += '<span class="item-date">' + Item.description + '</span>';
     html += '</div>';
     html += '</div>';

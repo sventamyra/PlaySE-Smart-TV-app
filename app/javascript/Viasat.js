@@ -249,9 +249,6 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
             Link = data[k]._links.stream.href;
 
             AirDate = data[k].publish_at;
-	    if (Description.length > 55){
-		Description = Description.substring(0, 52)+ "...";
-	    }
             if (data[k].format_position)
                 Episode = data[k].format_position.episode
             else

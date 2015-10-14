@@ -99,9 +99,6 @@ Section.decode_recommended = function(data) {
             Description = $(data[k]).find('span.play_carousel-caption__description').text();
 	    ImgLink = fixLink($(data[k]).find('img').attr('data-imagename')).replace("_imax", "");
             ImgLink = ImgLink.replace("extralarge", "small");
-	    if(Description.length > 55){
-		Description = Description.substring(0, 52)+ "...";
-	    }
             if (Link.match(/\/(video|klipp)\//)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
@@ -162,9 +159,6 @@ Section.decode_data = function(data, filter) {
             ImgLink = fixLink(ImgLink);
             starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
             data[k] = "";
-	    if (Description.length > 55){
-		Description = Description.substring(0, 52)+ "...";
-	    }
             LinkPrefix = '<a href="showList.html?name=';
             if (Link.search("/klipp/") != -1 || Link.search("/video/") != -1) {
                 Duration = Duration[1];

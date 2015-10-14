@@ -228,9 +228,6 @@ Tv4.decode = function(data, stripShow, completeFun) {
             Description = (data[k].description) ? data[k].description.trim() : "";
             Link = "http://webapi.tv4play.se/play/video_assets?id=" +  data[k].id;
             AirDate = data[k].broadcast_date_time.replace(/T.+/,"");
-	    if (Description.length > 55){
-		Description = Description.substring(0, 52)+ "...";
-	    }
             Season = (data[k].season) ? data[k].season : null;
             Episode = (data[k].episode) ? data[k].episode : null;
             Tv4.result.push({name:Name, 
@@ -492,9 +489,13 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        var stream;
                        if (isLive) 
-                           stream = data.responseText.match(/(http.+\.m3u8.*hdnea[^<]*)/)[1]; 
+                           stream = data.responseText.match(/(http.+\.m3u8.*hdnea[^<]*)/); 
                        else
-                           stream = data.responseText.match(/(http.+\.mp4.+\.m3u8[^<]*)/)[1];
+                           stream = data.responseText.match(/(http.+\.mp4.+\.m3u8[^<]*)/);
+                       if (!stream) {
+                           $('.bottomoverlaybig').html('Not Available!');
+                       }
+                       stream = stream[1];
                        var srtUrl = data.responseText.match(/(http.+\.webvtt[^<]*)/);
                        srtUrl = (srtUrl && srtUrl.length > 0) ? srtUrl[1] : null;
                        Resolution.getCorrectStream(stream, false, srtUrl);
@@ -511,7 +512,7 @@ Tv4.fixThumb = function(thumb, size) {
 };
 
 Tv4.isViewable = function (data) {
-    if (data.is_premium || data.is_drm_protected || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free))
+    if (data.is_premium || data.is_drm_protected || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free) || (data.broadcast_date_time.replace(/T.+/,"") > dateToString(getCurrentDate(),'-')))
         return false;
     else
         return true;        
