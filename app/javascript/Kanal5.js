@@ -310,6 +310,9 @@ Kanal5.decode = function(data, target, stripShow, completeFun, isNext) {
             for (var k=0; k < data.length; k++) {
                 if (data[k].premium || data[k].widevineRequired)
                     continue;
+                if (Kanal5.episodes.indexOf(data[k].id) != -1)
+                    continue;
+                Kanal5.episodes.push(data[k].id);
                 Name = data[k].episodeText.trim();;
                 Description = data[k].title.trim();
                 if (!stripShow) {
