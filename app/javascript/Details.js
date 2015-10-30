@@ -421,7 +421,7 @@ Details.getSvtData = function(url, data) {
         Details.duration = VideoLength.trim();
 
         startTime = DetailsPlayTime.match(/([0-9]+[:.][0-9]+)/);
-        if ((isChannel || (isLive && getDeviceYear() == 2013)) && startTime.length > 1)
+        if ((isChannel || (isLive && deviceYear == 2013)) && startTime.length > 1)
             startTime = startTime[1];
         else 
             startTime = 0;

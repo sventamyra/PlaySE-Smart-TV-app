@@ -607,7 +607,7 @@ Viasat.getDetailsData = function(url, data) {
             is_live       : isLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : null,
+            start_time    : 0,
             duration      : VideoLength,
             description   : Description,
             not_available : false,
@@ -669,7 +669,7 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
 
 Viasat.fixThumb = function(thumb, size) {
     if (!size)
-        size = "240x135";
+        size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
     return thumb.replace("{size}", size);
 }
 

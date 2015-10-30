@@ -44,8 +44,9 @@ Language.getisSwedish=function(){
 return isSwedish;
 };
 
-Language.setLang = function(){
-	var value = this.checkLanguage();
+Language.setLang = function(value){
+        if (!value)
+            value = this.checkLanguage();
 	var src="url(images/name.png)";
         this.fixAButton(value);
         this.fixBButton(value);
@@ -55,37 +56,14 @@ Language.setLang = function(){
 		$('#swedish').removeClass('checked');
 
 		src="url(images/name-english.png)";
-		$("#searchshow").text('Search shows');
-	
-
-		$("#write").val('');
-		$("#delete").text('Delete');
-		$("#search").text('Search');
-		
-		var ltxt = $("#location").text();
-		ltxt = ltxt.replace('Populärt', 'Popular');
-		ltxt = ltxt.replace('Kategorier', 'Categories');
-		ltxt = ltxt.replace('Kanaler & livesändningar', 'Channels & live broadcasts');
-		ltxt = ltxt.replace('Sök:', 'Search:');
-		$("#location").text(ltxt);
+		$("#d-button").text('Search');
 		isSwedish=false;
 		
 	}else {
 
 		$('#swedish').addClass('checked');
 		$('#english').removeClass('checked');
-		$("#searchshow").text('Sök programtitlar');
-		
-		$("#write").val('');
-		$("#delete").text('Ta Bort');
-		$("#search").text('Sök');
-		
-		var ltxt = $("#location").text();
-		ltxt = ltxt.replace('Popular', 'Populärt');
-		ltxt = ltxt.replace('Categories', 'Kategorier');
-		ltxt = ltxt.replace('Channels & live broadcasts', 'Kanaler & livesändningar');
-		ltxt = ltxt.replace('Search:', 'Sök:');
-		$("#location").text(ltxt);
+		$("#d-button").text('Sök');		
 		isSwedish=true;
 	}
 	
@@ -152,16 +130,15 @@ Language.show = function()
 	else{
 		Buttons.setKeyHandleID(oldKeyHandle);
 	}
-	$(".slider-language").slideToggle(500, function() {});	
-
+    slideToggle($(".slider-language"), 500, function() {});
 };
 
 Language.hide = function()
 {
 	
 	if(Buttons.getKeyHandleID() == 6){
-		Buttons.setKeyHandleID(oldKeyHandle);
-		$(".slider-language").slideToggle(500, function() {});	
+	    Buttons.setKeyHandleID(oldKeyHandle);
+            slideToggle($(".slider-language"), 500, function() {})
 	}
 	
 

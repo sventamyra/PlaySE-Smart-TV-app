@@ -39,7 +39,7 @@ getDeviceYear = function() {
 
     if (firmwareVersion === "") {
         // emulator
-        return 2011;
+        return 666;
     }
 
     // Log("JTDEBUG getDeviceYear: " + Number(firmwareVersion.substr(10, 4)))
@@ -74,6 +74,7 @@ String.prototype.trim = function () {
 };
 
 loadingStart = function() {
+    if (isEmulator) return;
     try {
         if (loadingTimer == 0) {
             loadingTimer = window.setTimeout(function () {
@@ -504,7 +505,7 @@ getHistory = function(Name) {
 }
 
 loadFinished = function(status, refresh) {
-
+    fixCss();
     if (status == "success") {
         Log("itemCounter:" + itemCounter);
         if (!restorePosition() && !refresh)
@@ -514,6 +515,12 @@ loadFinished = function(status, refresh) {
             $("#content-scroll").show();
     }
 }
+
+fixCss = function() {
+    if (deviceYear > 2011) {
+        $('.confirmExit').css({"padding":"10px", "padding-bottom":"5px"});
+    };
+};
 
 showToHtml = function(Name, Thumb, Link, LinkPrefix) {
     if (!LinkPrefix)
@@ -536,7 +543,7 @@ toHtml = function(Item) {
 
     var html;
     var IsLiveText;
-   
+
     if(itemCounter % 2 == 0){
 	if(itemCounter > 0){
 	    html = '<div class="scroll-content-item topitem">';
@@ -551,7 +558,7 @@ toHtml = function(Item) {
 
     IsLiveText = (Item.is_live || Item.is_channel) ? " is-live" : "";
     html += '<div class="scroll-item-img">';
-    html += Item.link_prefix + Item.link + '&history=' + getHistory(Item.name) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="240" height="135" alt="' + Item.name + '" /></a>';
+    html += Item.link_prefix + Item.link + '&history=' + getHistory(Item.name) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
 
     if (Item.is_live && !Item.running) {
 	html += '<span class="topoverlay">LIVE</span>';
@@ -564,13 +571,16 @@ toHtml = function(Item) {
 	html += '<span class="bottomoverlayred">' + Item.starttime + '</span>';
     }
     html += '</div>';
+    Item.name = Item.name.trim();
     html += '<div class="scroll-item-name">';
     html +=	'<p><a href="#">' + Item.name + '</a></p>';
-    var MaxLen = (Item.name.length > 45) ? 45 : 90;
-        if (Item.description.length > MaxLen){
-		Item.description = Item.description.substring(0, MaxLen-3)+ "...";
-    }
-    html += '<span class="item-date">' + Item.description + '</span>';
+    Item.description = Item.description.trim();
+    html += '<span class="item-date"';
+    if (Item.name.length > 2*LINE_LENGTH)
+        Item.description = "";
+    else if (Item.name.length > LINE_LENGTH)
+        html += ' style=" max-height:11px;"';
+    html += '>' + Item.description + '</span>';
     html += '</div>';
     html += '</div>';
     
@@ -584,6 +594,24 @@ toHtml = function(Item) {
     itemCounter++;
 };
 
+setClock = function(id, callback) {
+    var time = getCurrentDate();
+    id.html(msToClock(time.getTime()));
+    return window.setTimeout(callback, (60-time.getSeconds())*1000);
+}
+
+slideToggle = function(id, timer, callback) {
+    if (deviceYear < 2011) {
+        if (id.is(':visible'))
+            id.hide();
+        else
+            id.show();
+        if (callback) {
+            window.setTimeout(callback, timer);
+        }
+    } else
+        id.slideToggle(timer, callback);
+}
 
 Log = function (msg) 
 {

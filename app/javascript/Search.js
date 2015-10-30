@@ -78,7 +78,7 @@ Search.imeShow = function(slideDuration)
     if(Buttons.getKeyHandleID()!=7){
         oldKeyHandle = Buttons.getKeyHandleID();
         Buttons.setKeyHandleID(7);
-        $(".slider-imesearch").slideToggle(slideDuration, function() {
+        slideToggle($(".slider-imesearch"), slideDuration, function() {
             // Position of input box gets messed up in case focus is called too soon (at least in 2012 simulator).
             if (Buttons.getKeyHandleID() == 7)
                 document.getElementById("ime_write").focus();
@@ -103,7 +103,7 @@ Search.imeShow = function(slideDuration)
         }
     }
     else{
-        $(".slider-imesearch").slideToggle(slideDuration, function() {});
+        slideToggle($(".slider-imesearch"), slideDuration, function() {});
         document.getElementById("ime_write").blur()
         document.body.focus();
         Buttons.setKeyHandleID(oldKeyHandle); 
@@ -119,11 +119,7 @@ Search.imeReady = function()
 
 Search.hide = function()
 {
-	if(Buttons.getKeyHandleID()==4){
-		Buttons.setKeyHandleID(oldKeyHandle);
-		$(".slider-search").slideToggle(500, function() {});	
-	}
-        else if (Buttons.getKeyHandleID()==7){
-            Search.imeShow();
-        }
+    if (Buttons.getKeyHandleID()==7){
+        Search.imeShow();
+    }
 };

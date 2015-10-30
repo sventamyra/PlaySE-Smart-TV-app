@@ -506,7 +506,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
 
 Tv4.fixThumb = function(thumb, size) {
     if (!size) {
-        size = "240x135";
+        size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
     }
     return "https://img3.tv4cdn.se/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb;
 };

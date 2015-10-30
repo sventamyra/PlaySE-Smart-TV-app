@@ -141,13 +141,13 @@ Player.deinit = function()
 
 Player.setWindow = function()
 {
-	//this.plugin.SetDisplayArea(0, 0, 960, 540);
+	//this.plugin.SetDisplayArea(0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
     this.plugin.SetDisplayArea(0, 0, 1, 1);
 };
 
 Player.setFullscreen = function()
 {
-    this.plugin.SetDisplayArea(0, 0, 960, 540);
+    this.plugin.SetDisplayArea(0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
 };
 
 Player.setVideoURL = function(url, srtUrl, bw)
@@ -375,9 +375,9 @@ Player.skipForwardVideo = function()
     this.skipForward(10*1000);
 };
 
-Player.skipLongForwardVideo = function()
+Player.skipLongForwardVideo = function(longMinutes)
 {
-    this.skipForward(1*60*1000);
+    this.skipForward(longMinutes*60*1000);
 };
 
 Player.skipBackward = function(time)
@@ -402,9 +402,9 @@ Player.skipBackwardVideo = function()
     this.skipBackward(10*1000);
 };
 
-Player.skipLongBackwardVideo = function()
+Player.skipLongBackwardVideo = function(longMinutes)
 {
-    this.skipBackward(1*60*1000);
+    this.skipBackward(longMinutes*60*1000);
 };
 
 Player.getState = function()
@@ -486,11 +486,8 @@ Player.showControls = function(){
 };
 
 Player.setClock = function() {
-    // Log("setClock");
-    var time = getCurrentDate();
-    $('.topoverlayclock').html(msToClock(time.getTime()));
     window.clearTimeout(clockTimer);
-    clockTimer = window.setTimeout(Player.setClock, (60-time.getSeconds())*1000);
+    clockTimer = setClock($('.topoverlayclock'), Player.setClock);
 }
 
 Player.hideControls = function(){
@@ -580,9 +577,8 @@ Player.updateSeekBar = function(time){
         var progressFactor = time / Player.GetDuration();
         if (progressFactor > 1)
             progressFactor = 1;
-	var progress = Math.floor(960 * progressFactor);
+	var progress = Math.floor(MAX_WIDTH * progressFactor);
 	$('.progressfull').css("width", progress);
-	$('.progressempty').css("width", 960 - progress);
    // Display.setTime(time);
    this.setTotalTime();
 	
@@ -762,8 +758,9 @@ Player.setAspectRatio = function(videoWidth, videoHeight) {
     if (videoWidth > 0 && videoHeight > 0) {
         if (Player.aspectMode === Player.ASPECT_H_FIT && videoWidth/videoHeight > 4/3)
         {
-            var cropX     = Math.round(videoWidth/960*120);
-            var cropWidth = videoWidth-(2*cropX);
+            var cropOffset = Math.floor((GetMaxVideoWidth() - (4/3*GetMaxVideoHeight()))/2);
+            var cropX      = Math.round(videoWidth/GetMaxVideoWidth()*cropOffset);
+            var cropWidth  = videoWidth-(2*cropX);
             this.plugin.SetCropArea(cropX, 0, cropWidth, videoHeight);
         }
         else
@@ -821,7 +818,6 @@ Player.startPlayer = function(url, isLive, startTime)
     $('.currentTime').text("");
     $('.totalTime').text("");
     $('.progressfull').css("width", 0);
-    $('.progressempty').css("width", 960);
 
     $('#outer').hide();
     this.hideDetailedInfo();
@@ -1287,4 +1283,16 @@ Player.enableScreenSaver = function() {
 
 Player.disableScreenSaver = function() {
     pluginAPI.setOffScreenSaver();
+};
+
+GetMaxVideoWidth = function() {
+    if (deviceYear > 2011) 
+        return MAX_WIDTH;
+    return 960;
+};
+
+GetMaxVideoHeight = function() {
+    if (deviceYear > 2011) 
+        return MAX_HEIGHT;
+    return 540;
 };

@@ -1,9 +1,17 @@
 var widgetAPI = new Common.API.Widget();
 var pluginAPI = new Common.API.Plugin();
+var MAX_WIDTH   = 960;
+var MAX_HEIGHT  = 540;
+var LINE_LENGTH = 45;
+var THUMB_WIDTH = 240;
+var THUMB_HEIGHT = 135;
 var recommendedLinks = [];
+var isEmulator = false;
+var deviceYear  = null;
 var Main =
 {
-    loaded: false
+    loaded: false,
+    clockTimer:null
 };
 
 Main.onLoad = function(refresh)
@@ -14,7 +22,13 @@ Main.onLoad = function(refresh)
 	Header.display(document.title);
     if (!this.loaded) {
         $("#page-cover").hide();
+        var model = document.getElementById("pluginObjectDEVICE").GetRealModel();
+        isEmulator = (model === "VALENCIA" || model === "SDK");
+        deviceYear = getDeviceYear();
+        if (deviceYear > 2011)
+            LINE_LENGTH = 36;
         loadingStart();
+        Main.setClock();
         this.loaded = true;
 	Audio.init();
 	Audio.showMuteFooter();
@@ -39,6 +53,10 @@ Main.onUnload = function()
 	Player.deinit();
 };
 
+Main.setClock = function() {
+    window.clearTimeout(Main.clockTimer);
+    Main.clockTimer = setClock($('#footer-clock'), Main.setClock);
+}
 
 Main.loadXml = function(refresh){
     $("#content-scroll").hide();

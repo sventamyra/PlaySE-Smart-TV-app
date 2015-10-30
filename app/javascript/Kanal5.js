@@ -527,7 +527,7 @@ Kanal5.getDetailsData = function(url, data) {
             is_live       : isLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : null,
+            start_time    : 0,
             duration      : VideoLength,
             description   : Description,
             not_available : false,
@@ -612,7 +612,7 @@ Kanal5.requestNextPage = function(url, callback) {
 
 Kanal5.fixThumb = function(thumb) {
     if (thumb)
-        thumb = thumb + "=s240";
+        thumb = thumb + "=s" + THUMB_WIDTH;
     return thumb
 }
 

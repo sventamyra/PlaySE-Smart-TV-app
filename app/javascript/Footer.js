@@ -6,7 +6,7 @@ var Footer =
 
 Footer.display = function(mute)
 {
-	var leftcorner = '<div class="footer-left-r"></div>';
+	var leftcorner = '<span id="footer-clock"></span><div class="footer-left-r"></div>';
 	var rightcorner = '<div class="footer-right-r"></div>';
 	
 	var html = leftcorner;
@@ -23,10 +23,11 @@ Footer.display = function(mute)
 	html+= rightcorner + leftcorner; 
 	html+= '<div class="footer-box-r"><img src="images/yellow.png" alt="" border="0" /><span id="c-button">Kanaler & livesändningar</span></div>';
 	html+= rightcorner + leftcorner; 
-	html+= '<div class="footer-box-r"><img src="images/blue.png" alt="" border="0" /><span id="searchshow">Sök programtitlar</span></div>';
+	html+= '<div class="footer-box-r"><img src="images/blue.png" alt="" border="0" /><span id="d-button">Sök</span></div>';
 	html+= rightcorner;
    
 	$('.footer-content').html(html);
+        Main.setClock();
     return true;
 };
 

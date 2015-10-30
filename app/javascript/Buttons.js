@@ -1,10 +1,11 @@
 var tvKey = new Common.API.TVKeyValue();
 
-var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, search = 4, player2 = 5, language = 6, imeSearch = 7, blocked = 8, connection error = 9
+var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, player2 = 5, language = 6, imeSearch = 7, blocked = 8, connection error = 9
 var keyHeld = false;
 var keyTimer;
 var itemSelected;
 var lastKey = 0;
+var keyHeldCounter = 0;
 
 var shift = false;
 var capslock = false;
@@ -43,9 +44,6 @@ Buttons.keyDown = function()
 	}
 	else if(index == 3){
 		this.keyHandleForKanaler();
-	}
-	else if(index == 4){
-		this.keyHandleForSearch();
 	}
 	else if(index == 5){
 		this.getCurrentChannelId();
@@ -93,6 +91,7 @@ Buttons.clearKey = function()
     // Log("clearKey");
     lastKey = 0;
     keyHeld = false;
+    keyHeldCounter = 0;
 };
 
 Buttons.sscroll = function(hide) 
@@ -393,7 +392,7 @@ Buttons.keyHandleForLanguage = function()
 					$('#english').addClass('selected');
 					$('#swedish').removeClass('checked');
 					Language.setLanguage('English');
-					Language.setLang();
+					Language.setLang('English');
 				}
 				break;
 			case tvKey.KEY_DOWN:
@@ -414,7 +413,7 @@ Buttons.keyHandleForLanguage = function()
 				cSel = ri;
 			}
 		}
-		Log(cSel);
+		// Log(cSel);
 		switch(keyCode)
 		{
 			case tvKey.KEY_RIGHT:
@@ -518,102 +517,6 @@ Buttons.keyHandleForImeSearch = function()
 {
 };
 
-Buttons.keyHandleForSearch = function()
-{
-	var keys = $('.row' + rowCount);
-    keys.eq(keyCount).removeClass('selected');
-	var keyCode = event.keyCode;
-	switch(keyCode)
-	{
-		case tvKey.KEY_LEFT:
-			if (keyCount > 0) {
-                keyCount--;
-            }
-			break;
-		case tvKey.KEY_RIGHT:
-			if (keyCount < keys.length - 1) {
-                keyCount++;
-            }
-			break;
-		case tvKey.KEY_UP:
-			if (rowCount > 1) {
-                rowCount--;
-            }
-			break;
-		case tvKey.KEY_DOWN:
-			if (rowCount < 5) {
-                rowCount++;
-            }
-			break;
-		case tvKey.KEY_ENTER:
-		case tvKey.KEY_PANEL_ENTER:
-			var $this = keys.eq(keyCount);
-			if(first)
-			{
-				$('#write').val('');
-				first = false;
-			}
-			var character = $this.html(); // If it's a lowercase letter, nothing happens to this variable
-			Log(character);
-        // Shift keys
-        if ($this.hasClass('left-shift') || $this.hasClass('right-shift')) {
-            $('.letter').toggleClass('uppercase');
-            $('.symbol span').toggle();
-
-            shift = (shift === true) ? false : true;
-            capslock = false;
-            break;
-        }
-
-        // Caps lock
-        if ($this.hasClass('capslock')) {
-            $('.letter').toggleClass('uppercase');
-            capslock = true;
-            break;
-        }
-
-        // Delete
-        if ($this.hasClass('delete')) {
-            var html = $('#write').val();
-
-            $('#write').val(html.substr(0, html.length - 1));
-            break;
-        }
-
-        // Special characters
-        if ($this.hasClass('space')) character = ' ';
-        if ($this.hasClass('tab')) character = "\t";
-        if ($this.hasClass('return')) {
-			setLocation('SearchList.html?sok=' + $('#write').val());
-			return false;
-		}
-
-        // Uppercase letter
-        if ($this.hasClass('uppercase')) character = character.toUpperCase();
-		
-		// Remove shift once a key is clicked.
-        if (shift === true) {
-            $('.symbol span').toggle();
-            //if (capslock === false) $('.letter').toggleClass('uppercase');
-
-            shift = false;
-        }
-
-        // Add the character
-		Log("text " + $('#write').val() + character);
-        $('#write').val($('#write').val() + character);
-		break;
-	}
-	keys = $('.row' + rowCount);
-	if (keyCount > keys.length - 1) {
-		keyCount = keys.length - 1;
-	}
-	keys.eq(keyCount).addClass('selected');
-	Log(keyCount);
-	$('.keyboard').hide(0, function(){$(this).show();});
-	this.handleMenuKeys(keyCode);
-};
-
 Buttons.keyHandleForKanaler = function()
 {
     Log("keyHandleForKanaler!!!");
@@ -623,13 +526,29 @@ Buttons.keyHandleForPlayer2 = function(){
 };
 Buttons.keyHandleForPlayer = function(){
     var keyCode = event.keyCode;
+    keyHeld = (keyCode == lastKey);
+
+    if (keyCode != lastKey || keyHeld) {
+        lastKey = keyCode;
+        window.clearTimeout(keyTimer);
+        if (keyHeld) {
+            keyHeldCounter++;
+        }
+        else {
+            keyHeldCounter = 0
+        }
+	keyTimer = window.setTimeout(this.clearKey, 600);
+    }
+
+    var longMinutes = Math.floor(keyHeldCounter/10) + 1;
+
     switch(keyCode)
     {
     case tvKey.KEY_RIGHT:
-        Player.skipLongForwardVideo();
+        Player.skipLongForwardVideo(longMinutes);
 	break;
     case tvKey.KEY_LEFT:
-        Player.skipLongBackwardVideo();
+        Player.skipLongBackwardVideo(longMinutes);
 	break;
     case tvKey.KEY_RW:
 	Player.skipBackwardVideo();
@@ -827,9 +746,6 @@ Buttons.handleMenuKeys = function(keyCode){
 	if(index == 6){
 	    Language.hide();
 	}
-	else if(index == 4){
-	    Search.hide();
-	}
 	else if(index == 9 || $(".slider-error").is(':visible')) {
             ConnectionError.show(true);
         }
@@ -891,7 +807,7 @@ Buttons.playItem = function() {
             return -1;
         } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
             starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
-        } else if (getDeviceYear() == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
+        } else if (deviceYear == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
             starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/)[1];
         }
     }
