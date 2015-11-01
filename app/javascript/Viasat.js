@@ -567,7 +567,8 @@ Viasat.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "994x560");
+
+	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "600x338");
         AirDate = data.publish_at.replace(/T.+/,"");
         // if (AirDate.indexOf(DetailsClock.replace(":", ".")) == -1)
         //     AirDate  = AirDate + " " + DetailsClock;
@@ -625,7 +626,7 @@ Viasat.getShowData = function(url, data) {
         data = JSON.parse(data.responseText);
 
         Name = data.title;
-	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "994x560");
+	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "600x338");
 
     } catch(err) {
         Log("Viasat.getShowData exception:" + err.message);

@@ -489,7 +489,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        var stream;
                        if (isLive) 
-                           stream = data.responseText.match(/(http.+\.m3u8.*hdnea[^<]*)/); 
+                           stream = data.responseText.match(/(http.+\.m3u8(.*hdnea)?[^<]*)/); 
                        else
                            stream = data.responseText.match(/(http.+\.mp4.+\.m3u8[^<]*)/);
                        if (!stream) {

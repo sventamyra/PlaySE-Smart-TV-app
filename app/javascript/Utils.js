@@ -425,7 +425,7 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
             error: function(xhr, textStatus, errorThrown)
             {
                 if (isRequestStillValid(requestedLocation)) {
-
+        	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown);
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
                         this.tryCount <= this.retryLimit) 
@@ -433,7 +433,6 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
                         //try again
                         return $.ajax(this);
                     } else {
-        	        Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown);
         	        ConnectionError.show();
                         callUrlCallBack(requestedLocation, cbError, textStatus, errorThrown);
         	    }
