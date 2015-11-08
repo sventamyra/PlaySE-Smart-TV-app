@@ -669,6 +669,9 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
 }
 
 Viasat.fixThumb = function(thumb, size) {
+    if (!thumb)
+        return thumb;
+        
     if (!size)
         size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
     return thumb.replace("{size}", size);
