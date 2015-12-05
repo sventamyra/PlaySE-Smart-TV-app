@@ -465,7 +465,7 @@ isRequestStillValid = function (request) {
 
 syncHttpRequest = function(url) {
     var xhr = new XMLHttpRequest();
-    var success, status, data = null;
+    var success, status, data, location = null;
     xhr.open("GET", url, false);
     xhr.send();
     success = (xhr.status === 200)
@@ -473,13 +473,15 @@ syncHttpRequest = function(url) {
     if (success) {
         Log('Success:' + url);
         data = xhr.responseText;
+    } else if (status === 302) {
+        location = xhr.getResponseHeader('location');
     } else {
         Log('Failure:' + url + " status:" + status);
     }
 
     xhr.destroy();
     xhr = null;
-    return {data:data, success:success, status:status}
+    return {data:data, success:success, status:status, location:location}
 };
 
 asyncHttpRequest = function(url, callback, noLog) {

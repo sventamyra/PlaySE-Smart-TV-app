@@ -130,7 +130,9 @@ redirectUrl = function(url) {
         // No need to check re-direct for an already playable url.
         return url;
     var result = syncHttpRequest(url)
-    if (result.success) {
+    if (result.location) {
+        return result.location
+    } else if (result.success) {
         result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
         if (result.length > 0)
             return result[1]
