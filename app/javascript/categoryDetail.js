@@ -230,7 +230,7 @@ categoryDetail.decode_data = function (categoryData) {
             categoryData[k] = "<article" + categoryData[k].split("<article")[1];
             Name = categoryData[k].match(/data-title="([^"]+)"/)[1];
             Link = fixLink(categoryData[k].match(/href="([^"]+)"/)[1]);
-            if (Link.match(/\/(video|klipp)\//))
+            if (isPlayable(Link))
                 // Episode amongst shows - skip
                 continue;
             // Log(Link);

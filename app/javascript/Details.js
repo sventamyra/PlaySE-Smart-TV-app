@@ -309,7 +309,7 @@ Details.getData = function(url, data) {
 };
 
 Details.getSvtData = function(url, data) {
-    if (url.indexOf("/video/") == -1 && url.indexOf("/klipp/") == -1 && url.indexOf("/kanaler/") == -1) {
+    if (!isPlayable(url) && url.indexOf("/kanaler/") == -1) {
         return Details.getShowData(url, data);
     }
 

@@ -95,11 +95,11 @@ Section.decode_recommended = function(data) {
                 i = i+1;
             }
             Name = Name.replace(/Live just nu /, "").trim();
-            Link = fixLink(data[k].match(/href="([^#][^#"]+)"/)[1]);
+            Link = redirectUrl(fixLink(data[k].match(/href="([^#][^#"]+)"/)[1]));
             Description = $(data[k]).find('span.play_carousel-caption__description').text();
 	    ImgLink = fixLink($(data[k]).find('img').attr('data-imagename')).replace("_imax", "");
             ImgLink = ImgLink.replace("extralarge", "small");
-            if (Link.match(/\/(video|klipp)\//)) {
+            if (isPlayable(Link)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
             } else {
@@ -123,6 +123,19 @@ Section.decode_recommended = function(data) {
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);
     }
+};
+
+redirectUrl = function(url) {
+    if (isPlayable(url))
+        // No need to check re-direct for an already playable url.
+        return url;
+    var result = syncHttpRequest(url)
+    if (result.success) {
+        result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
+        if (result.length > 0)
+            return result[1]
+    }
+    return url
 };
 
 Section.decode_data = function(data, filter) {
@@ -160,7 +173,7 @@ Section.decode_data = function(data, filter) {
             starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
             data[k] = "";
             LinkPrefix = '<a href="showList.html?name=';
-            if (Link.search("/klipp/") != -1 || Link.search("/video/") != -1) {
+            if (isPlayable(Link)) {
                 Duration = Duration[1];
                 LinkPrefix = '<a href="details.html?ilink=';
             }

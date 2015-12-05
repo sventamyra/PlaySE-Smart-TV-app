@@ -403,6 +403,10 @@ fixLink = function (ImgLink)
     }
 };
 
+isPlayable = function (url) {
+    return url.match(/\/video|klipp\//)
+}
+
 requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh) {
 
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
