@@ -87,8 +87,8 @@ Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
                function(status, data)
                {
-                   data = "<section id=\"recommended" + data.responseText.split("<section id=\"recommended")[1];
-                   data = data.split("</section>")[0] + "</section>";
+                   data = "<div class=\"play_display-window" + data.responseText.split("<div class=\"play_display-window")[1];
+                   data = data.split('<class="play_display-window__show-more')[0] + "</div>";
                    recommendedLinks = Section.decode_recommended(data);
                },
                null,

@@ -86,7 +86,15 @@ Section.decode_recommended = function(data) {
 
         for (var k=0; k < data.length; k++) {
             data[k] = "<article" + data[k].split("<article")[1];
-	    Titles = $(data[k]).find('span.play_carousel-caption__title-inner');
+	    Titles = $(data[k]).find('span.play_display-window__title');
+            if (Titles.length > 0) {
+                Decoded = decode_new_recommended(data[k]);
+            }
+            else 
+            {
+	        Titles = $(data[k]).find('span.play_carousel-caption__title-inner');
+                Decoded = decode_legacy_recommended(data[k]);
+            }
             var i = 0;
             Name = "";
             while (i < Titles.length) {
@@ -95,9 +103,9 @@ Section.decode_recommended = function(data) {
                 i = i+1;
             }
             Name = Name.replace(/Live just nu /, "").trim();
-            Link = redirectUrl(fixLink(data[k].match(/href="([^#][^#"]+)"/)[1]));
-            Description = $(data[k]).find('span.play_carousel-caption__description').text();
-	    ImgLink = fixLink($(data[k]).find('img').attr('data-imagename')).replace("_imax", "");
+            Link = redirectUrl(fixLink(Decoded.link));
+            Description = Decoded.description;
+	    ImgLink = fixLink(Decoded.img).replace("_imax", "");
             ImgLink = ImgLink.replace("extralarge", "small");
             if (isPlayable(Link)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
@@ -123,6 +131,20 @@ Section.decode_recommended = function(data) {
     } catch(err) {
         Log("decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);
     }
+};
+
+decode_new_recommended = function(data) {
+    return {link:data.match(/href="([^#][^#"]+)"/)[1],
+            description:$(data).find('span.play_display-window__text').text(),
+            img:$(data).find('img').attr('src')
+           }
+};
+
+decode_legacy_recommended = function(data) {
+    return {link:data.match(/href="([^#][^#"]+)"/)[1],
+            description:$(data).find('span.play_carousel-caption__description').text(),
+            img:$(data).find('img').attr('data-imagename')
+           }
 };
 
 redirectUrl = function(url) {
