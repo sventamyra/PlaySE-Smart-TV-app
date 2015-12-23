@@ -21,6 +21,7 @@ var clrSubtitleTimer = 0;
 var subtitleStatusPrinted = false;
 var reloaded = false;
 var SEPARATOR = "&nbsp;&nbsp;&nbsp;&nbsp;"
+var SVT_ALT_API_URL= "http://www.svt.se/videoplayer-api/video/"
 
 var Player =
 {
@@ -901,68 +902,81 @@ Player.checkPlayUrlStillValid = function(gurl) {
     return true;
 };
 
-Player.GetPlayUrl = function(gurl, isLive) {
+Player.GetPlayUrl = function(gurl, isLive, altUrl) {
     gurl = fixLink(gurl);
     // Log("gurl:" + gurl);
     requestedUrl = gurl;
     if (channel == "viasat") {
         Viasat.getPlayUrl(gurl, isLive);
-        return 0;
     } else if (channel == "tv4") {
         Tv4.getPlayUrl(gurl, isLive);
-        return 0;
     } else if (channel == "kanal5") {
         Kanal5.getPlayUrl(gurl, isLive);
-        return 0;
     };
 
-    var url_param = '?output=json';
+    var stream_url, url_param = '?output=json';
 
     if (gurl.indexOf('?') != -1)
         url_param = '&output=json'; 
-    $.getJSON(gurl+url_param, function(data) {
-            if (!Player.checkPlayUrlStillValid(gurl)) {
-            return -1;
-        }
-	$.each(data, function(key, val) {
-	    if(key == 'video'){
-		
-                videoUrl="";
-		for (var i = 0; i < val.videoReferences.length; i++) {
-		    Log(val.videoReferences[i].url);
-		    videoUrl = val.videoReferences[i].url;
-		    if(videoUrl.indexOf('.m3u8') >= 0){
-			break;
-		    }
-		}
-                srtUrl="";
-                for (var i = 0; i < val.subtitleReferences.length; i++) {
-		    Log(val.subtitleReferences[i].url);
-		    srtUrl = val.subtitleReferences[i].url;
-                    if (srtUrl.length > 0){
-			break;
-		    }
-		}
+    var stream_url = (altUrl) ? altUrl : gurl+url_param;
 
-		if(videoUrl.indexOf('.m3u8') >= 0){
-		    Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
-		}
-		else{
-		    gurl = gurl + '?type=embed';
-		    Log(gurl);
-		    widgetAPI.runSearchWidget('29_fullbrowser', gurl);
-		    // //	$('#outer').css("display", "none");
-		    // //	$('.video-wrapper').css("display", "none");
-		    
-		    // //	$('.video-footer').css("display", "none");
+    requestUrl(stream_url,
+               function(status, data)
+               {
+                   if (Player.checkPlayUrlStillValid(gurl)) {
+                       var videoReferences, subtitleReferences, srtUrl = null;
+                       data = JSON.parse(data.responseText);
+                       if (data.video)
+                           videoReferences = data.video.videoReferences
+                       else
+                           videoReferences = data.videoReferences;
 
-		    // //	$('#flash-content').css("display", "block");
-		    // //	$('#iframe').attr('src', gurl);
-		}
-	    }
-	});
-	return 0;
-    });
+		       for (var i = 0; i < videoReferences.length; i++) {
+		           Log(videoReferences[i].url);
+		           videoUrl = videoReferences[i].url;
+		           if(videoUrl.indexOf('.m3u8') >= 0){
+			       break;
+		           }
+		       }
+                       if (data.video)
+                           subtitleReferences = data.video.subtitleReferences
+                       else
+                           subtitleReferences = data.subtitleReferences;
+
+                       for (var i = 0; i < subtitleReferences.length; i++) {
+		           Log(subtitleReferences[i].url);
+                           if (subtitleReferences[i].url.indexOf(".m3u8") != -1)
+                               continue
+		           srtUrl = subtitleReferences[i].url;
+                           if (srtUrl.length > 0){
+			       break;
+		           }
+		       }
+                       if (!altUrl && !srtUrl && data.context.programVersionId) {
+                           // Try alternative url
+                           altUrl = SVT_ALT_API_URL + data.context.programVersionId;
+                           return Player.GetPlayUrl(gurl, isLive, altUrl);
+                       }
+
+		       if(videoUrl.indexOf('.m3u8') >= 0){
+		           Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
+		       }
+		       else{
+		           gurl = gurl + '?type=embed';
+		           Log(gurl);
+		           widgetAPI.runSearchWidget('29_fullbrowser', gurl);
+		           // //	$('#outer').css("display", "none");
+		           // //	$('.video-wrapper').css("display", "none");
+		           
+		           // //	$('.video-footer').css("display", "none");
+
+		           // //	$('#flash-content').css("display", "block");
+		           // //	$('#iframe').attr('src', gurl);
+		       }
+	           }
+               }
+              );
+    return 0
 };
 
 // Subtitles support

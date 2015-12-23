@@ -87,7 +87,9 @@ Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
                function(status, data)
                {
-                   data = "<div class=\"play_display-window" + data.responseText.split("<div class=\"play_display-window")[1];
+                   data = data.responseText.split("<div class=\"play_display-window");
+                   data.pop();
+                   data = "<div class=\"play_display-window" + data.join("");
                    data = data.split('<class="play_display-window__show-more')[0] + "</div>";
                    recommendedLinks = Section.decode_recommended(data);
                },
