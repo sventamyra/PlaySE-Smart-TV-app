@@ -164,60 +164,74 @@ redirectUrl = function(url) {
 
 Section.decode_data = function(data, filter) {
     try {
-        var Name;
-        var Duration;
-        var IsLive;
-        var running;
-        var starttime;
-        var Link;
-        var LinkPrefix;
-        var Description;
-        var ImgLink;
-
         data = data.split("</article>");
         data.pop();
-
         for (var k=0; k < data.length; k++) {
-            if (data[k].search(/data-broadcastended=\"true\"/i) > -1)
-                // Show already ended
-                continue;
-            Name = data[k].match(/data-title="([^"]+)"/)[1].trim();
-            Duration = data[k].match(/data-length="([^"]+)"/);
-            Description = data[k].match(/data-description="([^"]+)"/);
-            Link = fixLink(data[k].match(/href="([^#][^#"]+)"/)[1]);
-            if (filter && filter.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
-                continue;
-            ImgLink = data[k].match(/data-imagename="([^"]+)"/);
-            IsLive = data[k].search(/svt_icon--live/) > -1;
-            running = data[k].search(/play_graphics-live--inactive/) == -1;
-            starttime = data[k].match(/alt="([^"]+)"/);
-            Description = (!Description) ? "" : Description[1].trim();
-            ImgLink = (!ImgLink) ? data[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
-            ImgLink = fixLink(ImgLink);
-            starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
-            data[k] = "";
-            LinkPrefix = '<a href="showList.html?name=';
-            if (isPlayable(Link)) {
-                Duration = Duration[1];
-                LinkPrefix = '<a href="details.html?ilink=';
-            }
-            else {
-                Duration = 0;
-            }
 
-            toHtml({name:Name,
-                    duration:Duration,
-                    is_live:IsLive,
-                    is_channel:false,
-                    running:running,
-                    starttime:starttime,
-                    link:Link,
-                    link_prefix:LinkPrefix,
-                    description:Description,
-                    thumb:ImgLink
-                   })
-	}
+            if (data[k].match(/data-title="([^"]+)"/))
+                decode_video(data[k], filter);
+            else
+                decode_show(data[k]);
+        }
     } catch(err) {
         Log("Section.decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);
     }
+};
+
+decode_video = function(data, filter) {
+    var Name;
+    var Duration;
+    var IsLive;
+    var running;
+    var starttime;
+    var Link;
+    var LinkPrefix;
+    var Description;
+    var ImgLink;
+
+    if (data.search(/data-broadcastended=\"true\"/i) > -1)
+        // Show already ended
+        return;
+    Name = data.match(/data-title="([^"]+)"/)[1].trim();
+    Duration = data.match(/data-length="([^"]+)"/);
+    Description = data.match(/data-description="([^"]+)"/);
+    Link = fixLink(data.match(/href="([^#][^#"]+)"/)[1]);
+    if (filter && filter.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
+        return;
+    ImgLink = data.match(/data-imagename="([^"]+)"/);
+    IsLive = data.search(/svt_icon--live/) > -1;
+    running = data.search(/play_graphics-live--inactive/) == -1;
+    starttime = data.match(/alt="([^"]+)"/);
+    Description = (!Description) ? "" : Description[1].trim();
+    ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/)[1] : ImgLink[1];
+    ImgLink = fixLink(ImgLink);
+    starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
+    data = "";
+    LinkPrefix = '<a href="showList.html?name=';
+    if (isPlayable(Link)) {
+        Duration = Duration[1];
+        LinkPrefix = '<a href="details.html?ilink=';
+    }
+    else {
+        Duration = 0;
+    }
+
+    toHtml({name:Name,
+            duration:Duration,
+            is_live:IsLive,
+            is_channel:false,
+            running:running,
+            starttime:starttime,
+            link:Link,
+            link_prefix:LinkPrefix,
+            description:Description,
+            thumb:ImgLink
+           })
+}
+
+decode_show = function(data) {
+    showToHtml($(data).find('span.play_videolist-element__title-text').text(),
+               $(data).find('img').attr('src'),
+               fixLink(data.match(/href="([^#][^#"]+)"/)[1])
+              )
 };
