@@ -156,7 +156,7 @@ redirectUrl = function(url) {
         return result.location
     } else if (result.success) {
         result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
-        if (result.length > 0)
+        if (result && result.length > 0)
             return result[1]
     }
     return url
