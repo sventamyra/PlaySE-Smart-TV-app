@@ -209,7 +209,7 @@ decode_video = function(data, filter) {
     data = "";
     LinkPrefix = '<a href="showList.html?name=';
     if (isPlayable(Link)) {
-        Duration = Duration[1];
+        Duration = (Duration) ? Duration[1] : 0;
         LinkPrefix = '<a href="details.html?ilink=';
     }
     else {

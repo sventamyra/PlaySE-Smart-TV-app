@@ -29,21 +29,33 @@ showList.Geturl=function(refresh){
     return name;
 };
 
-showList.loadXml = function(refresh)
+showList.loadXml = function(refresh, alt)
 {
     $("#content-scroll").hide();
-    var gurl = this.Geturl(refresh);
+    var gurl = (alt) ? alt : this.Geturl(refresh);
     requestUrl(gurl,
                function(status, data)
                {
                    switch (channel) {
                    case "svt":
+                       if (!alt) {
+                           alt = $(data.responseText).find('div#play_js-tabpanel-more-episodes').find('div.play_title-page__pagination').find('a').attr('href')
+                           if (alt) {
+                               return showList.loadXml(refresh, fixLink(alt))
+                           }
+                       }
+                       var clips_data = $(data.responseText).find('div#play_js-tabpanel-more-clips').find('div.play_title-page__pagination').find('a').attr('href')
                        data = data.responseText.split("id=\"videos-in-same-category")[0];
                        if (!data.match("play_js-tabs")) {
                            data = data.split("<article").slice(1).join("<article");
                            Section.decode_data("<article" + data);
                        } else {
                            data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
+                           if (clips_data) {
+                               clips_data = syncHttpRequest(fixLink(clips_data)).data.split("id=\"videos-in-same-category")[0];
+                               clips_data = clips_data.split("<div id=\"play_js-tabpanel-more-clips")[1];
+                               data = data.split("<div id=\"play_js-tabpanel-more-clips")[0] + clips_data;
+                           }
                            showList.decode_data(data);
                        }
                        loadFinished(status, refresh);
