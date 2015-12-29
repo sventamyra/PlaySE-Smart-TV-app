@@ -76,13 +76,6 @@ Main.loadXml = function(refresh){
     }
 };
 
-Main.getLocation = function (refresh)
-{
-    if (refresh)
-        return myRefreshLocation;
-    return myLocation;
-};
-    
 Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
                function(status, data)
@@ -116,7 +109,7 @@ Main.loadPopular = function(refresh){
 };
 
 Main.loadViasat = function(refresh) {
-    var newChannel = this.getLocation(refresh).match(/viasat_channel=([0-9]+|reset)/);
+    var newChannel = getLocation(refresh).match(/viasat_channel=([0-9]+|reset)/);
     newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
     if (newChannel)
         myHistory = [];
@@ -146,7 +139,7 @@ Main.loadTv4 = function(refresh) {
 };
 
 Main.loadKanal5 = function(refresh) {
-    var newChannel = this.getLocation(refresh).match(/kanal5_channel=([0-9]+|reset)/);
+    var newChannel = getLocation(refresh).match(/kanal5_channel=([0-9]+|reset)/);
     newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
     if (newChannel)
         myHistory = [];

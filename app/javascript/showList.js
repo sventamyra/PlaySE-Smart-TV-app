@@ -18,9 +18,7 @@ showList.onUnload = function()
 
 
 showList.Geturl=function(refresh){
-    var url = myLocation;
-    if (refresh)
-        url = myRefreshLocation;
+    var url = getLocation(refresh);
     var name="";
     if (url.indexOf("name=")>0)
     {
@@ -33,6 +31,7 @@ showList.loadXml = function(refresh, alt)
 {
     $("#content-scroll").hide();
     var gurl = (alt) ? alt : this.Geturl(refresh);
+    var clips = (getLocation(refresh).indexOf("clips=1") != -1);
     requestUrl(gurl,
                function(status, data)
                {
@@ -40,7 +39,7 @@ showList.loadXml = function(refresh, alt)
                    case "svt":
                        var CLIPS_TAG = "<div id=\"play_js-tabpanel-more-clips"
                        data = data.responseText.split("id=\"videos-in-same-category")[0];
-                       if (!alt) {
+                       if (!alt && !clips) {
                            alt = showList.get_pagination_url(data.split(CLIPS_TAG)[0]);
                            if (alt) {
                                return showList.loadXml(refresh, alt)
@@ -51,16 +50,24 @@ showList.loadXml = function(refresh, alt)
                            data = data.split("<article").slice(1).join("<article");
                            Section.decode_data("<article" + data);
                        } else {
+                           var clips_thumb = $(data).find('img').attr('data-imagename');
                            data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
                            data = data.split(CLIPS_TAG)
-                           var clips_data = (data.length > 1) ? showList.get_pagination_url(data[1]) : null;
-                           if (clips_data) {
-                               clips_data = syncHttpRequest(fixLink(clips_data)).data.split("id=\"videos-in-same-category")[0];
-                               data = data[0] + clips_data.split(CLIPS_TAG)[1];
+                           var clips_url = (data.length > 1) ? gurl : null;
+                           if (!clips) {
+                               clips_url = (data.length > 1) ? showList.get_pagination_url(data[1]) : null;
+                               if (!clips_url && data.length > 1)
+                                   clips_url = gurl;
+
+                               if (clips_url) {
+                                   data = data[0]
+                               } else {
+                                   data = data.join(CLIPS_TAG);
+                               }
                            } else {
-                               data = data.join(CLIPS_TAG);
+                               data = CLIPS_TAG + data[1];
                            }
-                           showList.decode_data(data);
+                           showList.decode_data(data, clips, clips_url, clips_thumb);
                        }
                        loadFinished(status, refresh);
                        break;
@@ -89,7 +96,7 @@ showList.get_pagination_url = function(data) {
     return (url && url.length > 0) ? fixLink(url[1]) : null;
 }
 
-showList.decode_data = function(showData) {
+showList.decode_data = function(showData, clips, clips_url, clips_thumb) {
     try {
         var Name;
         var Duration;
@@ -168,7 +175,14 @@ showList.decode_data = function(showData) {
         });
         for (var k=0; k < Shows.length; k++) {
             toHtml(Shows[k])
-        };
+        }
+        if (!clips && clips_url) {
+            showToHtml("Klipp",
+                       fixLink(clips_thumb).replace("extralarge", "small"),
+                       fixLink(clips_url),
+                       '<a href="showList.html?clips=1&name='
+                      )
+        }
     } catch(err) {
         Log("decode_data Exception:" + err.message + ". showData[" + k + "]:" + showData[k]);
     }

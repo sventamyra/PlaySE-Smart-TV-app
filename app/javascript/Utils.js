@@ -251,6 +251,13 @@ fetchPriorLocation = function()
     refreshLocation(myHistory[myHistory.length-1]);
 };
 
+getLocation = function (refresh)
+{
+    if (refresh)
+        return myRefreshLocation;
+    return myLocation;
+};
+
 getOldLocation = function() {
     if (myHistory.length > 0)
         return myHistory[myHistory.length-1].loc
@@ -390,16 +397,17 @@ msToClock = function (ts)
     return hour + ":" + minutes;
 };
 
-fixLink = function (ImgLink) 
+fixLink = function (Link) 
 {
-    if (ImgLink.match(/^\/\//)) {
-        return "http:" + ImgLink;
-    } else if (!ImgLink.match("https*:")) {
-        if (!ImgLink.match(/^\//))
-            ImgLink = "/" + ImgLink;
-        return "http://www.svtplay.se" + ImgLink
+    Link = Link.replace(/amp;/g, "")
+    if (Link.match(/^\/\//)) {
+        return "http:" + Link;
+    } else if (!Link.match("https*:")) {
+        if (!Link.match(/^\//))
+            Link = "/" + Link;
+        return "http://www.svtplay.se" + Link
     } else {
-        return ImgLink
+        return Link
     }
 };
 
