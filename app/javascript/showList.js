@@ -38,23 +38,27 @@ showList.loadXml = function(refresh, alt)
                {
                    switch (channel) {
                    case "svt":
+                       var CLIPS_TAG = "<div id=\"play_js-tabpanel-more-clips"
+                       data = data.responseText.split("id=\"videos-in-same-category")[0];
                        if (!alt) {
-                           alt = $(data.responseText).find('div#play_js-tabpanel-more-episodes').find('div.play_title-page__pagination').find('a').attr('href')
+                           alt = showList.get_pagination_url(data.split(CLIPS_TAG)[0]);
                            if (alt) {
-                               return showList.loadXml(refresh, fixLink(alt))
+                               return showList.loadXml(refresh, alt)
                            }
                        }
-                       var clips_data = $(data.responseText).find('div#play_js-tabpanel-more-clips').find('div.play_title-page__pagination').find('a').attr('href')
-                       data = data.responseText.split("id=\"videos-in-same-category")[0];
+
                        if (!data.match("play_js-tabs")) {
                            data = data.split("<article").slice(1).join("<article");
                            Section.decode_data("<article" + data);
                        } else {
                            data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
+                           data = data.split(CLIPS_TAG)
+                           var clips_data = (data.length > 1) ? showList.get_pagination_url(data[1]) : null;
                            if (clips_data) {
                                clips_data = syncHttpRequest(fixLink(clips_data)).data.split("id=\"videos-in-same-category")[0];
-                               clips_data = clips_data.split("<div id=\"play_js-tabpanel-more-clips")[1];
-                               data = data.split("<div id=\"play_js-tabpanel-more-clips")[0] + clips_data;
+                               data = data[0] + clips_data.split(CLIPS_TAG)[1];
+                           } else {
+                               data = data.join(CLIPS_TAG);
                            }
                            showList.decode_data(data);
                        }
@@ -79,6 +83,11 @@ showList.loadXml = function(refresh, alt)
                }
               );
 };
+
+showList.get_pagination_url = function(data) {
+    var url = data.match(/class=\"play_title-page__pagination\"[^\/]+<a href=\"([^"]+)/);
+    return (url && url.length > 0) ? fixLink(url[1]) : null;
+}
 
 showList.decode_data = function(showData) {
     try {
