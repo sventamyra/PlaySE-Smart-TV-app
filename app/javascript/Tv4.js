@@ -93,8 +93,10 @@ Tv4.getUrl = function(name) {
         return 'http://webapi.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false'
         break;
 
+    case "clips":
+        type = "clip"
     case "episodes":
-        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=episode&node_nids='
+        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=' + type + '&node_nids='
         break;
 
     case "Latest.html":
@@ -135,7 +137,7 @@ Tv4.search = function(query, completeFun) {
                        requestUrl(Tv4.getUrl("query") + query,
                                   function(status, data)
                                   {
-                                      Tv4.decode(data.responseText, false, completeFun);
+                                      Tv4.decode(data.responseText, false, false, completeFun);
                                       data = null;
                                       if (completeFun)
                                           completeFun();
@@ -186,7 +188,7 @@ Tv4.getCButtonText = function (language) {
         return 'Livesändningar';
 };
 
-Tv4.decode = function(data, stripShow, completeFun) {
+Tv4.decode = function(data, stripShow, isClip, completeFun) {
     try {
         var Name;
         var Duration;
@@ -245,8 +247,7 @@ Tv4.decode = function(data, stripShow, completeFun) {
                             }
                            );
         }
-        data = null;
-        
+       
         if (stripShow) {
             Tv4.result.sort(function(a, b){
                 if (a.season == b.season) {
@@ -288,6 +289,18 @@ Tv4.decode = function(data, stripShow, completeFun) {
                        });
             }
 	}
+        if (stripShow && !isClip) {
+            var clips_url = Tv4.getUrl("clips") + data[0].program.nid;
+            var clips_data = JSON.parse(syncHttpRequest(clips_url+"&per_page=1").data);
+            if (clips_data.total_hits > 0) {
+                showToHtml('Klipp',
+                           Tv4.fixThumb(clips_data.results[0].program.program_image),
+                           clips_url,
+                           '<a href="showList.html?clips=1&name='
+                          )
+            }
+        }
+        data = null;
         Tv4.result = [];
     } catch(err) {
         Log("Tv4.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
@@ -331,7 +344,6 @@ Tv4.decode_shows = function(data, query, completeFun) {
         var ImgLink;
         var next = null;
         var checkSeasons=false;
-        var LinkPrefix = '<a href="showList.html?name='
         var json = null;
         var queryTest = (query && query.length == 1) ? new RegExp("^" + query, 'i') : null;
 
@@ -362,8 +374,7 @@ Tv4.decode_shows = function(data, query, completeFun) {
         for (var k=0; k < Tv4.result.length; k++) {
             showToHtml(Tv4.result[k].name,
                        Tv4.result[k].thumb,
-                       Tv4.result[k].link,
-                       LinkPrefix
+                       Tv4.result[k].link
                       );
         }
         Tv4.result = [];
