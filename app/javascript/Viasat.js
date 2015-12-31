@@ -197,7 +197,7 @@ Viasat.getCButtonText = function (language) {
         return 'Kanaler';
 };
 
-Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
+Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
     try {
         var Name;
         var Duration;
@@ -209,6 +209,8 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
         var Description;
         var ImgLink;
         var next = null;
+        var clipsUrl = null;
+        var seasonUrl = null;
         var AirDate;
         var Episode=null;
 
@@ -225,6 +227,10 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
         else 
             next = null;
 
+        if (stripShow && !isClip && data._links && data._links.self) {
+            clipsUrl = data._links.self.href.replace("type=program", "type=clip").replace(/&page=[^&]+/,"");
+        }
+
         if (data._embedded.sections)
             data = data._embedded.sections[0]._embedded.videos;
         else if (data._embedded.videos)
@@ -239,7 +245,7 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
                 Name = Name.replace(/^./,Name[0].toUpperCase());
                 Name = Name.replace(/^([Ss][0-9]+)?[Ee][0]*([0-9]+)$/,"Avsnitt $2")
             }
-            ImgLink = Viasat.fixThumb(data[k]._links.image.href); 
+            ImgLink = Viasat.fixThumb(data[k]._links.image.href);
             if (!data[k]._links.stream) {
                 Viasat.result.push({name:Name, link:data[k]._links.seasons.href, thumb:ImgLink});
                 continue;
@@ -253,6 +259,8 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
                 Episode = data[k].format_position.episode
             else
                 Episode = undefined
+            if (clipsUrl && !seasonUrl && data[k]._links.season)
+                seasonUrl = data[k]._links.season.href;
             Viasat.result.push({name:Name, 
                                 episode:Episode,
                                 link:Link, 
@@ -264,10 +272,10 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
                                }
                               );
         }
-        data = null;
         if (next) {
+            data = null;
             return Viasat.requestNextPage(next, function(status, nextData) {
-                Viasat.decode(nextData.responseText, url, stripShow, completeFun, true);
+                Viasat.decode(nextData.responseText, url, stripShow, completeFun, isClip, true);
             });
         }
         
@@ -307,6 +315,23 @@ Viasat.decode = function(data, url, stripShow, completeFun, isNext) {
                        });
             }
 	}
+        if (clipsUrl) {
+            data = JSON.parse(syncHttpRequest(clipsUrl).data);
+            var clipsThumb = null;
+            if (data.count.total_items > 0) {
+                if (seasonUrl) {
+                    data = JSON.parse(syncHttpRequest(seasonUrl).data);
+                    if (data._links && data._links.image)
+                        clipsThumb = Viasat.fixThumb(data._links.image.href); 
+                }
+                showToHtml('Klipp',
+                           clipsThumb,
+                           clipsUrl,
+                           '<a href="showList.html?clips=1&name='
+                          )
+            }
+        };
+        data = null;
         Viasat.result = [];
     } catch(err) {
         Log("Viasat.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
@@ -567,7 +592,6 @@ Viasat.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-
 	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "600x338");
         AirDate = data.publish_at.replace(/T.+/,"");
         // if (AirDate.indexOf(DetailsClock.replace(":", ".")) == -1)

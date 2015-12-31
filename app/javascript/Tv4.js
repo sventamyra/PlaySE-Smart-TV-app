@@ -291,10 +291,10 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
 	}
         if (stripShow && !isClip) {
             var clips_url = Tv4.getUrl("clips") + data[0].program.nid;
-            var clips_data = JSON.parse(syncHttpRequest(clips_url+"&per_page=1").data);
-            if (clips_data.total_hits > 0) {
+            var data = JSON.parse(syncHttpRequest(clips_url+"&per_page=1").data);
+            if (data.total_hits > 0) {
                 showToHtml('Klipp',
-                           Tv4.fixThumb(clips_data.results[0].program.program_image),
+                           Tv4.fixThumb(data.results[0].program.program_image),
                            clips_url,
                            '<a href="showList.html?clips=1&name='
                           )

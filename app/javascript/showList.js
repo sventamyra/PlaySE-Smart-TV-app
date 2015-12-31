@@ -74,7 +74,7 @@ showList.loadXml = function(refresh, alt)
                        break;
 
                    case "viasat":
-                       Viasat.decode(data.responseText, gurl, true, function(){loadFinished(status, refresh)});
+                       Viasat.decode(data.responseText, gurl, true, function(){loadFinished(status, refresh)}, is_clips);
                        break;
 
                    case "tv4":
