@@ -932,7 +932,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                                videoReferences = data.videoReferences;
 
 		           for (var i = 0; i < videoReferences.length; i++) {
-		               Log(videoReferences[i].url);
+		               Log("videoReferences:" + videoReferences[i].url);
 		               videoUrl = videoReferences[i].url;
 		               if(videoUrl.indexOf('.m3u8') >= 0){
 			           break;
@@ -944,7 +944,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                                subtitleReferences = data.subtitleReferences;
 
                            for (var i = 0; i < subtitleReferences.length; i++) {
-		               Log(subtitleReferences[i].url);
+		               Log("subtitleReferences:" + subtitleReferences[i].url);
                                if (subtitleReferences[i].url.indexOf(".m3u8") != -1)
                                    continue
 		               srtUrl = subtitleReferences[i].url;
@@ -952,7 +952,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 			           break;
 		               }
 		           }
-                           if (!altUrl && !srtUrl && data.context.programVersionId) {
+                           if (!altUrl && !srtUrl && !data.disabled && data.context.programVersionId) {
                                // Try alternative url
                                altUrl = SVT_ALT_API_URL + data.context.programVersionId;
                                return Player.GetPlayUrl(gurl, isLive, altUrl);
