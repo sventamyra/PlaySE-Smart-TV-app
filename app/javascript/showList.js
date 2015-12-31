@@ -37,6 +37,7 @@ showList.loadXml = function(refresh, alt)
                {
                    switch (channel) {
                    case "svt":
+                       var EPISODE_TAG = "<section class=\"play_js-tabs\""
                        var CLIPS_TAG = "<div id=\"play_js-tabpanel-more-clips"
                        data = data.responseText.split("id=\"videos-in-same-category")[0];
                        if (!alt && !is_clips) {
@@ -50,8 +51,8 @@ showList.loadXml = function(refresh, alt)
                            data = data.split("<article").slice(1).join("<article");
                            Section.decode_data("<article" + data);
                        } else {
-                           var clips_thumb = $(data).find('img').attr('data-imagename');
-                           data = "<section class=\"play_js-tabs\"" + data.split("class=\"play_js-tabs")[1];
+                           var clips_thumb = $(data.split(EPISODE_TAG)[0]).find('img').attr('data-imagename');
+                           data = EPISODE_TAG + data.split(EPISODE_TAG)[1];
                            data = data.split(CLIPS_TAG)
                            var clips_url = (data.length > 1) ? gurl : null;
                            if (!is_clips) {
@@ -99,6 +100,7 @@ showList.get_pagination_url = function(data) {
 showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
     try {
         var Name;
+        var Description;
         var Duration;
         var Link;
         var ImgLink;
@@ -121,7 +123,8 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             if (showData[k].match('countdown play_live-countdown'))
                 continue;
             Name = showData[k].match(/play_vertical-list__header-link\">([^<]+)</)[1].trim();
-
+            Description = showData[k].match(/play_vertical-list__description-text\">([^<]+)</);
+            Description = (Description) ? Description[1].trim() : "";
             // Duration = showData[k].match(/data-length="([^"]+)"/)[1];
             Duration = showData[k].match(/time>([^<]+)/)[1];
             Link = fixLink(showData[k].match(/href="([^#][^#"]+)"/)[1]);
@@ -130,7 +133,7 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             ImgLink = fixLink(ImgLink);
             showData[k] = "";
             Season  = Name.match(/s[^s]+song[	 ]*([0-9]+)/i);
-            Episode = Name.match(/avsnitt[	 ]*([0-9]+)/i);
+            Episode = Name.match(/avsnitt[	 ]*([0-9]+)/i) || Description.match(/[Dd]el[	 ]+([0-9]+)/i);
             Variant = Name.match(/(textat|syntolkat|teckenspr[^k]+kstolkat|originalspr[^k]+k)/i);
             Season  = (Season) ? +Season[1] : null;
             Episode = (Episode) ? +Episode[1] : null;
