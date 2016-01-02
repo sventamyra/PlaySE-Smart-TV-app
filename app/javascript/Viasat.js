@@ -324,11 +324,7 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
                     if (data._links && data._links.image)
                         clipsThumb = Viasat.fixThumb(data._links.image.href); 
                 }
-                showToHtml('Klipp',
-                           clipsThumb,
-                           clipsUrl,
-                           '<a href="showList.html?clips=1&name='
-                          )
+                clipToHtml(clipsThumb, clipsUrl);
             }
         };
         data = null;
@@ -476,7 +472,6 @@ Viasat.decode_shows = function(data, url, allShows, skipHtml, completeFun, isNex
                 json = json._embedded.formats;
             else if (json._embedded.seasons) {
                 json = json._embedded.seasons;
-                LinkPrefix = '<a href="showList.html?season=1&name='
                 checkSeasons = true;
             } else {
                 if (json._embedded.items[0].type && json._embedded.items[0].type == "program") {
@@ -506,9 +501,10 @@ Viasat.decode_shows = function(data, url, allShows, skipHtml, completeFun, isNex
                 if (checkSeasons) {
                     if (JSON.parse(syncHttpRequest(Link).data).count.total_items == 0)
                         continue;
+                    LinkPrefix = '<a href="showList.html?season=1' + encodeURIComponent(Name) + '&name=';
                 }
 
-                Viasat.result.push({name:Name, link:Link, thumb:ImgLink});
+                Viasat.result.push({name:Name, link:Link, thumb:ImgLink, link_prefix:LinkPrefix});
             }
             json = null;
             if (next) {
@@ -560,7 +556,7 @@ Viasat.decode_shows = function(data, url, allShows, skipHtml, completeFun, isNex
             showToHtml(Viasat.result[k].name,
                        Viasat.result[k].thumb,
                        Viasat.result[k].link,
-                       LinkPrefix
+                       Viasat.result[k].link_prefix
                       );
         }
         Viasat.result = [];

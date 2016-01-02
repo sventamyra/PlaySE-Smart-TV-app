@@ -445,7 +445,7 @@ Kanal5.decode_season = function(data, completeFun) {
                 if (!ImgLink)
                     ImgLink = data.photoUrl;
                 ImgLink = Kanal5.fixThumb(ImgLink);
-                showToHtml(Name, ImgLink, Link, '<a href="showList.html?season=1&name=');
+                seasonToHtml(Name, ImgLink, Link);
             }
         }
         data = null;

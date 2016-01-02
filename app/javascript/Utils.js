@@ -12,6 +12,7 @@ var itemCounter = 0;
 var myLocation = "index.html";
 var myRefreshLocation = null;
 var myHistory = [];
+var myUrls    = [];
 var myPos = null;
 var loadingTimer = 0;
 var detailsOnTop = false;
@@ -418,6 +419,7 @@ isPlayable = function (url) {
 requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh) {
 
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
+    addToMyUrls(url);
     $.support.cors = true;
     $.ajax(
         {
@@ -472,6 +474,7 @@ isRequestStillValid = function (request) {
 }
 
 syncHttpRequest = function(url) {
+    addToMyUrls(url);
     var xhr = new XMLHttpRequest();
     var success, status, data, location = null;
     xhr.open("GET", url, false);
@@ -493,6 +496,7 @@ syncHttpRequest = function(url) {
 };
 
 asyncHttpRequest = function(url, callback, noLog) {
+    addToMyUrls(url);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
@@ -533,6 +537,18 @@ fixCss = function() {
     if (deviceYear > 2011) {
         $('.confirmExit').css({"padding":"10px", "padding-bottom":"5px"});
     };
+};
+
+seasonToHtml = function(Name, Thumb, Link) {
+    showToHtml(Name, 
+               Thumb, 
+               Link, 
+               '<a href="showList.html?season=1' + encodeURIComponent(Name) + '&name='
+              );
+};
+
+clipToHtml = function(Thumb, Link) {
+    showToHtml("Klipp", Thumb, Link, '<a href="showList.html?clips=1&title=Klipp&name=');
 };
 
 showToHtml = function(Name, Thumb, Link, LinkPrefix) {
@@ -625,6 +641,13 @@ slideToggle = function(id, timer, callback) {
     } else
         id.slideToggle(timer, callback);
 }
+
+addToMyUrls = function(url) {
+    if (myUrls.indexOf(url) == -1 && url.indexOf("/log?msg") == -1) {
+        myUrls.push(url);
+        myUrls = myUrls.slice(0,10);
+    }
+};
 
 Log = function (msg) 
 {

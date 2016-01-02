@@ -256,7 +256,9 @@ Details.loadXml = function(isBackground) {
 		       html+='<div class="project-desc">'+programData.description+'</div>';
 		       html+='<div class="bottom-buttons">';
                        if (programData.show) {
-                           html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till Programmet</a>';
+                           var title = myLocation.match(/title=([^&]+)/);
+                           title = (title) ? title[1] : "Programmet"
+                           html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till ' + title + '</a>';
                        } else if (programData.not_available) {
                            html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
                        } else {

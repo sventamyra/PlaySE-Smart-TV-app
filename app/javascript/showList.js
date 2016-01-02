@@ -180,10 +180,8 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             toHtml(Shows[k])
         }
         if (!is_clips && clips_url) {
-            showToHtml("Klipp",
-                       fixLink(clips_thumb).replace("extralarge", "small"),
-                       fixLink(clips_url),
-                       '<a href="showList.html?clips=1&name='
+            clipToHtml(fixLink(clips_thumb).replace("extralarge", "small"),
+                       fixLink(clips_url)
                       )
         }
     } catch(err) {

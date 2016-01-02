@@ -55,8 +55,15 @@ Main.onUnload = function()
 
 Main.setClock = function() {
     window.clearTimeout(Main.clockTimer);
+    Main.requestRandomUrl();
     Main.clockTimer = setClock($('#footer-clock'), Main.setClock);
 }
+
+Main.requestRandomUrl = function() {
+    if (deviceYear == 2013 && myUrls.length > 0)
+        asyncHttpRequest(myUrls[Math.floor(Math.random()*myUrls.length)], null, true);
+};
+
 
 Main.loadXml = function(refresh){
     $("#content-scroll").hide();

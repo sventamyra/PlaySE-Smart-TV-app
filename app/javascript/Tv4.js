@@ -54,7 +54,7 @@ Tv4.checkDrm = function(i, data) {
     }
     else {
         Log("Saving DRM shows, length:" + Tv4.drmShows.length);
-        setCookie("tv4DrmShows", Tv4.drmShows.join(";"), 30)
+        setCookie("tv4DrmShows", Tv4.drmShows.join(";"), 7)
         Tv4.updatingDrmShows = false;
         data = null;
     }
@@ -293,10 +293,8 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
             var clips_url = Tv4.getUrl("clips") + data[0].program.nid;
             var data = JSON.parse(syncHttpRequest(clips_url+"&per_page=1").data);
             if (data.total_hits > 0) {
-                showToHtml('Klipp',
-                           Tv4.fixThumb(data.results[0].program.program_image),
-                           clips_url,
-                           '<a href="showList.html?clips=1&name='
+                clipToHtml(Tv4.fixThumb(data.results[0].program.program_image),
+                           clips_url
                           )
             }
         }
