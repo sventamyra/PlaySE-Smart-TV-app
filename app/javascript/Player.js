@@ -324,7 +324,7 @@ Player.reloadVideo = function(time)
         Player.disableScreenSaver();
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
 	this.plugin.ResumePlay(videoUrl, lastPos);
-	Log("video reloaded. url = " + videoUrl + "pos " + lastPos );
+	Log("video reloaded. url = " + videoUrl + " pos " + lastPos );
     this.state = this.PLAYING;
 	this.hideDetailedInfo();
 };
@@ -518,6 +518,13 @@ Player.showDetailedInfo = function(){
 Player.setDetailsData = function(details) {
     $('.detailstitle').html(details.title);
     $('.detailsdescription').html(details.description); 
+};
+
+Player.returnKey = function() {
+    if (ccTime!=0 && (Player.detailsActive || Player.infoActive))
+        Player.hideDetailedInfo();
+    else
+	Player.stopVideo();
 };
 
 Player.hideDetailedInfo = function(){
@@ -910,8 +917,8 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
         Viasat.getPlayUrl(gurl, isLive);
     } else if (channel == "tv4") {
         Tv4.getPlayUrl(gurl, isLive);
-    } else if (channel == "kanal5") {
-        Kanal5.getPlayUrl(gurl, isLive);
+    } else if (channel == "dplay") {
+        Dplay.getPlayUrl(gurl, isLive);
     } else {
 
         var stream_url, url_param = '?output=json';
@@ -995,7 +1002,7 @@ Player.toggleSubtitles = function () {
         } else {
             subtitlesEnabled = true;
         }
-        setCookie("subEnabled",subtitlesEnabled*1, 100);
+        Config.save("subEnabled",subtitlesEnabled*1);
     } else {
         // Only show status the first time
         subtitleStatusPrinted = true;
@@ -1017,10 +1024,8 @@ Player.printSubtitleStatus = function () {
 };
 
 Player.getSubtitlesEnabled = function () {
-    var savedValue = getCookie("subEnabled");
+    var savedValue = Config.read("subEnabled");
     if (savedValue) {
-        // To reduce risk of setting being cleared
-        setCookie("subEnabled",(savedValue == "1")*1, 100);
         return savedValue == "1";
     } else {
         return false;
@@ -1032,8 +1037,6 @@ Player.fetchSubtitle = function (srtUrl) {
         return Viasat.fetchSubtitle(srtUrl)
     else if (channel == "tv4")
         return Tv4.fetchSubtitle(srtUrl)
-    else if (channel == "kanal5")
-        return Kanal5.fetchSubtitle(srtUrl)
 
     asyncHttpRequest(srtUrl,
                      function(data) {
@@ -1167,10 +1170,8 @@ Player.refreshDetailsTimer = function() {
 };
 
 Player.getSubtitleSize = function () {
-    var savedValue = getCookie("subSize");
+    var savedValue = Config.read("subSize");
     if (savedValue) {
-        // To avoid it ever beeing cleared
-        setCookie("subSize", savedValue, 100);
         return Number(savedValue);
     } else {
         return 30;
@@ -1178,10 +1179,8 @@ Player.getSubtitleSize = function () {
 };
 
 Player.getSubtitlePos = function () {
-    var savedValue = getCookie("subPos");
+    var savedValue = Config.read("subPos");
     if (savedValue) {
-        // To avoid it ever beeing cleared
-        setCookie("subPos", savedValue, 100);
         return Number(savedValue);
     } else {
         return 420;
@@ -1189,10 +1188,8 @@ Player.getSubtitlePos = function () {
 };
 
 Player.getSubtitleLineHeight = function () {
-    var savedValue = getCookie("subHeight");
+    var savedValue = Config.read("subHeight");
     if (savedValue) {
-        // To avoid it ever beeing cleared
-        setCookie("subHeight", savedValue, 100);
         return Number(savedValue);
     } else {
         return 100;
@@ -1200,31 +1197,29 @@ Player.getSubtitleLineHeight = function () {
 };
 
 Player.getSubtitleBackground = function () {
-    var savedValue = getCookie("subBack");
-    if (savedValue) {
-        // To avoid it ever beeing cleared
-        setCookie("subBack", savedValue, 100);
-        return (savedValue == "true");
+    var savedValue = Config.read("subBack");
+    if (savedValue != null) {
+        return savedValue;
     } else {
         return true;
     }
 };
 
 Player.setSubtitleBackground = function (value) {
-    setCookie("subBack", value, 100); 
+    Config.save("subBack", value); 
     this.setSubtitleProperties();
 };
 
 Player.saveSubtitleSize = function (value) {
-    setCookie("subSize", value, 100); 
+    Config.save("subSize", value); 
 };
 
 Player.saveSubtitlePos = function (value) {
-    setCookie("subPos", value, 100);
+    Config.save("subPos", value);
 };
 
 Player.saveSubtitleLineHeight = function (value) {
-    setCookie("subHeight", value, 100);
+    Config.save("subHeight", value);
 };
 
 Player.moveSubtitles = function (moveUp) {

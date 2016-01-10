@@ -1,0 +1,121 @@
+var Config = {
+    data     : null,
+    fileName : curWidget.id + "_config.db",
+    version  : 1
+};
+
+Config.init = function() {
+    if (this.data)
+        // Already done
+        return
+    this.data = {items:{}};
+    // Save storage
+    this.data.saveFile = function() {
+	if (typeof JSON == 'object') {
+	    // var $this = this.id;
+	    fileObj = fileSysObj.openCommonFile(Config.fileName, "w");
+	    fileObj.writeAll(JSON.stringify(this.items));
+	    fileSysObj.closeCommonFile(fileObj);
+	};
+    };
+
+    this.data.saveItem = function(key, value) {
+	this.items[key] = value;
+	this.saveFile(true);
+	return this.items[key];
+    };
+
+    this.data.getItem = function(key) {
+	return this.items[key];
+    };
+
+    this.data.deleteItem = function(key) {
+        delete this.items[key];
+	this.saveFile(true);
+        return null;
+    };
+
+    this.data.deleteAll = function() {
+        var fileSysObj = new FileSystem();
+	var fileObj = fileSysObj.openCommonFile(Config.fileName, "w");
+	fileObj.writeAll("{}");
+        fileSysObj.closeCommonFile(fileObj);
+        Config.initData();
+    };
+
+    this.initData = function() {
+        this.data.items = {};
+        var fileSysObj = new FileSystem();
+        var fileObj = fileSysObj.openCommonFile(this.fileName, "r+");
+        if (fileObj !== null) {
+	    try {
+	        this.data.items = JSON.parse(fileObj.readAll());
+                // Log("Found config data:" + JSON.stringify(this.data.items));
+	    } catch(err) {
+                Log("Failed to read config:" + err);
+	    }
+        } else {
+	    fileObj = fileSysObj.openCommonFile(this.fileName, "w");
+	    fileObj.writeAll("{}");
+        }
+        fileSysObj.closeCommonFile(fileObj);
+    };
+
+    this.upgrade = function() {
+        var current_version = this.read("version");
+        if (!current_version) {
+            Log("Upgrade from non version");
+            var cookies = ['language','res','liveres','subEnabled','subSize','subPos','subHeight','subBack'];
+            for (var i=0; i < cookies.length; i++)
+                cookieToConfig(cookies[i]);
+            deleteAllCookies();
+        } else if (current_version > this.version) {
+            Log("Downgrade from " + current_version);
+            this.data.deleteAll();
+        } else if (current_version == this.version)
+            Log("Same version " + current_version);
+        this.save("version", this.version);
+    }
+
+    this.test = function() {
+        try {
+            if (!this.read("version")) {
+                throw "Configuration not supported";
+            }
+	} catch(err) {
+            Log("Failed to test config:" + err);
+            throw "Configuration test failed";
+	}
+    };
+
+    var fileSysObj = new FileSystem();
+    var commonDir = fileSysObj.isValidCommonPath(curWidget.id);
+    if(!commonDir) {
+	fileSysObj.createCommonDir(curWidget.id);
+    }
+    this.initData();
+    this.upgrade();
+    this.test();
+};
+
+Config.read = function(key) {
+    if (this.data.getItem(key))
+        return JSON.parse(this.data.getItem(key));
+    return null;
+}
+
+Config.save = function(key, value) {
+    return this.data.saveItem(key, JSON.stringify(value));
+}
+
+Config.remove = function(key) {
+    return this.data.deleteItem(key);
+}
+
+cookieToConfig = function(name) {
+    var value = getCookie(name);
+    if (value) {
+        Config.save(name, value);
+        // Log("Cookie for " + name + " moved:" + Config.read(name));
+    }
+}

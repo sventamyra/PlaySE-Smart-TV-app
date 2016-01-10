@@ -55,8 +55,8 @@ Details.Geturl=function(detailsUrl){
         name = Viasat.getDetailsUrl(name);
     else if (channel == "tv4")
         name = Tv4.getDetailsUrl(name);
-    else if (channel == "kanal5")
-        name = Kanal5.getDetailsUrl(name);
+    else if (channel == "dplay")
+        name = Dplay.getDetailsUrl(name);
     return name;
 };
 
@@ -165,8 +165,8 @@ Details.GetPlayUrl = function(){
     } else if (channel == "tv4") {
         Tv4.getPlayUrl(gurl,isLive);
         return 0;
-    } else if (channel == "kanal5") {
-        Kanal5.getPlayUrl(gurl,isLive);
+    } else if (channel == "dplay") {
+        Dplay.getPlayUrl(gurl,isLive);
         return 0;
     }
         var url_param = '?output=json';
@@ -306,8 +306,8 @@ Details.getData = function(url, data) {
         return Viasat.getDetailsData(url,data)
     else if (channel == "tv4") 
         return Tv4.getDetailsData(url,data)
-    else if (channel == "kanal5") 
-        return Kanal5.getDetailsData(url,data)
+    else if (channel == "dplay") 
+        return Dplay.getDetailsData(url,data)
 };
 
 Details.getSvtData = function(url, data) {
@@ -410,6 +410,8 @@ Details.getSvtData = function(url, data) {
                 if (VideoLength.length == 0)
                 {
                     VideoLength = $video.find('span').find('time').text();
+                    if (VideoLength = "0 sek")
+                        VideoLength = "";
                 }
             }
 	    Description = $($video.find('p')[0]).text();

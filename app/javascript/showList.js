@@ -81,8 +81,8 @@ showList.loadXml = function(refresh, alt)
                        Tv4.decode(data.responseText, true, is_clips, function(){loadFinished(status, refresh)});
                        break;
 
-                   case "kanal5":
-                       Kanal5.decode(data.responseText, {name:"showList", url:gurl}, true, function(){loadFinished(status, refresh)});
+                   case "dplay":
+                       Dplay.decode(data.responseText, {name:"showList", url:gurl}, true, function(){loadFinished(status, refresh)});
                        break;
                    }
                },
@@ -138,13 +138,19 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             Season  = (Season) ? +Season[1] : null;
             Episode = (Episode) ? +Episode[1] : null;
             Variant = (Variant) ? Variant[1] : null;
+            if (!Name.match(/avsnitt[	 ]*([0-9]+)/i) && Episode) {
+                Description = Name.replace(/s[^s]+song[	 ]*([0-9]+[ 	]*-[ 	]*)/i, "")
+                Name = Name.replace(/(s[^s]+song[	 ]*[0-9]+).+/i, "$1 - Avsnitt " + Episode);
+            } else {
+                Description = "";
+            }
             AnyNonInfoEpisode = (AnyNonInfoEpisode) ? AnyNonInfoEpisode : !IsClip({link:Link}) && !Episode;
             Names.push(Name);
             Shows.push({name:Name,
                         duration:Duration,
                         link:Link,
                         link_prefix:'<a href="details.html?ilink=',
-                        description:"",
+                        description:Description,
                         thumb:ImgLink,
                         season:Season,
                         episode:Episode,

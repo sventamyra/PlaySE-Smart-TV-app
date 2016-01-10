@@ -10,14 +10,18 @@ var isEmulator = false;
 var deviceYear  = null;
 var Main =
 {
-    loaded: false,
-    clockTimer:null
+    loaded         : false,
+    clockTimer     : null,
+    keepAliveTimer : null
 };
 
 Main.onLoad = function(refresh)
 {
+    Config.init();
     Language.fixAButton();
     document.title = "Populärt";
+    if (channel == "dplay")
+        document.title = 'Rekommenderat';
     if (!refresh)
 	Header.display(document.title);
     if (!this.loaded) {
@@ -27,8 +31,10 @@ Main.onLoad = function(refresh)
         deviceYear = getDeviceYear();
         if (deviceYear > 2011)
             LINE_LENGTH = 36;
+        Log("DeviceYear(" + isEmulator + "):" + deviceYear + " curWidget:" + curWidget.name + "Cookies:" + document.cookie);
         loadingStart();
         Main.setClock();
+        Main.startKeepAlive();
         this.loaded = true;
 	Audio.init();
 	Audio.showMuteFooter();
@@ -55,13 +61,22 @@ Main.onUnload = function()
 
 Main.setClock = function() {
     window.clearTimeout(Main.clockTimer);
-    Main.requestRandomUrl();
     Main.clockTimer = setClock($('#footer-clock'), Main.setClock);
 }
 
+Main.startKeepAlive = function() {
+    if (deviceYear == 2013) {
+        Main.requestRandomUrl();
+    }
+}
+
 Main.requestRandomUrl = function() {
-    if (deviceYear == 2013 && myUrls.length > 0)
+    window.clearTimeout(Main.keepAliveTimer);
+    if (myUrls.length > 0) {
+        // Log("Main.requestRandomUrl")
         asyncHttpRequest(myUrls[Math.floor(Math.random()*myUrls.length)], null, true);
+    }
+    Main.keepAliveTimer = window.setTimeout(Main.requestRandomUrl, 30*1000);
 };
 
 
@@ -77,8 +92,8 @@ Main.loadXml = function(refresh){
     case "tv4":
         Main.loadTv4(refresh);
         break;
-    case "kanal5":
-        Main.loadKanal5(refresh);
+    case "dplay":
+        Main.loadDplay(refresh);
         break;
     }
 };
@@ -145,16 +160,16 @@ Main.loadTv4 = function(refresh) {
               );
 };
 
-Main.loadKanal5 = function(refresh) {
-    var newChannel = getLocation(refresh).match(/kanal5_channel=([0-9]+|reset)/);
+Main.loadDplay = function(refresh) {
+    var newChannel = getLocation(refresh).match(/dplay_channel=([0-9]+|reset)/);
     newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
     if (newChannel)
         myHistory = [];
-    var url = Kanal5.getUrl("main", newChannel);
+    var url = Dplay.getUrl("main", newChannel);
     requestUrl(url,
                function(status, data)
                {
-                   Kanal5.decode(data.responseText, {tag:"main",url:url}, false,
+                   Dplay.decode(data.responseText, {tag:"main",url:url}, false,
                                  function() {loadFinished(status, refresh)});
                }
               );

@@ -1,3 +1,4 @@
+var TV4_DETAILS_IMG_SIZE="600x336";
 var Tv4 =
 {
     result:[],
@@ -6,10 +7,12 @@ var Tv4 =
 };
 
 Tv4.fetchDrmShows = function() {
-    var savedShows = getCookie("tv4DrmShows");
-    if (savedShows) {
-        Tv4.drmShows = savedShows.split(";");
-        Log("Found saved DRM shows, length:" + Tv4.drmShows.length);
+    var savedShows = Config.read("tv4DrmShows");
+    var days = 24*3600*1000;
+    var tsDiff = (savedShows) ? (getCurrentDate().getTime()-savedShows.ts)/days : null;
+    if (savedShows && tsDiff < 7) {
+        Tv4.drmShows = savedShows.shows.split(";");
+        Log("Found saved DRM shows, Days:" + Math.floor(tsDiff) + " length:" + Tv4.drmShows.length);
     } else {
         Tv4.refreshdDrmShows();
     }
@@ -54,7 +57,7 @@ Tv4.checkDrm = function(i, data) {
     }
     else {
         Log("Saving DRM shows, length:" + Tv4.drmShows.length);
-        setCookie("tv4DrmShows", Tv4.drmShows.join(";"), 7)
+        Config.save("tv4DrmShows", {ts:getCurrentDate().getTime(), shows:Tv4.drmShows.join(";")});
         Tv4.updatingDrmShows = false;
         data = null;
     }
@@ -406,7 +409,7 @@ Tv4.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = Tv4.fixThumb(data.image, "600x336");
+	DetailsImgLink = Tv4.fixThumb(data.image, TV4_DETAILS_IMG_SIZE);
         Description  = (data.description) ? data.description.trim() : "";
         AirDate = Tv4.getStartTime(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
@@ -455,7 +458,7 @@ Tv4.getShowData = function(url, data) {
         data = JSON.parse(data.responseText)[0];
         Name = data.name;
         Description = data.description.trim();
-	DetailsImgLink = Tv4.fixThumb(data.program_image, "600x336");
+	DetailsImgLink = Tv4.fixThumb(data.program_image, TV4_DETAILS_IMG_SIZE);
         for (var i=0; i < data.genres.length; i++) {
             Genre.push(data.genres[i])
         }

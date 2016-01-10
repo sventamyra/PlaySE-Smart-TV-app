@@ -55,8 +55,8 @@ SearchList.loadXml = function(refresh) {
     } else if (channel == "tv4") {
         Tv4.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
         return
-    } else if (channel == "kanal5") {
-        Kanal5.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
+    } else if (channel == "dplay") {
+        Dplay.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
         return
     }
     requestUrl('http://www.svtplay.se/sok?q='+this.Geturl(refresh),

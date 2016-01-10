@@ -20,13 +20,13 @@ var detailsOnTop = false;
 setChannel = function(newChannel) {
     if (channel != newChannel || 
         ((channel == 'viasat' && Viasat.anySubChannel()) ||
-         (channel == 'kanal5' && Kanal5.anySubChannel())
+         (channel == 'dplay' && Dplay.anySubChannel())
         )
        )
     {
         channel = newChannel;
         Viasat.resetSubChannel();
-        Kanal5.resetSubChannel();
+        Dplay.resetSubChannel();
         myLocation = null;
         setLocation('index.html', undefined);
         myHistory = []; 
@@ -47,27 +47,49 @@ getDeviceYear = function() {
     return Number(firmwareVersion.substr(10, 4));
 };
 
-getCookie = function (cName) {
-    var i,x,y,ARRcookies=document.cookie.split(";");
-    for (i=0;i<ARRcookies.length;i++)
-    {
-        x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-        y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-        x=x.replace(/^\s+|\s+$/g,"");
-        if (x==cName)
-        {
-            return unescape(y);
-        }
+deleteAllCookies = function (name) {
+    var cookies = document.cookie.match(/([^; ]+=[^; ]+)/g);
+    if (name) {
+        var regexp = new RegExp("(\\b" + name + "\\b=[^; ]+)", "g");
+        cookies = document.cookie.match(regexp);
     }
-    return null;
+    for (var i=0; cookies && i<cookies.length; i++)
+    {
+        deleteCookie(cookies[i]);
+    }
+    if (cookies)
+        Log("All cookies deleted (name=" + name + "): " + document.cookie);
+    // else
+    //     Log("No cookies to delete (name=" + name + "): " + document.cookie);
+};
+
+deleteCookie = function(cookie) {
+    // Log("Deleting " + cookie + " from " + document.cookie);
+    document.cookie = cookie  + "; expires=Thu, 01 Jan 1970 00:00:01 GMT";
+    // Log("Done " + document.cookie);
+}
+
+getCookie = function (name) {
+    var regexp = new RegExp("\\b" + name + "\\b=([^; ]+)");
+    var cookie = document.cookie.match(regexp);
+    if (cookie)
+        return unescape(cookie[1])
+    else
+        return null
 };
 
 setCookie = function(cName,value,exdays)
 {
+    value = escape(value) + "; path=/; domain=127.0.0.1";
     var exdate=getCurrentDate();
     exdate.setDate(exdate.getDate() + exdays);
-    var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    var c_value = value + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+    // Log("Setting " + cName + "=" + c_value);
     document.cookie=cName + "=" + c_value;
+};
+
+addCookiePath = function(cookie, url) {
+    return cookie + "; path=/; domain=" + url.match(/https?:\/\/([^:\/]+)/)[1];
 };
 
 String.prototype.trim = function () {
@@ -107,7 +129,8 @@ refreshLocation = function(entry)
 // Methods for "restoring" item position during "history.back"
 replaceLocation = function(newlocation) {
     setLocation(newlocation, undefined, true);
-}
+};
+
 setLocation = function(location, oldPos, skipHistory)
 {
     if (location == myLocation)
@@ -145,7 +168,8 @@ setLocation = function(location, oldPos, skipHistory)
     } else {
         Language.fixAButton();
         if ((channel == "svt" && !location.match(/categoryDetail.html/)) ||
-            (channel == "viasat" && !location.match(/categories.html/)))
+            (channel == "viasat" && !location.match(/categories.html/)) ||
+            (channel == "dplay" && !location.match(/categories.html/)))
             Language.fixBButton();
     }
     if ((isDetails && !detailsOnTop) || !detailsOnTop)
@@ -416,10 +440,17 @@ isPlayable = function (url) {
     return url.match(/\/video|klipp\//)
 }
 
-requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh) {
+requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh, cookie) {
 
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
     addToMyUrls(url);
+    if (cookie) {
+        
+        cookie = addCookiePath(cookie, url);
+        Log("Adding " + cookie + " to " + document.cookie);
+        document.cookie = cookie;
+        // Log("Added " + document.cookie);
+    }
     $.support.cors = true;
     $.ajax(
         {
@@ -435,11 +466,13 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
                 callUrlCallBack(requestedLocation, cbSucces, status, xhr)
                 xhr.destroy();
                 xhr = null;
+                if (cookie)
+                    deleteCookie(cookie);
             },
             error: function(xhr, textStatus, errorThrown)
             {
                 if (isRequestStillValid(requestedLocation)) {
-        	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown);
+        	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown + " Headers:" + xhr.getAllResponseHeaders());
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
                         this.tryCount <= this.retryLimit) 
@@ -451,6 +484,8 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
                         callUrlCallBack(requestedLocation, cbError, textStatus, errorThrown);
         	    }
                 }
+                if (cookie)
+                    deleteCookie(cookie)
             },
             complete: function(xhr, status)
             {
@@ -463,10 +498,10 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
 };
 
 callUrlCallBack = function(requestedLocation,cb,status,xhr) {
-    if (cb && isRequestStillValid(requestedLocation))
+    if (cb && isRequestStillValid(requestedLocation)) {
         cb(status, xhr);
-    else if (cb)
-        Log("url: " + requestedLocation.url + " skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " Now:" + myLocation + " " +  myRefreshLocation);
+    } else if (cb)
+        Log("Url skipped: " + requestedLocation.url + " Skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " New:" + myLocation + " " +  myRefreshLocation);
 };
 
 isRequestStillValid = function (request) {
@@ -501,8 +536,12 @@ asyncHttpRequest = function(url, callback, noLog) {
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
             // if (xhr.status === 200)
-            if (!noLog)
-                Log('Success:' + url);
+            if (!noLog) {
+                if (xhr.status === 200)
+                    Log('Success:' + url);
+                else
+                    Log('asyncHttpRequest:' + url + " status:" + xhr.status);
+            }
             if (callback) {
                 callback(xhr.responseText);
             }
@@ -651,6 +690,6 @@ addToMyUrls = function(url) {
 
 Log = function (msg) 
 {
-    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[PlaySE] " + seqNo++ % 10 + " : " + msg + "'", null, true);
+    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, true);
     // alert(msg);
 };

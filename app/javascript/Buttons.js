@@ -594,10 +594,7 @@ Buttons.keyHandleForPlayer = function(){
 	break;
     case tvKey.KEY_RETURN:
 	widgetAPI.blockNavigation(event); 
-        if (Player.detailsActive || Player.infoActive)
-            Player.hideDetailedInfo();
-        else
-	    Player.stopVideo();
+        Player.returnKey();
 	break;
     case tvKey.KEY_EXIT:
     case tvKey.KEY_INFOLINK:
@@ -710,9 +707,11 @@ Buttons.handleMenuKeys = function(keyCode){
             } else {
 	        setLocation('Latest.html');
             }
-        } else if (channel == "kanal5") {
-	    if ($("#a-button").text().indexOf("Pop") != -1) {
+        } else if (channel == "dplay") {
+	    if ($("#a-button").text().indexOf("Re") != -1) {
 	        setLocation('index.html');
+	    } else if ($("#a-button").text().indexOf("Pop") != -1) {
+	        setLocation('Popular.html');
             } else {
 	        setLocation('Latest.html');
             }
@@ -726,8 +725,10 @@ Buttons.handleMenuKeys = function(keyCode){
 	        categoryDetail.setNextLocation();
             else if (channel == "viasat")
                 Categories.setNextLocation();
-            else if (channel == "tv4" || channel == "kanal5")
+            else if (channel == "tv4")
 	        setLocation('categories.html');
+            else if (channel == "dplay")
+                Categories.setNextLocation();
         } else {
 	    setLocation('categories.html');
         }
@@ -789,7 +790,7 @@ Buttons.handleMenuKeys = function(keyCode){
         break;
     case tvKey.KEY_5:
     case tvKey.KEY_9:
-        setChannel("kanal5");
+        setChannel("dplay");
         break;
     }
 };

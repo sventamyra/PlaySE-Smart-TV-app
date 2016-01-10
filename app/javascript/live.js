@@ -10,7 +10,7 @@ live.onLoad = function(refresh)
         document.title = 'Kanaler'
     else if (channel == "tv4")
         document.title = 'Livesändningar'
-    else if (channel == "kanal5")
+    else if (channel == "dplay")
         document.title = 'Kanaler'
 
     if (!refresh) {
@@ -64,8 +64,8 @@ live.getChannelsJson = function(refresh) {
         live.getViasatChannelJson(refresh);
     } else if (channel == "tv4") {
         live.getTv4LiveJson(refresh);
-    } else if (channel == "kanal5") {
-        live.getKanal5ChannelJson(refresh);
+    } else if (channel == "dplay") {
+        live.getDplayChannelJson(refresh);
     }
 
 };
@@ -100,10 +100,19 @@ live.getTv4LiveJson = function (refresh) {
               );
 };
 
-live.getKanal5ChannelJson = function (refresh) {
- 
-    Kanal5.decodeChannels();
-    loadFinished("success", refresh);
+live.getDplayChannelJson = function (refresh) {
+
+    requestUrl(Dplay.getUrl("channels"),
+               function(status, data)
+               {
+                   Dplay.decodeChannels(data.responseText);
+                   data = null
+               },
+               null,
+               null,
+               true,
+               refresh
+              );
 };
 
 live.getSvtChannelJson = function (refresh) {

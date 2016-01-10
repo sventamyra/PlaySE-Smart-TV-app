@@ -28,8 +28,8 @@ Section.onLoad = function(location, refresh)
         locationUrl = Viasat.getUrl(location)
     } else if (channel == "tv4") {
         locationUrl = Tv4.getUrl(location)
-    } else if (channel == "kanal5") {
-        locationUrl = Kanal5.getUrl(location);
+    } else if (channel == "dplay") {
+        locationUrl = Dplay.getUrl(location);
     }
 
     if (!refresh) {
@@ -57,9 +57,9 @@ Section.loadXml = function(locationUrl, refresh){
                    } else if (channel == "viasat") {
                        Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(status, refresh)});
                    } else if (channel == "tv4") {
-                       Tv4.decode(data.responseText, false, function() {loadFinished(status, refresh)});
-                   } else if (channel == "kanal5") {
-                       Kanal5.decode(data.responseText, {tag:"section",url:locationUrl}, false, function() {loadFinished(status, refresh)});
+                       Tv4.decode(data.responseText, false, false, function() {loadFinished(status, refresh)});
+                   } else if (channel == "dplay") {
+                       Dplay.decode(data.responseText, {tag:"section",url:locationUrl}, false, function() {loadFinished(status, refresh)});
                    }
                },
                function(status, data)

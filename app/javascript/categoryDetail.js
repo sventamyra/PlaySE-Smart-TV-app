@@ -110,6 +110,9 @@ categoryDetail.loadXml = function(url, refresh) {
     case "tv4":
         categoryDetail.loadTv4(url, refresh);
         break;
+    case "dplay":
+        categoryDetail.loadDplay(url, refresh);
+        break;
     }
 };
 
@@ -214,6 +217,11 @@ categoryDetail.loadTv4 = function(url, refresh) {
                true,
                refresh
               );
+};
+
+categoryDetail.loadDplay = function(url, refresh) {
+
+    Dplay.getAllShows(function() {loadFinished("success", refresh)}, url);
 };
 
 categoryDetail.decode_data = function (categoryData) {

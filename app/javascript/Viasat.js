@@ -1,3 +1,4 @@
+var VIASAT_DETAILS_IMG_SIZE="600x338";
 var Viasat =
 {
     channel_idx:null,
@@ -588,7 +589,7 @@ Viasat.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "600x338");
+	DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
         AirDate = data.publish_at.replace(/T.+/,"");
         // if (AirDate.indexOf(DetailsClock.replace(":", ".")) == -1)
         //     AirDate  = AirDate + " " + DetailsClock;
@@ -646,7 +647,7 @@ Viasat.getShowData = function(url, data) {
         data = JSON.parse(data.responseText);
 
         Name = data.title;
-	DetailsImgLink = Viasat.fixThumb(data._links.image.href, "600x338");
+	DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
 
     } catch(err) {
         Log("Viasat.getShowData exception:" + err.message);

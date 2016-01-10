@@ -13,8 +13,8 @@ Header.addPrefix = function(location) {
         return Viasat.getHeaderPrefix() + '/' + location;
     else if (channel == "tv4")
         return Tv4.getHeaderPrefix() + '/' + location;
-    else if (channel == "kanal5")
-        return Kanal5.getHeaderPrefix() + '/' + location;
+    else if (channel == "dplay")
+        return Dplay.getHeaderPrefix() + '/' + location;
 }
 
 Header.urldecode = function(str) {

@@ -146,7 +146,7 @@ Language.hide = function()
 
 Language.checkLanguage = function()
 {
-var language=getCookie("language");
+var language=Config.read("language");
 if (language!=null && language!="")
   {
   return language;
@@ -159,7 +159,7 @@ else
 
 Language.setLanguage = function(value)
 {
-	setCookie('language', value, 1000);
+	Config.save('language', value);
 };
 
 Language.fixAButton = function(language) {
@@ -197,8 +197,8 @@ Language.fixAButton = function(language) {
         Viasat.fixAButton(language);
     } else if (channel == "tv4") {
         Tv4.fixAButton(language);
-    } else if (channel == "kanal5") {
-        Kanal5.fixAButton(language);
+    } else if (channel == "dplay") {
+        Dplay.fixAButton(language);
     }
 };
 
@@ -212,9 +212,6 @@ Language.getBButtonText = function(language)
     if (!language)
         language = this.checkLanguage();
 
-    if (channel == "kanal5")
-        return Kanal5.getBButtonText(language);
-  
     if(language == 'English')
         return 'Categories';
     else
@@ -245,7 +242,7 @@ Language.getCButtonText = function(language)
         return Viasat.getCButtonText(language);
     } else if (channel == "tv4") {
         return Tv4.getCButtonText(language);
-    } else if (channel == "kanal5") {
-        return Kanal5.getCButtonText(language);
+    } else if (channel == "dplay") {
+        return Dplay.getCButtonText(language);
     }
 };

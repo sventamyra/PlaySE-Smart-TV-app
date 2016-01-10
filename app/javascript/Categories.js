@@ -8,8 +8,8 @@ Categories.onLoad = function(refresh)
     document.title = "Kategorier";
     if (channel == "viasat")
         Viasat.updateCategoryTitle();
-    else if (channel == "kanal5")
-        Kanal5.updateCategoryTitle();
+    else if (channel == "dplay")
+        Dplay.updateCategoryTitle();
 
     if (!refresh) {
 	Header.display(document.title);
@@ -35,8 +35,8 @@ Categories.loadXml = function(refresh) {
     case "tv4":
         Categories.loadTv4(refresh);
         break;
-    case "kanal5":
-        Categories.loadKanal5(refresh);
+    case "dplay":
+        Categories.loadDplay(refresh);
         break;
     }
 };
@@ -76,7 +76,10 @@ Categories.loadSvt = function(refresh) {
 
 Categories.setNextLocation = function()
 {
-    setLocation(Viasat.getNextCategory());
+    if (channel == "viasat")
+        setLocation(Viasat.getNextCategory());
+    else if (channel == "dplay")
+        setLocation(Dplay.getNextCategory());
 };
 
 Categories.loadViasat = function(refresh) {
@@ -108,8 +111,10 @@ Categories.loadTv4 = function(refresh) {
               );
 };
 
-Categories.loadKanal5 = function(refresh) {
-    Kanal5.getAllShows(function(){loadFinished("success", refresh)});
+Categories.loadDplay = function(refresh) {
+    url = Dplay.getUrl("categories")
+    Dplay.toggleBButton();
+    Dplay.categories(url, refresh);
 };
 //window.location = 'categoryDetail.html?category=' + ilink + '&history=Kategorier/' + iname +'/';
 
