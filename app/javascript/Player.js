@@ -153,7 +153,8 @@ Player.setFullscreen = function()
 
 Player.setVideoURL = function(url, srtUrl, bw)
 {
-    if (srtUrl && srtUrl.length > 0) {
+
+    if (srtUrl && srtUrl != "") {
         this.fetchSubtitle(srtUrl);
     }
 
@@ -165,7 +166,7 @@ Player.setVideoURL = function(url, srtUrl, bw)
         this.bw = "";
 
     videoUrl = url;
-    Log("URL = " + videoUrl);
+    Log("VIDEO URL: " + videoUrl);
 };
 
 Player.setDuration = function(duration)
@@ -1041,7 +1042,6 @@ Player.fetchSubtitle = function (srtUrl) {
     asyncHttpRequest(srtUrl,
                      function(data) {
                          Player.parseSubtitle(data);
-                         
                      }
                     );
 };

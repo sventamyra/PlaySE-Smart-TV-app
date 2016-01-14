@@ -62,10 +62,7 @@ Section.loadXml = function(locationUrl, refresh){
                        Dplay.decode(data.responseText, {tag:"section",url:locationUrl}, false, function() {loadFinished(status, refresh)});
                    }
                },
-               function(status, data)
-               {
-                   loadFinished(status, refresh);
-               }
+               {cbError:function(status, data){loadFinished(status, refresh)}}
               );
 };
 

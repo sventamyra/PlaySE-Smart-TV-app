@@ -86,9 +86,7 @@ showList.loadXml = function(refresh, alt)
                        break;
                    }
                },
-               function(status, data) {
-                   loadFinished(status, refresh);
-               }
+               {cbError:function(status, data) {loadFinished(status, refresh)}}
               );
 };
 
@@ -110,7 +108,8 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
         var Shows = [];
         var Names = [];
         var AnyNonInfoEpisode = false;
-
+        var SEASON_REGEXP = new RegExp("((s[^s]+song\\s*([0-9]+))\\s*-\\s*)?(.+)","i");
+        var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|tecken(spr[^k]+ks)?tolkat|originalspr[^k]+k)","i");
         showData = showData.split("</article>");
         showData.pop();
 
@@ -132,15 +131,17 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
             ImgLink = fixLink(ImgLink);
             showData[k] = "";
-            Season  = Name.match(/s[^s]+song[	 ]*([0-9]+)/i);
-            Episode = Name.match(/avsnitt[	 ]*([0-9]+)/i) || Description.match(/[Dd]el[	 ]+([0-9]+)/i);
-            Variant = Name.match(/(textat|syntolkat|teckenspr[^k]+kstolkat|originalspr[^k]+k)/i);
-            Season  = (Season) ? +Season[1] : null;
+            Season  = Name.match(SEASON_REGEXP);
+            Episode = Name.match(/avsnitt\s*([0-9]+)/i) || Description.match(/[Dd]el\s([0-9]+)/i);
+            Variant = Name.match(VARIANT_REGEXP);
+            Season  = (Season && Season[3]) ? +Season[3] : null;
             Episode = (Episode) ? +Episode[1] : null;
             Variant = (Variant) ? Variant[1] : null;
-            if (!Name.match(/avsnitt[	 ]*([0-9]+)/i) && Episode) {
-                Description = Name.replace(/s[^s]+song[	 ]*([0-9]+[ 	]*-[ 	]*)/i, "")
-                Name = Name.replace(/(s[^s]+song[	 ]*[0-9]+).+/i, "$1 - Avsnitt " + Episode);
+            if (!Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
+                Description = Name.replace(SEASON_REGEXP, "$4")
+                Description = Description.replace(VARIANT_REGEXP, "")
+                Name = Name.replace(SEASON_REGEXP, "$1Avsnitt " + Episode);
+                Name = (Variant) ? Name + " - " + Variant : Name;
             } else {
                 Description = "";
             }

@@ -439,16 +439,16 @@ fixLink = function (Link)
 isPlayable = function (url) {
     return url.match(/\/video|klipp\//)
 }
-
-requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refresh, cookie) {
-
+requestUrl = function(url, cbSucces, extra) {
+    if (!extra) extra = {};
+        
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
     addToMyUrls(url);
-    if (cookie) {
+    if (extra.cookie) {
         
-        cookie = addCookiePath(cookie, url);
-        Log("Adding " + cookie + " to " + document.cookie);
-        document.cookie = cookie;
+        extra.cookie = addCookiePath(extra.cookie, url);
+        Log("Adding " + extra.cookie + " to " + document.cookie);
+        document.cookie = extra.cookie;
         // Log("Added " + document.cookie);
     }
     $.support.cors = true;
@@ -466,8 +466,8 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
                 callUrlCallBack(requestedLocation, cbSucces, status, xhr)
                 xhr.destroy();
                 xhr = null;
-                if (cookie)
-                    deleteCookie(cookie);
+                if (extra.cookie)
+                    deleteCookie(extra.cookie);
             },
             error: function(xhr, textStatus, errorThrown)
             {
@@ -481,17 +481,17 @@ requestUrl = function(url, cbSucces, cbError, cbComplete, callLoadFinished, refr
                         return $.ajax(this);
                     } else {
         	        ConnectionError.show();
-                        callUrlCallBack(requestedLocation, cbError, textStatus, errorThrown);
+                        callUrlCallBack(requestedLocation, extra.cbError, textStatus, errorThrown);
         	    }
                 }
-                if (cookie)
-                    deleteCookie(cookie)
+                if (extra.cookie)
+                    deleteCookie(extra.cookie)
             },
             complete: function(xhr, status)
             {
-                callUrlCallBack(requestedLocation, cbComplete, status, xhr);
-                if (callLoadFinished && isRequestStillValid(requestedLocation))
-                    loadFinished(status, refresh);
+                callUrlCallBack(requestedLocation, extra.cbComplete, status, xhr);
+                if (extra.callLoadFinished && isRequestStillValid(requestedLocation))
+                    loadFinished(status, extra.refresh);
             }
         }
     );
@@ -543,7 +543,7 @@ asyncHttpRequest = function(url, callback, noLog) {
                     Log('asyncHttpRequest:' + url + " status:" + xhr.status);
             }
             if (callback) {
-                callback(xhr.responseText);
+                callback(xhr.responseText, xhr.status);
             }
             xhr.destroy();
             xhr = null;

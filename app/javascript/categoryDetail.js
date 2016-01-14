@@ -180,10 +180,9 @@ categoryDetail.loadSvt = function(url, refresh) {
                            Section.decode_data(data, recommendedLinks);
                    }
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -198,9 +197,7 @@ categoryDetail.loadViasat = function(url, refresh) {
                                        function() {loadFinished(status, refresh)}
                                       );
                },
-               function(status, data) {
-                   loadFinished(status, refresh);
-               }
+               {cbError:function(status, data) {loadFinished(status, refresh)}}
               );
 };
 
@@ -212,10 +209,9 @@ categoryDetail.loadTv4 = function(url, refresh) {
                    Tv4.decode_shows(data.responseText);
                    data = null
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 

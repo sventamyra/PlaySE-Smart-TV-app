@@ -121,7 +121,7 @@ Dplay.makeApiUrl = function(path, extra) {
     var channel = (Dplay.channel_idx) ? Dplay.channels[Dplay.channel_idx].id : null
     channel = (!path.match(/\/channels/) && channel) ? "&channel_id=" + channel : "";
     extra = (extra) ? extra : "";
-    return "http://www.dplay.se/api/v2/content/device" + path + "?appVersion=3.0.0&platform=IPHONE&realm=DPLAYSE&site=SE&embed=reference,show,package,genres,videos,shows&package=41&limit=500" + channel + extra;
+    return "http://www.dplay.se/api/v2/content/device" + path + "?appVersion=3.0.0&platform=IPHONE&realm=DPLAYSE&site=SE&embed=reference,show,package,genres,videos,shows,season&package=41&limit=500" + channel + extra;
 };
 
 Dplay.getPrefix = function(channel_idx) {
@@ -161,12 +161,8 @@ Dplay.search = function(query, completeFun, url) {
                                Dplay.decode_search_hits(data.videos);
                            data = null;
                        },
-                       null,
-                       function(status, data)
-                       {
-                           Dplay.finishSearch(completeFun)
-                       }
-                      );
+                       {cbComplete:function(status, data){Dplay.finishSearch(completeFun)}}
+                       );
         } else {
             var queryReqexp = (query && query.length == 1) ? new RegExp("^" + query, 'i') : null;
             Dplay.show_result = [];
@@ -344,10 +340,9 @@ Dplay.categories = function(url, refresh, allFetched) {
                        Dplay.decode_categories(data.responseText);
                        data = null;
                    },
-                   null,
-                   null,
-                   true,
-                   refresh
+                   {callLoadFinished:true,
+                    refresh:refresh
+                   }
                   );
     }
 };
@@ -734,12 +729,8 @@ Dplay.getPlayUrl = function(streamUrl) {
                        }
                        Resolution.getCorrectStream(JSON.parse(data.responseText).hls, false, srtUrl, true);
                    }
-               }, 
-               null,
-               null, 
-               false, 
-               null, 
-               cookie
+               },
+               {cookie:cookie}
               );
 };
 

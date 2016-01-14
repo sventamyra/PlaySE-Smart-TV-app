@@ -108,11 +108,7 @@ Main.loadSvt = function(refresh) {
                    data = data.split('<class="play_display-window__show-more')[0] + "</div>";
                    recommendedLinks = Section.decode_recommended(data);
                },
-               null,
-               function(xhr, status)
-               {
-                   Main.loadPopular(refresh);
-               }
+               {cbComplete:function(xhr, status){Main.loadPopular(refresh)}}
               );
 };
 
@@ -123,10 +119,9 @@ Main.loadPopular = function(refresh){
                    data = data.responseText.split("div id=\"gridpage-content")[1];
                    Section.decode_data(data, recommendedLinks);
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -140,10 +135,9 @@ Main.loadViasat = function(refresh) {
                {
                    Viasat.decode(data.responseText);
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -153,10 +147,9 @@ Main.loadTv4 = function(refresh) {
                {
                    Tv4.decode(data.responseText);
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -169,8 +162,10 @@ Main.loadDplay = function(refresh) {
     requestUrl(url,
                function(status, data)
                {
-                   Dplay.decode(data.responseText, {tag:"main",url:url}, false,
-                                 function() {loadFinished(status, refresh)});
+                   Dplay.decode(data.responseText, {tag:"main",url:url}, false);
+               },
+               {callLoadFinished:true,
+                refresh:refresh
                }
               );
 };

@@ -683,8 +683,11 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
                            stream = data.streams.high;
                        else
                            stream = data.streams.medium;
-                       
-                       Resolution.getCorrectStream(stream, false, Viasat.getDetailsUrl(streamUrl));
+                       data = JSON.parse(syncHttpRequest(Viasat.getDetailsUrl(streamUrl)).data)
+                       var srtUrls=[];
+                       if (data.sami_path) srtUrls.push(data.sami_path); 
+                       if (data.subtitles_for_hearing_impaired) srtUrls.push(data.subtitles_for_hearing_impaired);
+                       Resolution.getCorrectStream(stream, false, {list:srtUrls});
                    }
                });
 }
@@ -698,26 +701,26 @@ Viasat.fixThumb = function(thumb, size) {
     return thumb.replace("{size}", size);
 }
 
-Viasat.fetchSubtitle = function (detailsUrl) {
-    asyncHttpRequest(detailsUrl,
-                     function(data) {
-                         var json = JSON.parse(data);
-                         var subUrls = []
-                         if (json.sami_path) subUrls.push(json.sami_path); 
-                         if (json.subtitles_for_hearing_impaired) subUrls.push(json.subtitles_for_hearing_impaired); 
-                         if (subUrls.length > 0) {
-                             var rawData = ""
-                             for (var i=0; i < subUrls.length; i++) {
-                                 result = syncHttpRequest(subUrls[i]);
-                                 if (result.success) { 
-                                     rawData = rawData + result.data;
-                                 } else {
-                                     Log("Viasat.fetchSubtitle sub failed: " + result.status);
-                                 }
-                             }
-                             if (rawData.length > 0)
-                                 Viasat.parseSubtitles(rawData);
+Viasat.fetchSubtitle = function (subUrls) {
+    if (subUrls.list.length == 0) 
+        return;
+    asyncHttpRequest(subUrls.list[0],
+                     function(data, status) {
+                         if (status != 200) {
+                             Log("Viasat.fetchSubtitle sub failed: " + status);
+                             data = ""
                          }
+                         for (var i=1; i < subUrls.list.length; i++) {
+                             alert("sub:" + subUrls.list[1])
+                             result = syncHttpRequest(subUrls.list[i]);
+                             if (result.success) { 
+                                 data = data + result.data;
+                             } else {
+                                 Log("Viasat.fetchSubtitle sub failed: " + result.status);
+                             }
+                         }
+                         if (data.length > 0)
+                             Viasat.parseSubtitles(data);
                      }
                     );
 };

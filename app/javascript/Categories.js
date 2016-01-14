@@ -67,10 +67,9 @@ Categories.loadSvt = function(refresh) {
                    });
                    data = null;
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -91,9 +90,7 @@ Categories.loadViasat = function(refresh) {
                    Viasat.decodeCategories(data.responseText, url, function(){loadFinished(status, refresh)});
                    data = null;
                },
-               function(status, data) {
-                   loadFinished(status, refresh);
-               }
+               {cbError: function(status, data) {loadFinished(status, refresh)}}
               );
 };
 
@@ -104,10 +101,9 @@ Categories.loadTv4 = function(refresh) {
                    Tv4.decodeCategories(data.responseText);
                    data = null;
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 

@@ -415,7 +415,8 @@ Tv4.getDetailsData = function(url, data) {
         VideoLength = dataLengthToVideoLength(null, data.duration);
         Details.duration = VideoLength;
         IsLive = data.is_live;
-        AvailDate = data.availability.availability_group_free + ' dagar kvar'
+        AvailDate = data.availability.human.match(/\(([^)]+ dag[^)]+)/);
+        AvailDate = (AvailDate) ? AvailDate[1] : data.availability.availability_group_free + ' dagar kvar'
         if (data.expire_date_time)
         AvailDate = data.expire_date_time.replace(/T.+/,"") + ' (' + AvailDate + ')';
         if (IsLive) 
@@ -500,6 +501,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        var stream;
+                       var srtUrl = data.responseText.match(/(http.+\.webvtt[^<]*)/);
                        if (isLive) 
                            stream = data.responseText.match(/(http.+\.m3u8(.*hdnea)?[^<]*)/); 
                        else
@@ -508,7 +510,6 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                            $('.bottomoverlaybig').html('Not Available!');
                        }
                        stream = stream[1];
-                       var srtUrl = data.responseText.match(/(http.+\.webvtt[^<]*)/);
                        srtUrl = (srtUrl && srtUrl.length > 0) ? srtUrl[1] : null;
                        Resolution.getCorrectStream(stream, false, srtUrl);
                    }

@@ -69,8 +69,8 @@ SearchList.loadXml = function(refresh) {
                    Section.decode_data(data.join(""));
                    SearchList.finish(parentThis, status, refresh);
                },
-               function(status, data) {
-                   SearchList.finish(parentThis, status, refresh);
+               {cbError:function(status, data) {
+                   SearchList.finish(parentThis, status, refresh)}
                }
               );
 };

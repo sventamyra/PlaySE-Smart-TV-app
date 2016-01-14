@@ -66,8 +66,6 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
                                }
 		           }
                            target = streams[currentId].bandwidth
-		           Log('current: ' + target);
-                           // Log("current url: " + streams[currentId].url);
                            if (!streams[currentId].url.match(/^http/))
                                streams[currentId].url = prefix + streams[currentId].url;
                            // Log("Target url data:" + syncHttpRequest(streams[currentId].url).data.slice(0,600));
@@ -78,17 +76,11 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
                                if (!videoUrl.match(/^http/))
                                    videoUrl = prefix + videoUrl;
                            }
+		           Log('current: ' + target);
+                           // Log("current url: " + streams[currentId].url);
 		           Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl, target);
 		           Player.playVideo();
-	               },
-                       // Something failed - try with "master file" anyhow.
-                       function(status, data) {
-                           if (videoUrl.match(/\.m3u8/)) {
-                               videoUrl = videoUrl + "|STARTBITRATE=" + target +"|BITRATES=" + target + ":" + target;
-                               Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl, target);
-		               Player.playVideo();
-                           }
-                       }
+	               }
                       );
         } else {
             if (videoUrl.match(/\.m3u8/))
@@ -115,7 +107,7 @@ else
 
 Resolution.setRes = function(value)
 {
-    setCookie('res', value, 1000);
+    Config.save('res', value);
 };
 
 Resolution.checkLiveRes = function()
@@ -134,6 +126,6 @@ else
 
 Resolution.setLiveRes = function(value)
 {
-	setCookie('liveres', value, 1000);
+	Config.save('liveres', value, 1000);
 };
 

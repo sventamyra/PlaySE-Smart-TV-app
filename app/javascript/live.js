@@ -78,10 +78,9 @@ live.getViasatChannelJson = function (refresh) {
                    Viasat.decodeChannels(data.responseText);
                    data = null
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -93,10 +92,9 @@ live.getTv4LiveJson = function (refresh) {
                    Tv4.decode(data.responseText);
                    data = null
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -108,10 +106,9 @@ live.getDplayChannelJson = function (refresh) {
                    Dplay.decodeChannels(data.responseText);
                    data = null
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 
@@ -171,11 +168,7 @@ live.getSvtChannelJson = function (refresh) {
 	           });
                    data = null;
 	       },
-               null,
-               function(xhr, status)
-               {
-                   live.getLiveJson(refresh);
-               }
+               {cbComplete:function(xhr, status) {live.getLiveJson(refresh)}}
               );
 };
 
@@ -191,10 +184,9 @@ live.getLiveJson = function(refresh) {
                    Section.decode_data(data);
                    data = null
                },
-               null,
-               null,
-               true,
-               refresh
+               {callLoadFinished:true,
+                refresh:refresh
+               }
               );
 };
 

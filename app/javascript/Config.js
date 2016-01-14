@@ -1,7 +1,7 @@
 var Config = {
     data     : null,
     fileName : curWidget.id + "_config.db",
-    version  : 1
+    version  : 2
 };
 
 Config.init = function() {
@@ -62,18 +62,24 @@ Config.init = function() {
     };
 
     this.upgrade = function() {
-        var current_version = this.read("version");
-        if (!current_version) {
-            Log("Upgrade from non version");
-            var cookies = ['language','res','liveres','subEnabled','subSize','subPos','subHeight','subBack'];
-            for (var i=0; i < cookies.length; i++)
-                cookieToConfig(cookies[i]);
-            deleteAllCookies();
-        } else if (current_version > this.version) {
-            Log("Downgrade from " + current_version);
+        var old_version = this.read("version");
+        if (!old_version || old_version < this.version) {
+            Log("Upgrade from version:" + old_version);
+            if (!old_version || old_version == 1) {
+                var cookies = ['language','res','liveres','subEnabled','subSize','subPos','subHeight','subBack'];
+                if (old_version == 1)
+                    // A mistake was done in version 1
+                    cookies = ['res','liveres'];
+                for (var i=0; i < cookies.length; i++)
+                    cookieToConfig(cookies[i]);
+                deleteAllCookies();
+            }
+        } else if (old_version == this.version) {
+            Log("Same version " + old_version);
+        } else if (old_version > this.version) {
+            Log("Downgrade from " + old_version);
             this.data.deleteAll();
-        } else if (current_version == this.version)
-            Log("Same version " + current_version);
+        }
         this.save("version", this.version);
     }
 

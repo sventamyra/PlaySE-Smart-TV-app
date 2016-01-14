@@ -6,7 +6,6 @@ var downCounter;
 
 var Details =
 {
-    url:"",
     duration:null,
     startTime:0,
     fetchedDetails:null
@@ -14,7 +13,6 @@ var Details =
 
 Details.init = function() {
     isLive = false;
-    Details.url = "";
     Details.duration = null;
     Details.startTime = 0;
 };
@@ -223,12 +221,12 @@ Details.GetPlayUrl = function(){
 
 Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
-    Details.url = fixLink(this.Geturl());
-    requestUrl(Details.url,
+    var url = fixLink(this.Geturl());
+    requestUrl(url,
                function(status, data)
                {
                    var html;
-                   programData = Details.getData(Details.url, data);
+                   var programData = Details.getData(url, data);
                    Details.fetchedDetails = programData;
                    if (!isBackground) {
 		       Language.setDetailLang();
@@ -275,18 +273,16 @@ Details.loadXml = function(isBackground) {
                            fetchPriorLocation();
                    });
                },
-               function(textStatus, errorThrown)
-               {
+               {cbError:function(textStatus, errorThrown) {
                    if (!isBackground) {
                        loadingStop();
-                   }
+                   }}
                }
               )
 };
 
 
 Details.fetchData = function(detailsUrl) {
-    // Log("Details.fetchData");
     Details.init();
     Details.fetchedDetails = null;
     detailsUrl = fixLink(this.Geturl(detailsUrl));
