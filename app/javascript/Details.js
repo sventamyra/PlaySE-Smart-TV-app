@@ -374,9 +374,8 @@ Details.getSvtData = function(url, data) {
 
         } else {
             $video = $(data).find('div.play_container');
-            if ($video.find('section').find('a').attr('data-livestart'))
+            if ($video.find('a').attr('data-livestart'))
 		isLive = true;
-
             Name = $video.find('a').attr('data-title');
             Title = Name;
 	    DetailsImgLink = fixLink($video.find('img').attr('data-imagename'));

@@ -15,8 +15,8 @@ var first = true;
 var channels = ['svt1', 'svt2', 'svt24', 'barnkanalen', 'kunskapskanalen'];
 var channelId = 0;
 var menuId = 0;
-var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
-var reslButton = ["#resl1", "#resl2", "#resl3", "#resl4", "#resl5"];
+var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5", "#res6"];
+var reslButton = ["#reslauto", "#resl1", "#resl2", "#resl3", "#resl4", "#resl5", "#resl6"];
 var langButton = ["#english", "#swedish"];
 var animateCallbacked = 0;
 
@@ -807,9 +807,11 @@ Buttons.playItem = function() {
             // Not available yet
             return -1;
         } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
-            starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/)[1];
+            starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/);
+            starttime = (starttime) ? starttime[1] : 0;
         } else if (deviceYear == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
-            starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/)[1];
+            starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/);
+            starttime = (starttime) ? starttime[1] : 0;
         }
     }
     // Log("isLive:" + isLive + " starttime:" + starttime);

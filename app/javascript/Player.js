@@ -7,6 +7,7 @@ var detailsTimer;
 var pluginAPI = new Common.API.Plugin();
 var fpPlugin;
 var ccTime = 0;
+var videoWidth = null;
 var lastPos = 0;
 var videoUrl;
 var detailsUrl;
@@ -211,6 +212,22 @@ Player.GetDigits = function(type, data)
         return "0"
 };
 
+Player.getHlsVersion = function(url) 
+{
+    var prefix = url.replace(/[^\/]+$/,"");
+    var data = syncHttpRequest(url).data;
+    var hls_version = data.match(/^#.*EXT-X-VERSION:\s*([0-9]+)/m)
+    if (hls_version)
+        return +hls_version[1]
+    else if (data.match(/^([^#].+\.m3u8.*$)/m)) {
+        url = data.match(/^([^#].+\.m3u8.*$)/m)[1]
+        if (!url.match(/^http/))
+            url = prefix + url;
+        return Player.getHlsVersion(url)
+    }
+    return null
+};
+
 Player.playVideo = function()
 {
     if (videoUrl == null)
@@ -223,7 +240,15 @@ Player.playVideo = function()
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.state = this.PLAYING;
- 
+        if (channel == "svt" && videoUrl.indexOf("=HLS") != -1) {
+            var hls_version = Player.getHlsVersion(videoUrl.replace(/\|.+/,""));
+            if (hls_version && hls_version > 3) {
+                // Unsupported 
+                $('.bottomoverlaybig').html('HLS Version ' + hls_version + ' unsupported.');
+                loadingStop();
+                return -1;
+            }
+        }
         this.setWindow();
         
         this.plugin.SetInitialBuffer(640*1024);
@@ -555,6 +580,11 @@ Player.setCurTime = function(time)
 	    this.setCurSubtitle(ccTime);
         }
         Player.refreshStartData(Details.fetchedDetails);
+        // Seem onStreamInfoReady isn't invoked in case new stream in playlist is chosen.
+        if (this.plugin.GetVideoWidth() != videoWidth) {
+            Player.onStreamInfoReady();
+            Player.updateTopOSD()
+        }
 };
 
 Player.updateSeekBar = function(time){
@@ -595,8 +625,9 @@ Player.updateSeekBar = function(time){
 
 Player.onStreamInfoReady = function()
 {
+    videoWidth = this.plugin.GetVideoWidth();
     this.setTotalTime();
-    this.setResolution(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+    this.setResolution(videoWidth, this.plugin.GetVideoHeight());
 };
 
 Player.setTotalTime = function()
@@ -823,6 +854,7 @@ Player.startPlayer = function(url, isLive, startTime)
     subtitles = [];
     ccTime = 0;
     lastPos = 0;
+    videoWidth = null;
     Player.setTopOSDText("");
     $('.currentTime').text("");
     $('.totalTime').text("");

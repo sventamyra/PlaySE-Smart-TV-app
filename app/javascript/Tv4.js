@@ -232,7 +232,7 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
             Duration = data[k].duration;
             Description = (data[k].description) ? data[k].description.trim() : "";
             Link = "http://webapi.tv4play.se/play/video_assets?id=" +  data[k].id;
-            AirDate = data[k].broadcast_date_time.replace(/T.+/,"");
+            AirDate = data[k].broadcast_date_time;
             Season = (data[k].season) ? data[k].season : null;
             Episode = (data[k].episode) ? data[k].episode : null;
             Tv4.result.push({name:Name, 
@@ -253,12 +253,12 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
        
         if (stripShow) {
             Tv4.result.sort(function(a, b){
+                if (!a.episode || !b.episode)
+                    return Tv4.sortOnAirDate(a, b)
+
                 if (a.season == b.season) {
                     if (a.episode == b.episode) {
-                        if (a.airDate > b.airDate)
-                            return -1
-                        else
-                            return 1
+                        return Tv4.sortOnAirDate(a, b)
                     } else if (!b.episode || +a.episode > +b.episode) {
                         return -1
                     } else {
@@ -309,6 +309,13 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
     if (completeFun)
         completeFun();
 };
+
+Tv4.sortOnAirDate = function(a,b) {
+    if (a.airDate > b.airDate)
+        return -1
+    else
+        return 1
+}
 
 Tv4.decodeCategories = function(data) {
     try {
@@ -415,7 +422,7 @@ Tv4.getDetailsData = function(url, data) {
         VideoLength = dataLengthToVideoLength(null, data.duration);
         Details.duration = VideoLength;
         IsLive = data.is_live;
-        AvailDate = data.availability.human.match(/\(([^)]+ dag[^)]+)/);
+        AvailDate = data.availability.human.match(/\(([^)]+ dag[^) ]+)/);
         AvailDate = (AvailDate) ? AvailDate[1] : data.availability.availability_group_free + ' dagar kvar'
         if (data.expire_date_time)
         AvailDate = data.expire_date_time.replace(/T.+/,"") + ' (' + AvailDate + ')';

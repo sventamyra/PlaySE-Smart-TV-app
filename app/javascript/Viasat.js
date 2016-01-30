@@ -214,6 +214,7 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
         var seasonUrl = null;
         var AirDate;
         var Episode=null;
+        var Show=null;
 
         if (!isNext)
             Viasat.result = [];
@@ -241,8 +242,9 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
 
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
-            if (stripShow && data[k].format_title != Name) {
-                Name = Name.replace(data[k].format_title,"").replace(/^[,. :\-]*/,"").trim();
+            Show = data[k].format_title.trim();
+            if (stripShow && Show != Name) {
+                Name = Name.replace(Show,"").replace(/^[,. :\-]*/,"").replace(/[,. :\-]+$/,"").trim();
                 Name = Name.replace(/^./,Name[0].toUpperCase());
                 Name = Name.replace(/^([Ss][0-9]+)?[Ee][0]*([0-9]+)$/,"Avsnitt $2")
             }
@@ -711,7 +713,6 @@ Viasat.fetchSubtitle = function (subUrls) {
                              data = ""
                          }
                          for (var i=1; i < subUrls.list.length; i++) {
-                             alert("sub:" + subUrls.list[1])
                              result = syncHttpRequest(subUrls.list[i]);
                              if (result.success) { 
                                  data = data + result.data;

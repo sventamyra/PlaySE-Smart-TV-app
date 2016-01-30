@@ -424,7 +424,8 @@ msToClock = function (ts)
 
 fixLink = function (Link) 
 {
-    Link = Link.replace(/amp;/g, "")
+    if (Link)
+        Link = Link.replace(/amp;/g, "")
     if (Link.match(/^\/\//)) {
         return "http:" + Link;
     } else if (!Link.match("https*:")) {
@@ -530,11 +531,13 @@ syncHttpRequest = function(url) {
     return {data:data, success:success, status:status, location:location}
 };
 
-asyncHttpRequest = function(url, callback, noLog) {
+asyncHttpRequest = function(url, callback, noLog, timeout) {
     addToMyUrls(url);
     var xhr = new XMLHttpRequest();
+    var timer = null;
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
+            window.clearTimeout(timer);
             // if (xhr.status === 200)
             if (!noLog) {
                 if (xhr.status === 200)
@@ -550,6 +553,14 @@ asyncHttpRequest = function(url, callback, noLog) {
         }
     }
     xhr.open("GET", url);
+    if (timeout) {
+        timer = window.setTimeout(function() {
+            xhr.abort();
+            Log('Timeout:' + url);
+            if (callback)
+                callback(null, "timeout");
+        }, timeout);
+    }
     xhr.send();
 };
 

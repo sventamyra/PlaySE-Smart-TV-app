@@ -1,7 +1,7 @@
 var Config = {
     data     : null,
     fileName : curWidget.id + "_config.db",
-    version  : 2
+    version  : 3
 };
 
 Config.init = function() {
@@ -73,6 +73,15 @@ Config.init = function() {
                 for (var i=0; i < cookies.length; i++)
                     cookieToConfig(cookies[i]);
                 deleteAllCookies();
+            }
+            if (!old_version || old_version < 3) {
+                var liveres = Config.read("liveres");
+                if (liveres != null)
+                    Config.save("liveres", +liveres+1);
+                if (+Config.read("liveres") == 5)
+                    Config.save("liveres", 6)
+                if (+Config.read("res") == 5)
+                    Config.save("res", 6)
             }
         } else if (old_version == this.version) {
             Log("Same version " + old_version);

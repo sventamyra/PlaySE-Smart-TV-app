@@ -1253,7 +1253,7 @@ display:none;
 .res-content{
 	position:fixed;
 	top:97px;
-        left:113px;
+        left:70px;
 	text-align:center;
 	font-family:'Folks-Normal', Arial, sans-serif;
 	font-size:12px;
@@ -1264,7 +1264,7 @@ display:none;
 .res-live-content{
 	position:fixed;
 	top:125px;
-        left:113px;
+        left:70px;
 	text-align:center;
 	font-family:'Folks-Normal', Arial, sans-serif;
 	font-size:12px;
@@ -1396,21 +1396,22 @@ display:none;
 }
 
 .res-content .title a {
-	width:160px;
+	width:170px;
 	color:#4b5257;
 	display:block;
 	padding-left:7px;
 	height:21px;
+        white-space:nowrap
 
 }
 
 .res-live-content .title a {
-	width:185px;
+	width:170px;
 	color:#4b5257;
 	display:block;
 	padding-left:7px;
 	height:21px;
-
+        white-space:nowrap
 }
 
 .blocked-content .btext a {

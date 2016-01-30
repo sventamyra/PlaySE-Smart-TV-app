@@ -76,14 +76,14 @@ Section.decode_recommended = function(data) {
         var Description;
         var Duration;
         var ImgLink;
-        var starttime;
+
         recommendedLinks = [];
         data = data.split("</article>");
         data.pop();
 
         for (var k=0; k < data.length; k++) {
             data[k] = "<article" + data[k].split("<article")[1];
-	    Titles = $(data[k]).find('span.play_display-window__title');
+	    Titles = $(data[k]).find('h2.play_display-window__title');
             if (Titles.length > 0) {
                 Decoded = decode_new_recommended(data[k]);
             }
@@ -110,11 +110,10 @@ Section.decode_recommended = function(data) {
             } else {
                 LinkPrefix = '<a href="showList.html?name=';
             }
-
             toHtml({name:Name,
                     duration:Duration,
-                    is_live:data[k].match(/play_graphics-live-top--visible/),
-                    running:data[k].match(/play_graphics-live-top--visible/),
+                    is_live:Decoded.is_live,
+                    running:Decoded.is_live,
                     is_channel:false,
                     starttime:"",
                     link:Link,
@@ -126,21 +125,23 @@ Section.decode_recommended = function(data) {
 	}
         return recommendedLinks;
     } catch(err) {
-        Log("decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);
+        Log("decode_recommended Exception:" + err.message + " data[" + k + "]:" + data[k]);
     }
 };
 
 decode_new_recommended = function(data) {
     return {link:data.match(/href="([^#][^#"]+)"/)[1],
             description:$(data).find('span.play_display-window__text').text(),
-            img:$(data).find('img').attr('src')
+            img:$(data).find('img').attr('src'),
+            is_live:data.match(/play_graphics-live--active/)
            }
 };
 
 decode_legacy_recommended = function(data) {
     return {link:data.match(/href="([^#][^#"]+)"/)[1],
             description:$(data).find('span.play_carousel-caption__description').text(),
-            img:$(data).find('img').attr('data-imagename')
+            img:$(data).find('img').attr('data-imagename'),
+            is_live:data.match(/play_graphics-live-top--visible/)
            }
 };
 
@@ -227,7 +228,7 @@ decode_video = function(data, filter) {
 }
 
 decode_show = function(data) {
-    showToHtml($(data).find('span.play_videolist-element__title-text').text(),
+    showToHtml($(data).find('h3.play_videolist-element__title').text(),
                $(data).find('img').attr('src'),
                fixLink(data.match(/href="([^#][^#"]+)"/)[1])
               )

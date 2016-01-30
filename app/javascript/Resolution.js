@@ -1,6 +1,5 @@
-var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5"];
-var bwidths = ["Auto", "Min", 500000, 1500000, 3000000, "Max"];
-var lbwidths = ["Min", 500000, 1500000, 3000000, "Max"];
+var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5", "#res6"];
+var bwidths = ["Auto", "Min", 500000, 1500000, 3000000, 5000000, "Max"];
 
 var Resolution =
 {
@@ -16,17 +15,16 @@ Resolution.init = function()
 
 
 Resolution.displayRes = function(){
-	var value = this.checkRes();
-	$(resButton[value]).addClass('checked');
-	value = this.checkLiveRes();
-	$(reslButton[value]).addClass('checked');
+    var value = bwidths.indexOf(this.getTarget(false));
+    $(resButton[value]).addClass('checked');
+    value = bwidths.indexOf(this.getTarget(true));
+    $(reslButton[value]).addClass('checked');
 };
 
-Resolution.getTarget = function(IsLive){
-    if (IsLive)
-        return lbwidths[Resolution.checkLiveRes()];
-    else
-        return bwidths[Resolution.checkRes()];
+Resolution.getTarget = function(IsLive) {
+    var res = (IsLive) ? Config.read("liveres") : Config.read("res");
+    res = (res!=null && res!="") ? res : 0;
+    return bwidths[res];
 };
 
 Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
@@ -38,12 +36,19 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
                        function(status, data)
 	               {
                            // Log("M3U8 content: " + data.responseText);
-		           var bandwidths = data.responseText.match(/^#.+BANDWIDTH=([0-9]+)/mg);
+                           var anyResoution = data.responseText.match(/^#.+BANDWIDTH=[0-9]+.+RESOLUTION/mg);
+		           var bandwidths = data.responseText.match(/^#.+BANDWIDTH=[0-9]+(.+RESOLUTION)?/mg);
                            var urls = data.responseText.match(/^([^#\r\n]+)$/mg);
                            var streams = [];
 		           for (var i = 0; i < bandwidths.length; i++) {
-                               bandwidths[i]=bandwidths[i].replace(/.*BANDWIDTH=/,"");
-                               streams.push({bandwidth:+bandwidths[i], url:urls[i]});
+                               // Ignore audio only streams
+                               if (anyResoution && !bandwidths[i].match(/RESOLUTION/)) {
+                                   continue;
+                               }
+                               streams.push({bandwidth: +bandwidths[i].replace(/.*BANDWIDTH=([0-9]+).*/,"$1"),
+                                             url:urls[i]
+                                            }
+                                           );
                            }
                            streams.sort(function(a, b){
                                if (a.bandwidth > b.bandwidth)
@@ -91,41 +96,13 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
 	}
 };
 
-Resolution.checkRes = function()
-{
-var res=Config.read("res");
-var defa = 5;
-if (res!=null && res!="")
-  {
-  return res;
-  }
-else 
-  {
-	return defa;
-  }
-};
-
 Resolution.setRes = function(value)
 {
     Config.save('res', value);
 };
 
-Resolution.checkLiveRes = function()
-{
-var res=Config.read("liveres");
-var defa = 4;
-if (res!=null && res!="")
-  {
-  return res;
-  }
-else 
-  {
-	return defa;
-  }
-};
-
 Resolution.setLiveRes = function(value)
 {
-	Config.save('liveres', value, 1000);
+    Config.save('liveres', value);
 };
 
