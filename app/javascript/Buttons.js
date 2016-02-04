@@ -146,7 +146,7 @@ Buttons.keyHandleForList = function()
         }
 
         if (keyCode != lastKey || keyHeld) {
-                Log("Key handled: " + keyCode + " lastKey=" + lastKey);
+                // Log("Key handled: " + keyCode + " lastKey=" + lastKey);
                 lastKey = keyCode;
                 window.clearTimeout(keyTimer);
                 if (keyHeld) {

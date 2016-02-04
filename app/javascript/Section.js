@@ -83,13 +83,13 @@ Section.decode_recommended = function(data) {
 
         for (var k=0; k < data.length; k++) {
             data[k] = "<article" + data[k].split("<article")[1];
-	    Titles = $(data[k]).find('h2.play_display-window__title');
+	    Titles = $(data[k]).find('.play_display-window__title');
             if (Titles.length > 0) {
                 Decoded = decode_new_recommended(data[k]);
             }
             else 
             {
-	        Titles = $(data[k]).find('span.play_carousel-caption__title-inner');
+	        Titles = $(data[k]).find('.play_carousel-caption__title-inner');
                 Decoded = decode_legacy_recommended(data[k]);
             }
             var i = 0;
@@ -131,7 +131,7 @@ Section.decode_recommended = function(data) {
 
 decode_new_recommended = function(data) {
     return {link:data.match(/href="([^#][^#"]+)"/)[1],
-            description:$(data).find('span.play_display-window__text').text(),
+            description:$(data).find('.play_display-window__text').text(),
             img:$(data).find('img').attr('src'),
             is_live:data.match(/play_graphics-live--active/)
            }
