@@ -505,6 +505,8 @@ Player.onRenderingComplete = function()
 
 Player.showControls = function(){
   Player.infoActive = true;
+  // Restore Top OSD in case of "Auto 2011"
+  this.setTopOSDText();
   $('.topoverlayresolution').show();
   $('.video-wrapper').show();				
   $('.video-footer').show();
@@ -744,9 +746,16 @@ Player.toggleRepeat = function() {
     this.updateTopOSD();
 };
 
+Player.IsAutoBwUsedFor2011 = function() {
+    // During "AUTO Bandwith" resolution can change which isn't reported to 2011 devices.
+    return (deviceYear == 2011 && Player.bw == "")
+}
+
 Player.setTopOSDText = function(init_text) {
     var resolution_text = init_text;
-    if (resolution_text == undefined) {
+    if (Player.IsAutoBwUsedFor2011()) {
+        resolution_text = ""
+    } else if (resolution_text == undefined) {
         resolution_text = $('.topoverlayresolution').text().replace(/^([^)]+\)(.*bps)?)*.*/, "$1");
     }
     resolution_text = resolution_text + this.getAspectModeText() + this.getRepeatText();
@@ -761,7 +770,7 @@ Player.updateTopOSD = function() {
 
 Player.toggleAspectRatio = function() {
 
-    if (this.aspectMode === Player.ASPECT_NORMAL) {
+    if (this.aspectMode === Player.ASPECT_NORMAL && !this.IsAutoBwUsedFor2011()) {
         this.aspectMode = Player.ASPECT_H_FIT;
     }
     else 
@@ -771,6 +780,8 @@ Player.toggleAspectRatio = function() {
     this.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
     // Update OSD
     this.updateTopOSD()
+    if (this.IsAutoBwUsedFor2011())
+        $('.topoverlayresolution').html("ASPECT unsupported when AUTO BW");
     if (this.state === this.PAUSED) {
         this.pauseVideo();
     }
@@ -795,7 +806,9 @@ Player.setResolution = function (videoWidth, videoHeight) {
 
 Player.setAspectRatio = function(videoWidth, videoHeight) {
 
-    if (videoWidth > 0 && videoHeight > 0) {
+    // During "AUTO Bandwith" resolution can change which doesn't seem to be
+    // reported to 2011 devices. So then Crop Area would be all wrong.
+    if (videoWidth > 0 && videoHeight > 0 && !Player.IsAutoBwUsedFor2011()) {
         if (Player.aspectMode === Player.ASPECT_H_FIT && videoWidth/videoHeight > 4/3)
         {
             var cropOffset = Math.floor((GetMaxVideoWidth() - (4/3*GetMaxVideoHeight()))/2);

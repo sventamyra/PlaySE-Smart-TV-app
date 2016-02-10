@@ -169,7 +169,7 @@ Section.decode_data = function(data, filter) {
             if (data[k].match(/data-title="([^"]+)"/))
                 decode_video(data[k], filter);
             else
-                decode_show(data[k]);
+                decode_new_video(data[k]);
         }
     } catch(err) {
         Log("Section.decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);
@@ -227,9 +227,50 @@ decode_video = function(data, filter) {
            })
 }
 
-decode_show = function(data) {
-    showToHtml($(data).find('h3.play_videolist-element__title').text(),
-               $(data).find('img').attr('src'),
-               fixLink(data.match(/href="([^#][^#"]+)"/)[1])
-              )
-};
+decode_new_video = function(data, filter) {
+    var Name;
+    var Duration;
+    var IsLive;
+    var running;
+    var starttime;
+    var Link;
+    var LinkPrefix;
+    var Description="";
+    var ImgLink;
+
+    Name = data.match(/play_videolist-element__title[^>]+><span[^>]+>([^<]+)/)[1].trim();
+    Duration = data.match(/L.+ngd[^<]+<\/span>[^>]+>([^<]+)/);
+    // Description = data.match(/data-description="([^"]+)"/);
+    Link = fixLink(data.match(/href="([^#][^#"]+)"/)[1]);
+    if (filter && filter.indexOf(Link.replace(/.+\/(video|klipp)\/([0-9]+).*/, "$2")) != -1)
+        return;
+    ImgLink = data.match(/src="([^"]+)"/)[1];
+    // IsLive = data.search(/svt_icon--live/) > -1;
+    // running = data.search(/play_graphics-live--inactive/) == -1;
+    // starttime = data.match(/alt="([^"]+)"/);
+    // Description = (!Description) ? "" : Description[1].trim();
+    // ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/)[1] : ImgLink[1];
+    ImgLink = fixLink(ImgLink);
+    // starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
+    data = "";
+    LinkPrefix = '<a href="showList.html?name=';
+    if (isPlayable(Link)) {
+        Duration = (Duration) ? Duration[1] : 0;
+        LinkPrefix = '<a href="details.html?ilink=';
+    }
+    else {
+        Duration = 0;
+    }
+
+    toHtml({name:Name,
+            duration:Duration,
+            is_live:IsLive,
+            is_channel:false,
+            running:running,
+            starttime:starttime,
+            link:Link,
+            link_prefix:LinkPrefix,
+            description:Description,
+            thumb:ImgLink
+           })
+}
