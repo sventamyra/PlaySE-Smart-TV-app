@@ -52,12 +52,12 @@ Categories.loadSvt = function(refresh) {
                    }).each(function(){
                        var $video = $(this); 
                        var Name = $($video.find('span')[0]).text().trim();
-		       var Link = fixLink($video.attr('href'));
+		       var Link = Svt.fixLink($video.attr('href'));
 		       //Log(Link);
 		       //var Description = $video.find('Description').text();
 	               var ImgLink  = $video.find('img').attr('data-imagename');
                        if (!ImgLink) ImgLink = $video.find('img').attr('src');
-                       ImgLink = fixLink(ImgLink);
+                       ImgLink = Svt.fixLink(ImgLink);
                        showToHtml(Name,
                                   ImgLink,
                                   Link,

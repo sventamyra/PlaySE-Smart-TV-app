@@ -49,30 +49,16 @@ SearchList.setPath = function(name, count, refresh) {
 SearchList.loadXml = function(refresh) {
     $("#content-scroll").hide();
     var parentThis = this;
-    if (channel == "viasat") {
+
+    if (channel == "svt") {
+        Svt.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
+    }else if (channel == "viasat") {
         Viasat.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
-        return
     } else if (channel == "tv4") {
         Tv4.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
-        return
     } else if (channel == "dplay") {
         Dplay.search(parentThis.Geturl(refresh), function() {SearchList.finish(parentThis,"success",refresh)});
-        return
     }
-    requestUrl('http://www.svtplay.se/sok?q='+this.Geturl(refresh),
-               function(status, data)
-               {
-                   data = data.responseText.split("id=\"search-categories");
-                   data = (data.length > 1) ? data[1] : data[0];
-                   data = data.split("id=\"search-");
-                   data.shift();
-                   Section.decode_data(data.join(""));
-                   SearchList.finish(parentThis, status, refresh);
-               },
-               {cbError:function(status, data) {
-                   SearchList.finish(parentThis, status, refresh)}
-               }
-              );
 };
 
 SearchList.finish = function(parent, status, refresh) {

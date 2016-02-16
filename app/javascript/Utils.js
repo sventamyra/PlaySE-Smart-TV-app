@@ -422,24 +422,6 @@ msToClock = function (ts)
     return hour + ":" + minutes;
 };
 
-fixLink = function (Link) 
-{
-    if (Link)
-        Link = Link.replace(/amp;/g, "")
-    if (Link.match(/^\/\//)) {
-        return "http:" + Link;
-    } else if (!Link.match("https*:")) {
-        if (!Link.match(/^\//))
-            Link = "/" + Link;
-        return "http://www.svtplay.se" + Link
-    } else {
-        return Link
-    }
-};
-
-isPlayable = function (url) {
-    return url.match(/\/video|klipp\//)
-}
 requestUrl = function(url, cbSucces, extra) {
     if (!extra) extra = {};
         

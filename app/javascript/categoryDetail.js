@@ -120,6 +120,12 @@ categoryDetail.loadSvt = function(url, refresh) {
     requestUrl(url,
                function(status, data)
                {
+                   if (!data.responseText.match(/ul class=\"play_category__tab/)) {
+                       data = data.responseText.split('root\["__svtplay"\]')[1]
+                       data = data.replace(/[^{]*(.+);$/, "$1");
+                       // alert(data);
+                       return Svt.decode_category(data);
+                   }
                    data = data.responseText.split("ul class=\"play_category__tab");
                    tabs = data[1].split("li class=\"play_category__tab-list-item");
                    var tab = null;
@@ -143,7 +149,7 @@ categoryDetail.loadSvt = function(url, refresh) {
                        newTab = {
                            name: $(tab).text().trim(),
                            key: $(tab).attr('aria-controls'),
-                           href: fixLink($(tab).attr('href'))
+                           href: Svt.fixLink($(tab).attr('href'))
                        };
                        if (newTab.key === "playJs-alphabetic-list")
                            categoryDetail.tabs.unshift(newTab);
@@ -233,8 +239,8 @@ categoryDetail.decode_data = function (categoryData) {
         for (var k=0; k < categoryData.length; k++) {
             categoryData[k] = "<article" + categoryData[k].split("<article")[1];
             Name = categoryData[k].match(/data-title="([^"]+)"/)[1];
-            Link = fixLink(categoryData[k].match(/href="([^"]+)"/)[1]);
-            if (isPlayable(Link))
+            Link = Svt.fixLink(categoryData[k].match(/href="([^"]+)"/)[1]);
+            if (Svt.isPlayable(Link))
                 // Episode amongst shows - skip
                 continue;
             // Log(Link);
@@ -244,7 +250,7 @@ categoryDetail.decode_data = function (categoryData) {
             } else {
                 ImgLink = ImgLink[1];
             }
-            ImgLink = fixLink(ImgLink);
+            ImgLink = Svt.fixLink(ImgLink);
             categoryData[k] = "";
             showToHtml(Name, ImgLink, Link);
         }

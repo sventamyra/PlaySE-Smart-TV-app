@@ -245,8 +245,6 @@ Player.playVideo = function()
             if (hls_version && hls_version > 3) {
                 // Unsupported 
                 $('.bottomoverlaybig').html('HLS Version ' + hls_version + ' unsupported.');
-                loadingStop();
-                return -1;
             }
         }
         this.setWindow();
@@ -956,7 +954,7 @@ Player.checkPlayUrlStillValid = function(gurl) {
 };
 
 Player.GetPlayUrl = function(gurl, isLive, altUrl) {
-    gurl = fixLink(gurl);
+    gurl = Svt.fixLink(gurl);
     // Log("gurl:" + gurl);
     requestedUrl = gurl;
     if (channel == "viasat") {

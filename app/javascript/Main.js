@@ -102,18 +102,16 @@ Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
                function(status, data)
                {
-                   data = data.responseText.split("<div class=\"play_display-window");
-                   data.pop();
-                   data = "<div class=\"play_display-window" + data.join("");
-                   data = data.split('<class="play_display-window__show-more')[0] + "</div>";
-                   recommendedLinks = Section.decode_recommended(data);
+                   data = data.responseText.split('root\["__svtplay"\]')[1]
+                   data = data.replace(/[^{]*(.+);$/, "$1");
+                   recommendedLinks = Svt.decode_recommended(data, {addSections:true});
                },
-               {cbComplete:function(xhr, status){Main.loadPopular(refresh)}}
+               {cbComplete:function(xhr, status){Main.loadSvtPopular(refresh)}}
               );
 };
 
-Main.loadPopular = function(refresh){
-    requestUrl('http://www.svtplay.se/populara?sida=1',
+Main.loadSvtPopular = function(refresh){
+    requestUrl(Svt.sections[Svt.section_index].url,
                function(status, data)
                {
                    data = data.responseText.split("div id=\"gridpage-content")[1];

@@ -680,15 +680,7 @@ Buttons.handleMenuKeys = function(keyCode){
     {
     case tvKey.KEY_RED: 
         if (channel == "svt") {
-	    if ($("#a-button").text().indexOf("Pop") != -1) {
-	        setLocation('index.html');
-            } else if ($("#a-button").text().indexOf("Chan") != -1) {
-	        setLocation('LastChance.html');
-            } else if ($("#a-button").text().indexOf(" N") != -1) {
-	        setLocation('LatestNews.html');
-            } else {
-	        setLocation('Latest.html');
-            }
+            Svt.setNextSection();
         } else if (channel == "viasat") {
 	    if ($("#a-button").text().indexOf("Pop") != -1) {
 	        setLocation('index.html');

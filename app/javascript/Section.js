@@ -7,23 +7,7 @@ Section.onLoad = function(location, refresh)
 {
     var locationUrl;
     if (channel == "svt") {
-        switch (location)
-        {
-        case "LastChance.html":
-            document.title = 'Sista Chansen'
-            locationUrl    = 'http://www.svtplay.se/sista-chansen?sida=1'
-            break;
-
-        case "Latest.html":
-            document.title = 'Senaste'
-            locationUrl    = 'http://www.svtplay.se/senaste?sida=1'
-            break
-
-        case "LatestNews.html":
-            document.title = 'Senaste Nyheter'
-            locationUrl    = 'http://www.svtplay.se/nyheter?sida=1'
-            break
-        }
+        locationUrl = Svt.getSectionUrl(location);
     } else if (channel == "viasat") {
         locationUrl = Viasat.getUrl(location)
     } else if (channel == "tv4") {
@@ -100,11 +84,11 @@ Section.decode_recommended = function(data) {
                 i = i+1;
             }
             Name = Name.replace(/Live just nu /, "").trim();
-            Link = redirectUrl(fixLink(Decoded.link));
+            Link = Svt.redirectUrl(Svt.fixLink(Decoded.link));
             Description = Decoded.description;
-	    ImgLink = fixLink(Decoded.img).replace("_imax", "");
+	    ImgLink = Svt.fixLink(Decoded.img).replace("_imax", "");
             ImgLink = ImgLink.replace("extralarge", "small");
-            if (isPlayable(Link)) {
+            if (Svt.isPlayable(Link)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
             } else {
@@ -145,21 +129,6 @@ decode_legacy_recommended = function(data) {
            }
 };
 
-redirectUrl = function(url) {
-    if (isPlayable(url))
-        // No need to check re-direct for an already playable url.
-        return url;
-    var result = syncHttpRequest(url)
-    if (result.location) {
-        return result.location
-    } else if (result.success) {
-        result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
-        if (result && result.length > 0)
-            return result[1]
-    }
-    return url
-};
-
 Section.decode_data = function(data, filter) {
     try {
         data = data.split("</article>");
@@ -193,7 +162,7 @@ decode_video = function(data, filter) {
     Name = data.match(/data-title="([^"]+)"/)[1].trim();
     Duration = data.match(/data-length="([^"]+)"/);
     Description = data.match(/data-description="([^"]+)"/);
-    Link = fixLink(data.match(/href="([^#][^#"]+)"/)[1]);
+    Link = Svt.fixLink(data.match(/href="([^#][^#"]+)"/)[1]);
     if (filter && filter.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
         return;
     ImgLink = data.match(/data-imagename="([^"]+)"/);
@@ -202,11 +171,11 @@ decode_video = function(data, filter) {
     starttime = data.match(/alt="([^"]+)"/);
     Description = (!Description) ? "" : Description[1].trim();
     ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/)[1] : ImgLink[1];
-    ImgLink = fixLink(ImgLink);
+    ImgLink = Svt.fixLink(ImgLink);
     starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
     data = "";
     LinkPrefix = '<a href="showList.html?name=';
-    if (isPlayable(Link)) {
+    if (Svt.isPlayable(Link)) {
         Duration = (Duration) ? Duration[1] : 0;
         LinkPrefix = '<a href="details.html?ilink=';
     }
@@ -235,33 +204,39 @@ decode_new_video = function(data, filter) {
     var starttime;
     var Link;
     var LinkPrefix;
-    var Description="";
+    var Description;
     var ImgLink;
 
-    Name = data.match(/play_videolist-element__title[^>]+><span[^>]+>([^<]+)/)[1].trim();
+    Name = data.match(/play_videolist-element__title[^>]+><span[^>]+>([^<]+)/)
+    Name = (Name) ? Name[1].trim() : $($(data).find(".play_videolist-element__title").find("span")[3]).text().trim();
+    if (!Name)
+        Name = data.match(/img[^>]+alt="([^"]+)"/)[1];
     Duration = data.match(/L.+ngd[^<]+<\/span>[^>]+>([^<]+)/);
-    // Description = data.match(/data-description="([^"]+)"/);
-    Link = fixLink(data.match(/href="([^#][^#"]+)"/)[1]);
+    Description = $(data).find('.play_videolist-element__subtext')
+    Description = (Description) ? $(Description).text().trim() : "";
+    if (Description.match(/^L.+ngd/))
+        Description = "";
+    Link = Svt.fixLink(data.match(/href="([^#][^#"]+)"/)[1]);
     if (filter && filter.indexOf(Link.replace(/.+\/(video|klipp)\/([0-9]+).*/, "$2")) != -1)
         return;
-    ImgLink = data.match(/src="([^"]+)"/)[1];
-    // IsLive = data.search(/svt_icon--live/) > -1;
-    // running = data.search(/play_graphics-live--inactive/) == -1;
-    // starttime = data.match(/alt="([^"]+)"/);
-    // Description = (!Description) ? "" : Description[1].trim();
-    // ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/)[1] : ImgLink[1];
-    ImgLink = fixLink(ImgLink);
-    // starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
+    ImgLink = data.match(/img[^>]+src="([^"]+)"/)[1];
+    ImgLink = Svt.fixLink(ImgLink);
+    IsLive = data.match(/play_graphics-live/)
+    running = data.match(/play_graphics-live--active/)
+    starttime = data.match(/play_graphics-live__secondary-text[^>]+>([^<]+)/);
+    starttime = (!running && starttime) ? starttime[1] : "";
     data = "";
     LinkPrefix = '<a href="showList.html?name=';
-    if (isPlayable(Link)) {
+    if (Svt.isPlayable(Link)) {
         Duration = (Duration) ? Duration[1] : 0;
         LinkPrefix = '<a href="details.html?ilink=';
     }
     else {
+        if (Link.match(/\/genre\//))
+            // Block Info for Genres
+            LinkPrefix = LinkPrefix.replace("name=", "genre=1&name=")
         Duration = 0;
     }
-
     toHtml({name:Name,
             duration:Duration,
             is_live:IsLive,

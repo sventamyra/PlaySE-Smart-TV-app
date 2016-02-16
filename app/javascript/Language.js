@@ -170,32 +170,7 @@ Language.fixAButton = function(language) {
         language = this.checkLanguage();
 
     if (channel == "svt") {
-        if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
-            if(language == 'English'){
-	        $("#a-button").text('Last Chance');
-            } else {
-	        $("#a-button").text('Sista Chansen');
-            }
-        } else if((myRefreshLocation && (myRefreshLocation.indexOf("LastChance.html")) != -1) || myLocation.indexOf("LastChance.html") != -1) {
-            if(language == 'English'){
-	        $("#a-button").text('Latest');
-            } else {
-	        $("#a-button").text('Senaste');
-            }
-        } else if((myRefreshLocation && (myRefreshLocation.indexOf("Latest.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
-            if(language == 'English'){
-	        $("#a-button").text('Latest News');
-            } else {
-	        $("#a-button").text('Senaste Nyheter');
-            }
-        } else {
-            if(language == 'English'){
-	        $("#a-button").text('Popular');
-            } else {
-	        $("#a-button").text('Populärt');
-            }
-
-        }
+        $("#a-button").text(Svt.getNextSectionText());
     } else if (channel == "viasat") {
         Viasat.fixAButton(language);
     } else if (channel == "tv4") {

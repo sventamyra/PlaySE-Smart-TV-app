@@ -168,7 +168,7 @@ Details.GetPlayUrl = function(){
         return 0;
     }
         var url_param = '?output=json';
-        var gurl = fixLink(this.Geturl());
+        var gurl = Svt.fixLink(this.Geturl());
         if (gurl.indexOf('?') != -1)
                 url_param = '&output=json'; 
 	$.getJSON(gurl + url_param, function(data) {
@@ -221,7 +221,7 @@ Details.GetPlayUrl = function(){
 
 Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
-    var url = fixLink(this.Geturl());
+    var url = Svt.fixLink(this.Geturl());
     requestUrl(url,
                function(status, data)
                {
@@ -285,7 +285,7 @@ Details.loadXml = function(isBackground) {
 Details.fetchData = function(detailsUrl) {
     Details.init();
     Details.fetchedDetails = null;
-    detailsUrl = fixLink(this.Geturl(detailsUrl));
+    detailsUrl = Svt.fixLink(this.Geturl(detailsUrl));
     asyncHttpRequest(detailsUrl,
                      function(data) 
                      {
@@ -307,7 +307,7 @@ Details.getData = function(url, data) {
 };
 
 Details.getSvtData = function(url, data) {
-    if (!isPlayable(url) && url.indexOf("/kanaler/") == -1) {
+    if (!Svt.isPlayable(url) && url.indexOf("/kanaler/") == -1) {
         return Details.getShowData(url, data);
     }
 
@@ -335,7 +335,7 @@ Details.getSvtData = function(url, data) {
             isChannel = true;
 
             Name = $video.find('a').attr('data-title');
-	    DetailsImgLink = fixLink($video.find('img').attr('data-imagename'));
+	    DetailsImgLink = Svt.fixLink($video.find('img').attr('data-imagename'));
             pattern = new RegExp("\\b" + Name + "\\b", "i");
 	    var $info = $(data).find('div').filter(function() {
                 
@@ -361,7 +361,7 @@ Details.getSvtData = function(url, data) {
             Title = Name;
             // Log("Name:" + Name);
 	    DetailsImgLink = $($(data).find('img')[1]).attr('srcset');
-            DetailsImgLink = fixLink(DetailsImgLink.split(",").pop().split(" ")[1]);
+            DetailsImgLink = Svt.fixLink(DetailsImgLink.split(",").pop().split(" ")[1]);
 	    DetailsPlayTime = $($(data).find('strong')[0]).text();
             VideoLength = $($(data).find('strong')[1]).text();
 
@@ -378,7 +378,7 @@ Details.getSvtData = function(url, data) {
 		isLive = true;
             Name = $video.find('a').attr('data-title');
             Title = Name;
-	    DetailsImgLink = fixLink($video.find('img').attr('data-imagename'));
+	    DetailsImgLink = Svt.fixLink($video.find('img').attr('data-imagename'));
             // Log(DetailsImgLink);
             var DetailsClock = "";
             try {
@@ -475,7 +475,7 @@ Details.getShowData = function(url, data) {
         var $show = $(data);
 
         Name  = $show.find('h1').text();
-	DetailsImgLink = fixLink($show.find('img').attr('data-imagename'));
+	DetailsImgLink = Svt.fixLink($show.find('img').attr('data-imagename'));
 	Description = $($show.find('p.play_title-page-info__description')[1]).text();
         Genre = [];
         GenreData = $show.find('li.play_tag-list__tag').find("a");

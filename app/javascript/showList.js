@@ -92,7 +92,7 @@ showList.loadXml = function(refresh, alt)
 
 showList.get_pagination_url = function(data) {
     var url = data.match(/class=\"play_title-page__pagination\"[^\/]+<a href=\"([^"]+)/);
-    return (url && url.length > 0) ? fixLink(url[1]) : null;
+    return (url && url.length > 0) ? Svt.fixLink(url[1]) : null;
 }
 
 showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
@@ -126,10 +126,10 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             Description = (Description) ? Description[1].trim() : "";
             // Duration = showData[k].match(/data-length="([^"]+)"/)[1];
             Duration = showData[k].match(/time>([^<]+)/)[1];
-            Link = fixLink(showData[k].match(/href="([^#][^#"]+)"/)[1]);
+            Link = Svt.fixLink(showData[k].match(/href="([^#][^#"]+)"/)[1]);
             ImgLink = showData[k].match(/data-imagename="([^"]+)"/);
             ImgLink = (!ImgLink) ? showData[k].match(/src="([^"]+)"/)[1] : ImgLink[1];
-            ImgLink = fixLink(ImgLink);
+            ImgLink = Svt.fixLink(ImgLink);
             showData[k] = "";
             Season  = Name.match(SEASON_REGEXP);
             Episode = Name.match(/avsnitt\s*([0-9]+)/i) || Description.match(/[Dd]el\s([0-9]+)/i);
@@ -187,8 +187,8 @@ showList.decode_data = function(showData, is_clips, clips_url, clips_thumb) {
             toHtml(Shows[k])
         }
         if (!is_clips && clips_url) {
-            clipToHtml(fixLink(clips_thumb).replace("extralarge", "small"),
-                       fixLink(clips_url)
+            clipToHtml(Svt.fixLink(clips_thumb).replace("extralarge", "small"),
+                       Svt.fixLink(clips_url)
                       )
         }
     } catch(err) {
