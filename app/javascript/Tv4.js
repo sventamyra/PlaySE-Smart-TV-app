@@ -328,14 +328,8 @@ Tv4.decodeCategories = function(data) {
             Name = data[k].name;
 	    Link = Tv4.getUrl("categoryDetail") + data[k].nid;
             toHtml({name:Name,
-                    duration:"",
-                    is_live:false,
-                    is_channel:false,
-                    running:null,
-                    starttime:null,
                     link:Link,
                     link_prefix:'<a href="categoryDetail.html?category=',
-                    description:"",
                     thumb:null
                    });
 	}

@@ -221,7 +221,7 @@ Buttons.keyHandleForList = function()
                                         Buttons.playItem();
                                         break;
                                     }
-                                    else if (keyCode == tvKey.KEY_INFO && ilink.match("showList.html\\?name=")) {
+                                    else if (keyCode == tvKey.KEY_INFO && (ilink.match("showList.html\\?name=") || ilink.match("categoryDetail.html"))) {
                                         // Info of show.
                                         ilink = "details.html?" + ilink;
                                     }
@@ -857,7 +857,7 @@ Buttons.findNextItem = function(play) {
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
-             (tmpItem.find('.ilink').attr("href").search("showList.html\\?") != -1 && !play)) &&
+             (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
@@ -901,7 +901,7 @@ Buttons.findPriorItem = function(play) {
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
-             (tmpItem.find('.ilink').attr("href").search("showList.html\\?") != -1 && !play)) &&
+             (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
@@ -938,8 +938,8 @@ Buttons.runNextItem = function(direction, play) {
         if (myLocation.match(/details.html/)) {
             // refresh Details
             myLocation = itemSelected.find('.ilink').attr("href");
-            if (myLocation.search("showList.html\\?") != -1) {
-                // Info of show.
+            if (myLocation.search("(showList|categoryDetail).html\\?") != -1) {
+                // Info of category/show.
                 myLocation = "details.html?" + myLocation;
             }
             Details.refresh(play);

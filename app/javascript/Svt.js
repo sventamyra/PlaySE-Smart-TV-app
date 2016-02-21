@@ -139,7 +139,8 @@ Svt.decode_recommended = function (data, extra) {
                     link:Link,
                     link_prefix:LinkPrefix,
                     description:Description,
-                    thumb:ImgLink
+                    thumb:ImgLink,
+                    largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null
                    })
             data[k] = "";
 	}
@@ -288,7 +289,8 @@ Svt.decode = function(data) {
                     link:Link,
                     link_prefix:LinkPrefix,
                     description:Description,
-                    thumb:ImgLink
+                    thumb:ImgLink,
+                    largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null
                    })
             data[k] = "";
 	};

@@ -58,11 +58,12 @@ Categories.loadSvt = function(refresh) {
 	               var ImgLink  = $video.find('img').attr('data-imagename');
                        if (!ImgLink) ImgLink = $video.find('img').attr('src');
                        ImgLink = Svt.fixLink(ImgLink);
-                       showToHtml(Name,
-                                  ImgLink,
-                                  Link,
-                                  '<a href="categoryDetail.html?category='
-                                 );
+                       toHtml({name:        Name,
+                               link:        Link,
+                               link_prefix: '<a href="categoryDetail.html?category=',
+                               thumb:       ImgLink,
+                               largeThumb:  (ImgLink) ? ImgLink.replace("small", "large") : null
+                              });
 	               $tmpData = $video = null;
                    });
                    data = null;

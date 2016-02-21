@@ -618,6 +618,10 @@ toHtml = function(Item) {
     }
 
     IsLiveText = (Item.is_live || Item.is_channel) ? " is-live" : "";
+    if (Item.link_prefix.match(/categoryDetail\.html/)) {
+        Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);
+        Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
+    }
     html += '<div class="scroll-item-img">';
     html += Item.link_prefix + Item.link + '&history=' + getHistory(Item.name) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
 
@@ -635,7 +639,7 @@ toHtml = function(Item) {
     Item.name = Item.name.trim();
     html += '<div class="scroll-item-name">';
     html +=	'<p><a href="#">' + Item.name + '</a></p>';
-    Item.description = Item.description.trim();
+    Item.description = (Item.description) ? Item.description.trim() : "";
     html += '<span class="item-date"';
     if (Item.name.length > 2*LINE_LENGTH)
         Item.description = "";

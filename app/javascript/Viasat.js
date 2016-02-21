@@ -432,15 +432,10 @@ Viasat.decodeCategories = function(data, url, completeFun) {
 	    ImgLink  = Viasat.fixThumb(data[k]._links.image.href);
 
             toHtml({name:Name,
-                    duration:"",
-                    is_live:false,
-                    is_channel:false,
-                    running:null,
-                    starttime:null,
                     link:Link,
                     link_prefix:'<a href="categoryDetail.html?category=',
-                    description:"",
-                    thumb:ImgLink
+                    thumb:ImgLink,
+                    largeThumb:Viasat.fixThumb(ImgLink, VIASAT_DETAILS_IMG_SIZE)
                    });
 	}
 	data = null;
@@ -700,7 +695,7 @@ Viasat.fixThumb = function(thumb, size) {
         
     if (!size)
         size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
-    return thumb.replace("{size}", size);
+    return thumb.replace(/(({size})|([0-9]+x[0-9]+))/, size);
 }
 
 Viasat.fetchSubtitle = function (subUrls) {

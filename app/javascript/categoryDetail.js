@@ -65,7 +65,7 @@ categoryDetail.onUnload = function()
 {
 
 };
-// categoryDetail.html?category=/barn&history=Kategorier/Barn
+
 categoryDetail.Geturl=function(refresh){
     var url;
     if (!refresh && categoryDetail.tabs.length > categoryDetail.tab_index) {
@@ -76,19 +76,11 @@ categoryDetail.Geturl=function(refresh){
     url = categoryDetail.getLocation(refresh);
     var parse;
     var name="";
-    if (url.indexOf("category=")>0)
+    if (url.match(/category=/))
     {
-		// parse = url.substring(url.indexOf("=")+13,url.length);
-		parse = url.substring(url.indexOf("=")+1,url.length);
-		if (url.indexOf("&history")>0)
-		{
-			name = parse.substring(0,parse.indexOf("&history"));
-			
-		}
-		else{
-			name = parse;
-		}
-	}
+        name = url.match(/category=(.+)&catThumb/)[1]
+    }
+    
     return name.replace(/&tab_index=[0-9]+/, "");
 };
 

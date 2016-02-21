@@ -8,7 +8,8 @@ var Dplay =
     all_genres:[],
     show_names:[],
     show_result:[],
-    other_result:[]
+    other_result:[],
+    play_args:{}
 };
 
 Dplay.resetSubChannel = function() {
@@ -372,14 +373,8 @@ Dplay.decode_categories = function(data) {
 
         for (var k=0; k < genres.length; k++)
             toHtml({name:genres[k].name,
-                    duration:"",
-                    is_live:false,
-                    is_channel:false,
-                    running:null,
-                    starttime:null,
                     link:genres[k].link,
                     link_prefix:'<a href="categoryDetail.html?category=',
-                    description:"",
                     thumb:null
                    });
 
@@ -711,7 +706,8 @@ Dplay.getDetailsUrl = function(streamUrl) {
     return streamUrl.replace(/\/seasons/, "");
 };
 
-Dplay.getPlayUrl = function(streamUrl) {
+Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
+    Dplay.play_args = {stream_url:streamUrl, is_live:isLive};
     var videoUrl = "https://secure.dplay.se/secure/api/v2/user/authorization/stream/" + streamUrl.match(/\/videos\/([0-9]+)/)[1] + "?stream_type=hls";
     var countryCode = JSON.parse(syncHttpRequest("http://geo.dplay.se/geo.js").data).countryCode;
     var cookie = '{"countryCode":"' + countryCode + '","expiry":' + (getCurrentDate().getTime() + 3600*1000) + '}';
@@ -727,11 +723,21 @@ Dplay.getPlayUrl = function(streamUrl) {
                        } catch(err) {
                            srtUrl = null;
                        }
-                       Resolution.getCorrectStream(JSON.parse(data.responseText).hls, false, srtUrl, true);
+                       if (callback)
+                           Resolution.setStreamUrl(JSON.parse(data.responseText).hls, false, srtUrl, true, callback);
+                       else
+                           Resolution.getCorrectStream(JSON.parse(data.responseText).hls, false, srtUrl, true);
                    }
                },
                {cookie:cookie}
               );
+};
+
+Dplay.refreshPlayUrl = function(callback) {
+    Dplay.getPlayUrl(Dplay.play_args.stream_url,
+                     Dplay.play_args.is_live,
+                     callback
+                    );
 };
 
 Dplay.fixThumb = function(thumb, factor) {

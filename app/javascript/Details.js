@@ -45,7 +45,10 @@ Details.Geturl=function(detailsUrl){
         url = detailsUrl;
     var parse;
     var name=url;
-    if (url.indexOf("ilink=")>0 || url.indexOf("name=")>0)
+    if (url.match(/category=/)) {
+        name = url.match(/category=(.+)&catThumb=/)[1];
+    }
+    else if (url.match(/(ilink|name)=/))
     {
         name = url.match(/(ilink|name)=(.+)&history=/)[2]
     }
@@ -221,6 +224,16 @@ Details.GetPlayUrl = function(){
 
 Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
+    if (myLocation.match(/categoryDetail\.html/)) {
+        Details.toHtml({category    : true,
+                        link        : this.Geturl(),
+                        description : "",
+                        name        : decodeURIComponent(myLocation.match(/catName=([^&]+)/)[1]),
+                        thumb       : decodeURIComponent(myLocation.match(/catThumb=([^&]+)/)[1]),
+                       });
+        return loadingStop();
+    }
+    
     var url = Svt.fixLink(this.Geturl());
     requestUrl(url,
                function(status, data)
@@ -232,46 +245,8 @@ Details.loadXml = function(isBackground) {
 		       Language.setDetailLang();
                        Player.setNowPlaying(programData.name);
                        loadingStop();
-                   }
-                   loadThumb(programData.thumb, function() {
-                       if(programData.name.length > 47){
-	                   programData.name = programData.name.substring(0, 47)+ "...";
-                       }
-		       html = '<div class="project-text">';
-		       html+='<div class="project-name">';
-		       html+='<h1>'+programData.name+'</h1>';
-                       if (programData.show) {
-		           html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
-                       } else {
-		           html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
-                           if (programData.avail_date)
-		               html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
-                           if (programData.duration)
-		               html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
-                           else 
-                               html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
-                       }
-		       html+='<div class="project-desc">'+programData.description+'</div>';
-		       html+='<div class="bottom-buttons">';
-                       if (programData.show) {
-                           var title = myLocation.match(/title=([^&]+)/);
-                           title = (title) ? title[1] : "Programmet"
-                           html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till ' + title + '</a>';
-                       } else if (programData.not_available) {
-                           html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
-                       } else {
-                           html+='<a href="#" id="playButton" class="link-button selected" style="margin-left:80px;">Spela upp</a>';
-                       }
-                       html+=' </div>';
-		       html+=' </div>';
-		       
-                       html+='</div>';
-		       html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
-            	       $('#projdetails').html(html);
-	               html = null;
-                       if (!detailsOnTop)
-                           fetchPriorLocation();
-                   });
+                   };
+                   Details.toHtml(programData);
                },
                {cbError:function(textStatus, errorThrown) {
                    if (!isBackground) {
@@ -280,6 +255,51 @@ Details.loadXml = function(isBackground) {
                }
               )
 };
+
+Details.toHtml = function (programData) {
+    loadThumb(programData.thumb, function() {
+        if(programData.name.length > 47){
+	    programData.name = programData.name.substring(0, 47)+ "...";
+        }
+	html = '<div class="project-text">';
+	html+='<div class="project-name">';
+	html+='<h1>'+programData.name+'</h1>';
+        if (programData.show) {
+	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
+        } else if (!programData.category) {
+	    html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
+            if (programData.avail_date)
+		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
+            if (programData.duration)
+		html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
+            else 
+                html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
+        }
+	html+='<div class="project-desc">'+programData.description+'</div>';
+	html+='<div class="bottom-buttons">';
+        if (programData.category) {
+            html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till Kategorin</a>';
+        }
+        else if (programData.show) {
+            var title = myLocation.match(/title=([^&]+)/);
+            title = (title) ? title[1] : "Programmet"
+            html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till ' + title + '</a>';
+        } else if (programData.not_available) {
+            html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
+        } else {
+            html+='<a href="#" id="playButton" class="link-button selected" style="margin-left:80px;">Spela upp</a>';
+        }
+        html+=' </div>';
+	html+=' </div>';
+	
+        html+='</div>';
+	html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
+        $('#projdetails').html(html);
+	html = null;
+        if (!detailsOnTop)
+            fetchPriorLocation();
+    })
+}
 
 
 Details.fetchData = function(detailsUrl) {

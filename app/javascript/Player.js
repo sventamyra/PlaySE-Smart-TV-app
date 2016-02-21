@@ -704,8 +704,12 @@ Player.OnNetworkDisconnected = function()
                                     if (xhr.responseText.split("</article>").length > 1)
                                     {
 			        	Log('Success:' + this.url);
-                                        if (!reloaded)
-			        	    Player.reloadVideo();
+                                        if (!reloaded) {
+                                            if (channel = "dplay")
+                                                Dplay.refreshPlayUrl(function(){Player.reloadVideo()});
+                                            else
+                                                Player.reloadVideo();
+                                        }
 			            } else {
 			        	Log('Failure');
 			        	$.ajax(this);

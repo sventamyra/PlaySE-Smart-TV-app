@@ -28,6 +28,15 @@ Resolution.getTarget = function(IsLive) {
 };
 
 Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
+    Resolution.setStreamUrl(videoUrl, 
+                            isLive, 
+                            srtUrl, 
+                            useBitrates, 
+                            function() {Player.playVideo()}
+                           );
+};
+
+Resolution.setStreamUrl = function(videoUrl, isLive, srtUrl, useBitrates, callback){
 	// alert('target: ' + target + " videoUrl:" + videoUrl  + " isLive:" + isLive + " srtUrl:" + srtUrl);
         var prefix = videoUrl.replace(/[^\/]+$/,"");
         var target = Resolution.getTarget(isLive);
@@ -84,7 +93,7 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
 		           Log('current: ' + target);
                            // Log("current url: " + streams[currentId].url);
 		           Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl, target);
-		           Player.playVideo();
+		           callback();
 	               }
                       );
         } else {
@@ -92,7 +101,7 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
 	        Player.setVideoURL(videoUrl + "|COMPONENT=HLS", srtUrl);
             else
 	        Player.setVideoURL(videoUrl, srtUrl);
-	    Player.playVideo();
+	    callback();
 	}
 };
 
