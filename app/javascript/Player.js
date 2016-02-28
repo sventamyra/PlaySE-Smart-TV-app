@@ -689,7 +689,7 @@ Player.showDetails = function()
 Player.OnNetworkDisconnected = function()
 {
         loadingStop();
-	this.showControls();
+	Player.showControls();
         Player.enableScreenSaver();
 	$('.bottomoverlaybig').html('Network Error!');
 	// just to test the network so that we know when to resume
@@ -705,7 +705,7 @@ Player.OnNetworkDisconnected = function()
                                     {
 			        	Log('Success:' + this.url);
                                         if (!reloaded) {
-                                            if (channel = "dplay")
+                                            if (channel == "dplay")
                                                 Dplay.refreshPlayUrl(function(){Player.reloadVideo()});
                                             else
                                                 Player.reloadVideo();

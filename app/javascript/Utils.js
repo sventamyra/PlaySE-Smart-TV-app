@@ -292,6 +292,10 @@ getOldLocation = function() {
 
 setPosition = function(pos)
 {
+    if (itemCounter == 0) {
+        Log("setPosition without items?");
+        return;
+    }
     if (itemSelected) {
         itemSelected.removeClass('selected');
     } else {
@@ -548,8 +552,9 @@ asyncHttpRequest = function(url, callback, noLog, timeout) {
 
 getHistory = function(Name) {
     var Prefix = document.title;
-    if (myRefreshLocation)
+    if (myRefreshLocation && myRefreshLocation.match(/.+&history=/)) {
         Prefix = myRefreshLocation.replace(/.+&history=/, "");
+    }
     return Prefix.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/';
 }
 

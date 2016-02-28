@@ -231,7 +231,9 @@ Details.loadXml = function(isBackground) {
                         name        : decodeURIComponent(myLocation.match(/catName=([^&]+)/)[1]),
                         thumb       : decodeURIComponent(myLocation.match(/catThumb=([^&]+)/)[1]),
                        });
-        return loadingStop();
+        
+        window.setTimeout(loadingStop, 0);
+        return;
     }
     
     var url = Svt.fixLink(this.Geturl());
@@ -468,8 +470,8 @@ Details.getSvtData = function(url, data) {
         Log("DetailsImgLink:" + DetailsImgLink);
     }
     $video = data = null;
-    return {name          : Name,
-            title         : Title,
+    return {name          : Name.trim(),
+            title         : Title.trim(),
             is_live       : isLive,
             air_date      : DetailsPlayTime,
             avail_date    : AvailDate,

@@ -151,10 +151,10 @@ categoryDetail.loadSvt = function(url, refresh) {
                    if (url != categoryDetail.tabs[categoryDetail.tab_index].href) {
                        if (categoryDetail.tab_index != 0) {
                            // This is old data - we're out of sync - update
-                           return categoryDetail.loadXml(categoryDetail.tabs[categoryDetail.tab_index].href);
+                           return categoryDetail.loadXml(categoryDetail.tabs[categoryDetail.tab_index].href, refresh);
                        } else if ($(tabs[1]).attr('aria-controls') != "playJs-alphabetic-list") {
                            // Default isn't A-Ö -> shows are missing
-                           return categoryDetail.loadXml(categoryDetail.tabs[0].href);
+                           return categoryDetail.loadXml(categoryDetail.tabs[0].href, refresh );
                        }
                    }
                    categoryDetail.fixBButton();
