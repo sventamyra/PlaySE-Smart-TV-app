@@ -38,7 +38,7 @@ Resolution.getCorrectStream = function(videoUrl, isLive, srtUrl, useBitrates){
 
 Resolution.setStreamUrl = function(videoUrl, isLive, srtUrl, useBitrates, callback){
 	// alert('target: ' + target + " videoUrl:" + videoUrl  + " isLive:" + isLive + " srtUrl:" + srtUrl);
-        var prefix = videoUrl.replace(/[^\/]+$/,"");
+        var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,"");
         var target = Resolution.getTarget(isLive);
         if (target != "Auto" && videoUrl.match(/\.m3u8/)) {
             requestUrl(videoUrl,

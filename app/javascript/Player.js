@@ -214,7 +214,7 @@ Player.GetDigits = function(type, data)
 
 Player.getHlsVersion = function(url) 
 {
-    var prefix = url.replace(/[^\/]+$/,"");
+    var prefix = url.replace(/[^\/]+(\?.+)?$/,"");
     var data = syncHttpRequest(url).data;
     var hls_version = data.match(/^#.*EXT-X-VERSION:\s*([0-9]+)/m)
     if (hls_version)
