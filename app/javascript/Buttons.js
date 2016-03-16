@@ -713,8 +713,12 @@ Buttons.handleMenuKeys = function(keyCode){
     case tvKey.KEY_GREEN: 
         if (Language.isBButtonChanged())
         {
-            if (channel == "svt")
-	        categoryDetail.setNextLocation();
+            if (channel == "svt") {
+                if (getIndexLocation().match("categories.html"))
+                    Categories.setNextLocation();
+                else
+	            categoryDetail.setNextLocation();
+            }
             else if (channel == "viasat")
                 Categories.setNextLocation();
             else if (channel == "tv4")

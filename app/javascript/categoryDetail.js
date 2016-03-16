@@ -10,7 +10,7 @@ categoryDetail.onLoad = function(refresh)
 	PathHistory.GetPath();
 
     if (!detailsOnTop) {
-        var location = categoryDetail.getLocation(refresh);
+        var location = getLocation(refresh);
         if (location.indexOf("&tab_index=") == -1) {
             categoryDetail.tabs = [];
             categoryDetail.tab_index = 0;
@@ -20,13 +20,6 @@ categoryDetail.onLoad = function(refresh)
 	this.loadXml(this.Geturl(refresh), refresh);
     }
 //	widgetAPI.sendReadyEvent();
-};
-
-categoryDetail.getLocation = function (refresh)
-{
-    if (refresh)
-        return myRefreshLocation;
-    return myLocation;
 };
 
 categoryDetail.setNextLocation = function()
@@ -73,7 +66,7 @@ categoryDetail.Geturl=function(refresh){
         if (url.indexOf(myLocation.match(/\?category=(http:[^&]+)/)[1]) != -1)
             return url
     }
-    url = categoryDetail.getLocation(refresh);
+    url = getLocation(refresh);
     var parse;
     var name="";
     if (url.match(/category=/))
@@ -113,9 +106,6 @@ categoryDetail.loadSvt = function(url, refresh) {
                function(status, data)
                {
                    if (!data.responseText.match(/ul class=\"play_category__tab/)) {
-                       data = data.responseText.split('root\["__svtplay"\]')[1]
-                       data = data.replace(/[^{]*(.+);$/, "$1");
-                       // alert(data);
                        return Svt.decode_category(data);
                    }
                    data = data.responseText.split("ul class=\"play_category__tab");

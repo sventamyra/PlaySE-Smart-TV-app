@@ -167,9 +167,8 @@ setLocation = function(location, oldPos, skipHistory)
         }
     } else {
         Language.fixAButton();
-        if ((channel == "svt" && !location.match(/categoryDetail.html/)) ||
-            (channel == "viasat" && !location.match(/categories.html/)) ||
-            (channel == "dplay" && !location.match(/categories.html/)))
+        if ((channel == "svt" && !location.match(/categoryDetail.html/) && !location.match(/categories.html/)) ||
+            ((channel == "viasat" || channel == "dplay") && !location.match(/categories.html/)))
             Language.fixBButton();
     }
     if ((isDetails && !detailsOnTop) || !detailsOnTop)
@@ -283,11 +282,44 @@ getLocation = function (refresh)
     return myLocation;
 };
 
+getIndexLocation = function() {
+    var myNewLocation = (myRefreshLocation) ? myRefreshLocation : myLocation;
+    if (myNewLocation.match(/details.html/))
+        myNewLocation = getOldLocation();
+    return myNewLocation;
+}
+
 getOldLocation = function() {
     if (myHistory.length > 0)
         return myHistory[myHistory.length-1].loc
     else
         return null
+};
+
+getIndex = function(MaxIndex, IndexToSkip) {
+    var thisLocation = getIndexLocation();
+    var anyIndex = thisLocation.match(/\?tab_index=([0-9]+)/);
+    var nextIndex;
+    if (!anyIndex) {
+        currentIndex = 0;
+    } else {
+        currentIndex = +anyIndex[1];
+        anyIndex     = true;
+    }
+    var nextIndex = (currentIndex == MaxIndex) ? 0 : currentIndex+1;
+    if (IndexToSkip && nextIndex==IndexToSkip)
+       nextIndex = nextIndex+1;
+    return {current:currentIndex, next:nextIndex, any:anyIndex}
+};
+
+getNextIndexLocation = function(MaxIndex, IndexToSkip) {
+    var thisLocation = getIndexLocation();
+    var NextIndex = getIndex(MaxIndex, IndexToSkip).next;
+    if (NextIndex == 0) {
+        return thisLocation.replace(/\?tab_index=[0-9]+/, "")
+    } else {
+        return thisLocation.replace(/\.html(\?tab_index=[0-9]+)?/, ".html?tab_index=" + NextIndex)
+    }
 };
 
 setPosition = function(pos)

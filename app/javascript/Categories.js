@@ -6,7 +6,9 @@ var Categories =
 Categories.onLoad = function(refresh)
 {
     document.title = "Kategorier";
-    if (channel == "viasat")
+    if (channel == "svt")
+        Svt.updateCategoryTitle();
+    else if (channel == "viasat")
         Viasat.updateCategoryTitle();
     else if (channel == "dplay")
         Dplay.updateCategoryTitle();
@@ -42,30 +44,11 @@ Categories.loadXml = function(refresh) {
 };
 
 Categories.loadSvt = function(refresh) {
+    Svt.toggleBButton();
     requestUrl('http://www.svtplay.se/program',
                function(status, data)
                {
-                   data = data.responseText.split("<section class=\"play_alphabetic-group")[1];
-                   
-                   $(data).find('a').filter(function() {
-                       return $(this).attr('class') == "play_category-grid__link";
-                   }).each(function(){
-                       var $video = $(this); 
-                       var Name = $($video.find('span')[0]).text().trim();
-		       var Link = Svt.fixLink($video.attr('href'));
-		       //Log(Link);
-		       //var Description = $video.find('Description').text();
-	               var ImgLink  = $video.find('img').attr('data-imagename');
-                       if (!ImgLink) ImgLink = $video.find('img').attr('src');
-                       ImgLink = Svt.fixLink(ImgLink);
-                       toHtml({name:        Name,
-                               link:        Link,
-                               link_prefix: '<a href="categoryDetail.html?category=',
-                               thumb:       ImgLink,
-                               largeThumb:  (ImgLink) ? ImgLink.replace("small", "large") : null
-                              });
-	               $tmpData = $video = null;
-                   });
+                   Svt.decodeCategories(data);
                    data = null;
                },
                {callLoadFinished:true,
@@ -76,7 +59,9 @@ Categories.loadSvt = function(refresh) {
 
 Categories.setNextLocation = function()
 {
-    if (channel == "viasat")
+    if (channel == "svt")
+        setLocation(Svt.getNextCategory());
+    else if (channel == "viasat")
         setLocation(Viasat.getNextCategory());
     else if (channel == "dplay")
         setLocation(Dplay.getNextCategory());

@@ -1,16 +1,16 @@
 var Svt =
 {
     sections:[],
-    section_index:0
+    section_max_index:0
 };
 
 Svt.fixLink = function (Link) 
 {
     if (Link)
         Link = Link.replace(/amp;/g, "").replace(/([^:])\/\//g,"$1/")
-    if (Link.match(/^\/\//)) {
+    if (Link && Link.match(/^\/\//)) {
         return "http:" + Link;
-    } else if (!Link.match("https*:")) {
+    } else if (Link && !Link.match("https*:")) {
         if (!Link.match(/^\//))
             Link = "/" + Link;
         return "http://www.svtplay.se" + Link
@@ -45,58 +45,55 @@ Svt.addSections = function(data) {
     for (var key in data) {
         if (key.match(/Url$/) && !key.match(/live/i)) {
             name = key.replace(/Url$/, "Header");
-            Svt.sections.push({name:data[name], url:Svt.fixLink(data[key])})
-            if (key.match(/popu/i))
-                Svt.section_index = Svt.sections.length - 1
+            if (key.match(/popu/i)) {
+                Svt.sections.unshift({name:data[name], url:Svt.fixLink(data[key])})
+            } else {
+                Svt.sections.push({name:data[name], url:Svt.fixLink(data[key])})
+            }
         }
     }
+    Svt.section_max_index = Svt.sections.length-1;
     $("#a-button").text(Svt.getNextSectionText());
 }
 
 Svt.getSectionIndex = function() {
-    var location =  (myRefreshLocation) ? myRefreshLocation : myLocation;
-    var index = location.match(/section.html\?tab_index=([0-9]+)/)
-    if (index)
-        return +index[1]
-    else if (location.match(/index.html/))
-        return Svt.section_index;
-    else
-        return null;
-}
+    return getIndex(Svt.section_max_index)
+};
 
+Svt.getNextSectionIndex = function() {
+    if (!getIndexLocation().match(/(section|index)\.html/)) {
+        return 0
+    }else
+        return Svt.getSectionIndex().next
+}
 
 Svt.getNextSectionText = function() {
-    var index = Svt.getSectionIndex();
-    if (index != null) {
-        if (Svt.sections.length > 0) {
-            if (index+1 >= Svt.sections.length)
-                return Svt.sections[0].name;
-            else
-                return Svt.sections[index+1].name;
-        }
-    }
-    return 'Populärt';
-}
+    if (Svt.sections.length == 0)
+        // Sections not added yet
+        return 'Populärt';
+    
+    return Svt.sections[Svt.getNextSectionIndex()].name;
+};
 
 Svt.getSectionUrl = function(location) {
     var index = location.match(/tab_index=([0-9]+)/)[1];
     document.title = Svt.sections[index].name; 
     return Svt.sections[index].url;
-}
+};
 
 Svt.setNextSection = function() {
-
-    if ($("#a-button").text().indexOf("Pop") != -1) {
-	setLocation('index.html');
+    if (Svt.getNextSectionIndex() == 0) {
+        setLocation('index.html');
     } else {
-        Svt.section_index = Svt.section_index + 1;
-        if (Svt.section_index >= Svt.sections.length)
-            Svt.section_index = 0;
-        if (Svt.sections[Svt.section_index].name.match(/popu/i))
-	    setLocation('index.html');
-        else
-            setLocation("section.html?tab_index=" + Svt.section_index);
+        var nextLoc = getNextIndexLocation(Svt.section_max_index)
+        setLocation(nextLoc.replace("index.html", "section.html"));
     }
+};
+
+Svt.decodeJson = function(data) {
+    data = data.responseText.split('root\["__svtplay"\]')[1]
+    data = data.replace(/[^{]*(.+);$/, "$1");
+    return JSON.parse(data)
 }
 
 Svt.decode_recommended = function (data, extra) {
@@ -111,7 +108,7 @@ Svt.decode_recommended = function (data, extra) {
         var ImgLink;
 
         recommendedLinks = [];
-        data = JSON.parse(data).context.dispatcher.stores;
+        data = Svt.decodeJson(data).context.dispatcher.stores;
         if (extra && extra.addSections)
             Svt.addSections(data) 
         data = data.DisplayWindowStore.start_page ;
@@ -150,10 +147,111 @@ Svt.decode_recommended = function (data, extra) {
     }
 };
 
+Svt.decodeCategories = function (data) {
+
+    try {
+        var Name;
+        var Link;
+        var ImgLink;
+        var CurrentIndex = Svt.getCategoryIndex().current;
+
+        data = Svt.decodeJson(data).context.dispatcher.stores.ProgramsStore;
+
+        switch (CurrentIndex) {
+        case 0:
+            data.categories.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
+            Svt.decode(data.categories)
+            break;
+        case 1:
+            for (var key in data.allClusters) {
+                for (var k=0; k < data.allClusters[key].length; k++) {
+                    for (var i=0; i < data.allClusters[key][k].length; i++) {
+                        Name    = data.allClusters[key][k][i].name.trim();
+                        ImgLink = null;
+                        Link    = data.allClusters[key][k][i].uri.replace(/^tag.+:([^:]+)$/,"/genre/$1");
+                        Link    = Svt.fixLink(Link);
+                        if (data.allClusters[key][k][i].metaData)
+                            ImgLink = Svt.fixLink(data.allClusters[key][k][i].metaData.backgroundImageSmall);
+                        toHtml({name:        Name,
+                                link:        Link,
+                                link_prefix: '<a href="categoryDetail.html?category=',
+                                thumb:       ImgLink,
+                                largeThumb:  (ImgLink) ? ImgLink.replace("small", "large") : null
+                               });
+                    };
+                };
+            };            
+            break;
+        case 2:
+            ImgLink = null;
+            for (var key in data.alphabeticList) {
+                for (var k=0; k < data.alphabeticList[key].titles.length; k++) {
+                    Name    = data.alphabeticList[key].titles[k].title.trim();
+                    Link    = data.alphabeticList[key].titles[k].urlFriendlyTitle;
+                    showToHtml(Name, ImgLink, Svt.fixLink(Link));
+                };
+            };
+            break;
+        };
+        data = null;
+    } catch(err) {
+        Log("Svt.decodeCategories Exception:" + err.message + " data:" + JSON.stringify(data));
+    }
+};
+
+Svt.getNextCategory = function() {
+    return getNextIndexLocation(2);
+}
+
+Svt.getCategoryIndex = function () {
+    return getIndex(2);
+};
+
+Svt.updateCategoryTitle = function() {
+    switch (Svt.getCategoryIndex().current) {
+    case 0:
+        document.title = "Kategorier";
+        break;
+    case 1:
+        document.title = "Alla Kategorier";
+        break;
+    case 2:
+        document.title = "Alla Program";
+        break;
+    }
+};
+
+Svt.toggleBButton = function() {
+
+    var language = Language.checkLanguage();
+
+    switch (Svt.getCategoryIndex().next) {
+    case 0:
+        Language.fixBButton();
+        break;
+    case 1:
+        if (language == "Swedish")
+            $("#b-button").text("Alla Kategorier");
+        else
+            $("#b-button").text("All Categories");
+        break;
+    case 2:
+        if (language == "Swedish")
+            $("#b-button").text("Alla Program");
+        else
+            $("#b-button").text("All Shows");
+        break;
+    }
+};
+
 Svt.decode_category = function (data) {
-    data = JSON.parse(data).context.dispatcher.stores.ClusterStore;
-    Svt.decode(data.contents)
-    Svt.decode(data.clips)
+    data = Svt.decodeJson(data).context.dispatcher.stores.ClusterStore;
+    if (data.contents)
+        Svt.decode(data.contents)
+    if (data.titles)
+        Svt.decode(data.titles)
+    if (data.clips)
+        Svt.decode(data.clips)
 }
 
 Svt.search = function(query, completeFun, url) {
@@ -161,8 +259,6 @@ Svt.search = function(query, completeFun, url) {
     requestUrl('http://www.svtplay.se/sok?q=' + query,
                function(status, data)
                {
-                   data = data.responseText.split('root\["__svtplay"\]')[1]
-                   data = data.replace(/[^{]*(.+);$/, "$1");
                    Svt.decode_search(data);
                    completeFun();
                },
@@ -185,7 +281,7 @@ Svt.decode_search = function (data) {
         var keys = [];
 
         recommendedLinks = [];
-        data = JSON.parse(data).context.dispatcher.stores.SearchStore ;
+        data = Svt.decodeJson(data).context.dispatcher.stores.SearchStore;
         for (var key in data){
             if (!data[key][0] || (!data[key][0].contentType && !data[key][0].name))
                 continue;

@@ -102,8 +102,6 @@ Main.loadSvt = function(refresh) {
     requestUrl('http://www.svtplay.se',
                function(status, data)
                {
-                   data = data.responseText.split('root\["__svtplay"\]')[1]
-                   data = data.replace(/[^{]*(.+);$/, "$1");
                    recommendedLinks = Svt.decode_recommended(data, {addSections:true});
                },
                {cbComplete:function(xhr, status){Main.loadSvtPopular(refresh)}}
@@ -111,7 +109,7 @@ Main.loadSvt = function(refresh) {
 };
 
 Main.loadSvtPopular = function(refresh){
-    requestUrl(Svt.sections[Svt.section_index].url,
+    requestUrl(Svt.sections[0].url,
                function(status, data)
                {
                    data = data.responseText.split("div id=\"gridpage-content")[1];

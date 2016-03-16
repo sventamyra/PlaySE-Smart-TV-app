@@ -36,13 +36,17 @@ Viasat.getUrl = function(name, new_channel) {
         break;
 
     case "categories":
-        var thisCategory = Viasat.getCurrentLocation();
-        if (thisCategory.match(/\?tab_index=1/))
-            url = 'http://playapi.mtgx.tv/v3/collections?device=mobile&premium=open&country=se'
-        else if (thisCategory.match(/\?tab_index=2/))
-            return Viasat.getAllShowsUrl();
-        else
+        switch (Viasat.getCategoryIndex().current) {
+        case 0:
             url = 'http://playapi.mtgx.tv/v3/categories?device=mobile&premium=open&country=se&order=name'
+            break;
+        case 1:
+            url = 'http://playapi.mtgx.tv/v3/collections?device=mobile&premium=open&country=se'
+            break;
+        case 2:
+            return Viasat.getAllShowsUrl();
+            break;
+        }
         break;
 
     case "Latest.html":
@@ -92,38 +96,18 @@ Viasat.search = function(query, completeFun) {
                         );
 }
 
-Viasat.getCurrentLocation = function() {
-    var myNewLocation = myLocation;
-    if (detailsOnTop)
-        myNewLocation = getOldLocation();
-    return myNewLocation;
-}
-
 Viasat.getNextCategory = function() {
-    var thisCategory = Viasat.getCurrentLocation();
-    switch (Viasat.getCategoryIndex().next) {
-    case 0:
-        return thisCategory.replace(/\?tab_index=[0-9]+/, "")
-        break;
-    case 1:
-        return thisCategory.replace(/categories.html(\?tab_index=[0-9]+)?/, "categories.html?tab_index=1")
-        break;
-    case 2:
-        return thisCategory.replace(/categories.html(\?tab_index=[0-9]+)?/, "categories.html?tab_index=2")
-        break;
-    }
+    if (Viasat.channel_idx == null)
+        return getNextIndexLocation(2);
+    else
+        return getNextIndexLocation(2, 1);
 }
 
 Viasat.getCategoryIndex = function () {
-    var thisCategory = Viasat.getCurrentLocation();
-    if (thisCategory.match(/\?tab_index=2/)) {
-        return {current:2, next:0} 
-    } else if (thisCategory.match(/\?tab_index=1/)) {
-        return {current:1, next:2}
-    } else if (Viasat.channel_idx == null)
-        return {current:0, next:1}
+    if (Viasat.channel_idx == null)
+        return getIndex(2);
     else
-        return {current:0, next:2}
+        return getIndex(2, 1);
 };
 
 Viasat.updateCategoryTitle = function() {
