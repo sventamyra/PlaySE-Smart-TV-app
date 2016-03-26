@@ -331,10 +331,10 @@ Details.getData = function(url, data) {
 Details.getSvtData = function(url, data) {
     if (!Svt.isPlayable(url) && url.indexOf("/kanaler/") == -1) {
         return Details.getShowData(url, data);
+    } else if (url.indexOf("/kanaler/") == -1) {
+        data = data.responseText.split("<section class=\"play_js-tabs")[0]
+        data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
     }
-
-    data = data.responseText.split("<section class=\"play_js-tabs")[0]
-    data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
 
 
     var Name="";
@@ -349,35 +349,37 @@ Details.getSvtData = function(url, data) {
     var isChannel=false;
     var NotAvailable=false;
     var startTime=0;
+    var endTime=0;
     try {
 
         if (url.indexOf("/kanaler/") > -1) {
-            data = data.split("<div class=\"play_channel-schedules")[0];
-            $video = $(data).find('div.play_channels');
-            isChannel = true;
-
-            Name = $video.find('a').attr('data-title');
-	    DetailsImgLink = Svt.fixLink($video.find('img').attr('data-imagename'));
-            pattern = new RegExp("\\b" + Name + "\\b", "i");
-	    var $info = $(data).find('div').filter(function() {
-                
-                return ($(this).attr('class').indexOf("play_channels__active-video-info") > -1 &&
-                        pattern.test($(this).attr('data-channel')));
-            });
-            Name = Name + " - " + $($info.children()[0]).text();
-            VideoLength = $($($info.find('p')[1]).children()[1]).text();
-	    Description = $($info.find('p')[0]).text();
-            var timeData = $info.find('div').find('div').find('div').filter(function() {
-                if ($(this).attr('data-starttime'))
-                    return true;
-                else 
-                    return false;
-            });
-            DetailsPlayTime = tsToClock(+timeData.attr('data-starttime')) + "-" +
-                tsToClock(timeData.attr('data-endtime'));
+            data = Svt.decodeJson(data).context.dispatcher.stores.ScheduleStore;
+	    for (var i = 0; i < data.channels.length; i++) {
+                if (data.channels[i].title == data.activeChannelId) {
+                    data = data.channels[i];
+                    break;
+                }
+            }
+            Name = data.name.trim() + " - " + data.schedule[0].title.trim();
+            if (data.schedule[0].titlePage) {
+	        DetailsImgLink = Svt.fixLink(data.schedule[0].titlePage.thumbnailXL);
+            } else {
+	        DetailsImgLink = Svt.GetChannelThumb(data.title);
+            }
+            startTime = data.schedule[0].broadcastStartTime;
+            startTime = startTime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
+            startTime = new Date(startTime);
+            endTime = data.schedule[0].broadcastEndTime;
+            endTime = endTime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
+            endTime = new Date(endTime);
+            VideoLength = dataLengthToVideoLength(null, Math.round((endTime-startTime)/1000));
+	    Description = data.schedule[0].description.trim();
+            DetailsPlayTime = tsToClock(startTime.getTime()) + "-" +
+                tsToClock(endTime.getTime());
             Title = DetailsPlayTime + " " + Name;
+            isChannel = true;
             isLive = true;
-
+            NotAvailable = (startTime - getCurrentDate()) > 60*1000;
         } else if (url.indexOf("oppetarkiv") > -1) {
             Name = $($(data).find('img')[1]).attr('alt');
             Title = Name;
@@ -416,7 +418,7 @@ Details.getSvtData = function(url, data) {
                 DetailsPlayTime  = DetailsPlayTime + " " + DetailsClock;
             
             if (isLive) {
-                NotAvailable = +($video.find('section').find('a').attr('data-livestart')) < 0;
+                NotAvailable = +($video.find('a').attr('data-livestart')) < 0;
                 // Log("NotAvailable:" + NotAvailable + " " +$video.find('section').find('a').attr('data-livestart'));
                 VideoLength = dataLengthToVideoLength($video);
             } else {
@@ -432,7 +434,7 @@ Details.getSvtData = function(url, data) {
                 }
             }
 	    Description = $($video.find('p')[0]).text();
-	    onlySweden = $video.find('section').find('a').attr('data-only-available-in-sweden');
+	    onlySweden = $video.find('a').attr('data-only-available-in-sweden');
         }
 	if(!Language.getisSwedish()){
 	    DetailsPlayTime=DetailsPlayTime.replace("igår","yesterday");
@@ -538,7 +540,7 @@ function dataLengthToVideoLength($video, duration)
 {
     VideoLength = "";
     if (!duration && $video) {
-        duration = $video.find('section').find('a').attr('data-length');
+        duration = $video.find('a').attr('data-length');
     }
     if (!duration)
         return VideoLength;

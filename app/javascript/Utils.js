@@ -632,7 +632,7 @@ showToHtml = function(Name, Thumb, Link, LinkPrefix) {
             duration:"",
             is_live:false,
             is_channel:false,
-            running:null,
+            is_running:null,
             starttime:null
            });
 };
@@ -653,8 +653,11 @@ toHtml = function(Item) {
     else{
 	html = '<div class="scroll-content-item bottomitem">';
     }
-
-    IsLiveText = (Item.is_live || Item.is_channel) ? " is-live" : "";
+    if (Item.is_live || Item.is_channel) {
+        IsLiveText = (Item.is_running) ? " is-live" : " not-yet-available";
+    } else {
+        IsLiveText = "";
+    }
     if (Item.link_prefix.match(/categoryDetail\.html/)) {
         Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);
         Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
@@ -662,7 +665,7 @@ toHtml = function(Item) {
     html += '<div class="scroll-item-img">';
     html += Item.link_prefix + Item.link + '&history=' + getHistory(Item.name) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
 
-    if (Item.is_live && !Item.running) {
+    if (Item.is_live && !Item.is_running) {
 	html += '<span class="topoverlay">LIVE</span>';
 	// html += '<span class="bottomoverlay">' + Item.starttime + ' - ' + endtime + '</span>';
 	html += '<span class="bottomoverlay">' + Item.starttime + '</span>';

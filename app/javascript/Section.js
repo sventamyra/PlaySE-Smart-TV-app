@@ -97,7 +97,7 @@ Section.decode_recommended = function(data) {
             toHtml({name:Name,
                     duration:Duration,
                     is_live:Decoded.is_live,
-                    running:Decoded.is_live,
+                    is_running:Decoded.is_live,
                     is_channel:false,
                     starttime:"",
                     link:Link,
@@ -149,7 +149,7 @@ decode_video = function(data, filter) {
     var Name;
     var Duration;
     var IsLive;
-    var running;
+    var IsRunning;
     var starttime;
     var Link;
     var LinkPrefix;
@@ -167,7 +167,7 @@ decode_video = function(data, filter) {
         return;
     ImgLink = data.match(/data-imagename="([^"]+)"/);
     IsLive = data.search(/svt_icon--live/) > -1;
-    running = data.search(/play_graphics-live--inactive/) == -1;
+    IsRunning = data.search(/play_graphics-live--inactive/) == -1;
     starttime = data.match(/alt="([^"]+)"/);
     Description = (!Description) ? "" : Description[1].trim();
     ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/)[1] : ImgLink[1];
@@ -187,7 +187,7 @@ decode_video = function(data, filter) {
             duration:Duration,
             is_live:IsLive,
             is_channel:false,
-            running:running,
+            is_running:IsRunning,
             starttime:starttime,
             link:Link,
             link_prefix:LinkPrefix,
@@ -200,7 +200,7 @@ decode_new_video = function(data, filter) {
     var Name;
     var Duration;
     var IsLive;
-    var running;
+    var IsRunning;
     var starttime;
     var Link;
     var LinkPrefix;
@@ -222,9 +222,9 @@ decode_new_video = function(data, filter) {
     ImgLink = data.match(/img[^>]+src="([^"]+)"/)[1];
     ImgLink = Svt.fixLink(ImgLink);
     IsLive = data.match(/play_graphics-live/)
-    running = data.match(/play_graphics-live--active/)
+    IsRunning = data.match(/play_graphics-live--active/)
     starttime = data.match(/play_graphics-live__secondary-text[^>]+>([^<]+)/);
-    starttime = (!running && starttime) ? starttime[1] : "";
+    starttime = (!IsRunning && starttime) ? starttime[1] : "";
     data = "";
     LinkPrefix = '<a href="showList.html?name=';
     if (Svt.isPlayable(Link)) {
@@ -241,7 +241,7 @@ decode_new_video = function(data, filter) {
             duration:Duration,
             is_live:IsLive,
             is_channel:false,
-            running:running,
+            is_running:IsRunning,
             starttime:starttime,
             link:Link,
             link_prefix:LinkPrefix,

@@ -1,13 +1,17 @@
 var Svt =
 {
     sections:[],
-    section_max_index:0
+    section_max_index:0,
+    category_detail_max_index:0,
+    category_detail_name:""
 };
 
 Svt.fixLink = function (Link) 
 {
-    if (Link)
+    if (Link) {
         Link = Link.replace(/amp;/g, "").replace(/([^:])\/\//g,"$1/")
+        Link = Link.replace("{format}", "small");
+    }
     if (Link && Link.match(/^\/\//)) {
         return "http:" + Link;
     } else if (Link && !Link.match("https*:")) {
@@ -31,9 +35,13 @@ Svt.redirectUrl = function(url) {
     if (result.location) {
         return result.location
     } else if (result.success) {
-        result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
-        if (result && result.length > 0)
-            return result[1]
+        try {
+            url = Svt.decodeJson({responseText:result.data}).context.dispatcher.stores.MetaStore.canonical;
+        } catch(err) {
+            result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
+            if (result && result.length > 0)
+                return result[1]
+        }
     }
     return url
 };
@@ -108,10 +116,12 @@ Svt.decode_recommended = function (data, extra) {
         var ImgLink;
 
         recommendedLinks = [];
-        data = Svt.decodeJson(data).context.dispatcher.stores;
-        if (extra && extra.addSections)
-            Svt.addSections(data) 
-        data = data.DisplayWindowStore.start_page ;
+        if (!extra.json) {
+            data = Svt.decodeJson(data).context.dispatcher.stores;
+            if (extra && extra.addSections)
+                Svt.addSections(data) 
+            data = data.DisplayWindowStore.start_page ;
+        }
 
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
@@ -130,7 +140,7 @@ Svt.decode_recommended = function (data, extra) {
             toHtml({name:Name,
                     duration:0,
                     is_live:data[k].live,
-                    running:data[k].live,
+                    is_running:data[k].live,
                     is_channel:false,
                     starttime:"",
                     link:Link,
@@ -153,11 +163,10 @@ Svt.decodeCategories = function (data) {
         var Name;
         var Link;
         var ImgLink;
-        var CurrentIndex = Svt.getCategoryIndex().current;
 
         data = Svt.decodeJson(data).context.dispatcher.stores.ProgramsStore;
 
-        switch (CurrentIndex) {
+        switch (Svt.getCategoryIndex().current) {
         case 0:
             data.categories.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
             Svt.decode(data.categories)
@@ -221,8 +230,35 @@ Svt.updateCategoryTitle = function() {
     }
 };
 
+Svt.getNextCategoryDetail = function() {
+    var nextLocation = getNextIndexLocation(Svt.category_detail_max_index);
+    switch (Svt.getCategoryDetailIndex().next) {
+    case 0:
+        nextLocation = nextLocation.replace("Relaterat/", "");
+        break;
+    case 1:
+        nextLocation =  nextLocation + "Rekommenderat/"
+        break;
+    case 2:
+        nextLocation =  nextLocation.replace("Rekommenderat/", "") + "Relaterat/"
+        break
+    }
+    return nextLocation;
+}
+
+Svt.getCategoryDetailIndex = function () {
+    return getIndex(Svt.category_detail_max_index);
+};
+
 Svt.toggleBButton = function() {
 
+    if (getIndexLocation().indexOf("categoryDetail.html") == -1)
+        Svt.toggleBButtonForCategories()
+    else
+        Svt.toggleBButtonForCategoryDetail()
+}
+
+Svt.toggleBButtonForCategories = function() {
     var language = Language.checkLanguage();
 
     switch (Svt.getCategoryIndex().next) {
@@ -244,14 +280,63 @@ Svt.toggleBButton = function() {
     }
 };
 
+Svt.toggleBButtonForCategoryDetail = function() {
+    var language = Language.checkLanguage();
+
+    switch (Svt.getCategoryDetailIndex().next) {
+    case 0:
+        Language.fixBButton();
+        break;
+    case 1:
+        if (language == "Swedish")
+            $("#b-button").text(Svt.category_detail_name + " - Rekommenderat");
+        else
+            $("#b-button").text(Svt.category_detail_name + " - Recommended");
+        break;
+    case 2:
+        if (language == "Swedish")
+            $("#b-button").text(Svt.category_detail_name + " - Relaterat");
+        else
+            $("#b-button").text(Svt.category_detail_name + " - Related");
+        break;
+    }
+};
+
 Svt.decode_category = function (data) {
-    data = Svt.decodeJson(data).context.dispatcher.stores.ClusterStore;
-    if (data.contents)
-        Svt.decode(data.contents)
-    if (data.titles)
-        Svt.decode(data.titles)
-    if (data.clips)
-        Svt.decode(data.clips)
+    data = Svt.decodeJson(data).context.dispatcher.stores;
+    Svt.category_detail_name = data.ClusterStore.name.trim();
+    Svt.category_detail_max_index = 0;
+    for (var key in data.DisplayWindowStore) {
+        if (data.DisplayWindowStore[key].length > 0) {
+            Svt.category_detail_max_index = 1
+            if (data.ClusterStore.relatedClusters.length > 0)
+                Svt.category_detail_max_index = 2;
+            break;
+        }
+    };
+
+    switch (Svt.getCategoryDetailIndex().current) {
+    case 0:
+        if (data.ClusterStore.contents) {
+            alert("CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!")
+            Svt.decode(data.ClusterStore.contents)
+        }
+        if (data.ClusterStore.titles)
+            Svt.decode(data.ClusterStore.titles)
+        if (Svt.category_detail_max_index == 0 && data.ClusterStore.clips)
+            Svt.decode(data.ClusterStore.clips)
+        break;
+    case 1:
+        for (var key in data.DisplayWindowStore) {
+            Svt.decode_recommended(data.DisplayWindowStore[key], {json:true});
+        }
+        break;
+    case 2:
+        Svt.decode(data.ClusterStore.relatedClusters);
+        break;
+    };
+    Svt.toggleBButton();
+
 }
 
 Svt.search = function(query, completeFun, url) {
@@ -313,6 +398,55 @@ Svt.decode_search = function (data) {
     }
 };
 
+Svt.GetChannelThumb  = function (Name)
+{
+    return Svt.fixLink("/assets/images/channels/posters/" + Name + ".png")
+};
+
+Svt.decodeChannels = function(data) {
+    try {
+        var Name;
+        var Duration;
+        var Link;
+        var ImgLink;
+        var starttime;
+        var endtime;
+        var IsRunning;
+        var BaseUrl = 'http://www.svtplay.se/kanaler';
+
+        data = Svt.decodeJson(data).context.dispatcher.stores.ScheduleStore.channels;
+        for (var k=0; k < data.length; k++) {
+
+            Name = data[k].title.trim();
+	    Link = BaseUrl + '/' + Name;
+            ImgLink = Svt.GetChannelThumb(Name);
+            starttime = data[k].schedule[0].broadcastStartTime;
+            starttime = starttime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
+            endtime = data[k].schedule[0].broadcastEndTime;
+            endtime = endtime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
+            Duration  = Math.round((new Date(endtime)-new Date(starttime))/1000);
+            IsRunning = (getCurrentDate()-new Date(starttime)) > -60*1000;
+            starttime = starttime.replace(/.+[^0-9]([0-9]+:[0-9]+):.*/, "$1");
+            endtime   = endtime.replace(/.+[^0-9]([0-9]+:[0-9]+):.*/, "$1");
+            Name = starttime + "-" + endtime + " " + data[k].schedule[0].title.trim();
+            toHtml({name:Name,
+                    duration:Duration,
+                    is_live:false,
+                    is_channel:true,
+                    is_running:IsRunning,
+                    link:Link,
+                    link_prefix:'<a href="details.html?ilink=',
+                    thumb:ImgLink
+                   });
+            data[k] = "";
+	};
+        data = null;
+
+    } catch(err) {
+        Log("Svt.decodeChannels Exception:" + err.message + " data[k]:" + JSON.stringify(data[k]));
+    }
+};
+
 Svt.decode = function(data) {
     try {
         var html;
@@ -323,6 +457,8 @@ Svt.decode = function(data) {
         var Description;
         var Duration;
         var ImgLink;
+        var starttime;
+        var IsRunning;
 
         for (var k=0; k < data.length; k++) {
             if (data[k].title)
@@ -355,16 +491,22 @@ Svt.decode = function(data) {
                     Link = "/genre/" + Link;
                 Link = Svt.fixLink(Link);
             }
+            else if (data[k].slug)
+                Link = Svt.fixLink("/genre/" + data[k].slug)
+
             if (data[k].imageSmall)
                 ImgLink = Svt.fixLink(data[k].imageSmall);
             else if (data[k].posterImageUrl)
                 ImgLink = Svt.fixLink(data[k].posterImageUrl);
+            else if (data[k].thumbnailImage)
+                ImgLink = Svt.fixLink(data[k].thumbnailImage);
+
             IsLive = data[k].live;
             if (IsLive && data[k].broadcastEnded)
                 continue;
-            running = data[k].broadcastedNow;
+            IsRunning = data[k].broadcastedNow;
             starttime = data[k].broadcastStartTime;
-            starttime = (!running && starttime) ? starttime.replace(/([^:]+):.+/, "$1") : "";
+            starttime = (!IsRunning && starttime) ? starttime.replace(/([^:]+):.+/, "$1") : "";
             LinkPrefix = '<a href="showList.html?name=';
             if (Svt.isPlayable(Link)) {
                 Duration = (Duration) ? Duration : 0;
@@ -380,7 +522,7 @@ Svt.decode = function(data) {
                     duration:Duration,
                     is_live:IsLive,
                     is_channel:false,
-                    running:running,
+                    is_running:IsRunning,
                     starttime:starttime,
                     link:Link,
                     link_prefix:LinkPrefix,

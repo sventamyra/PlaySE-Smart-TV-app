@@ -24,16 +24,21 @@ categoryDetail.onLoad = function(refresh)
 
 categoryDetail.setNextLocation = function()
 {
-    var myNewLocation = myLocation;
-    if (detailsOnTop)
-        myNewLocation = getOldLocation();
-    if (myNewLocation.match(/tab_index=[0-9]+/)) {
-        // Name to be replaced exists in History
-        myNewLocation = myNewLocation.replace(/[^\/]+\/$/, this.getNextName() + '/');
-    } else
-        myNewLocation = myNewLocation + this.getNextName() + '/';
-    myNewLocation = myNewLocation.replace(/(&tab_index=[0-9]+)?&history/,"&tab_index=" + this.getNextTabIndex() + "&history");
-    setLocation(myNewLocation);
+    if (channel == "svt" && Svt.category_detail_max_index > 0)
+        setLocation(Svt.getNextCategoryDetail());
+    // To be removed when SVT updated all their categories
+    else {
+        var myNewLocation = myLocation;
+        if (detailsOnTop)
+            myNewLocation = getOldLocation();
+        if (myNewLocation.match(/tab_index=[0-9]+/)) {
+            // Name to be replaced exists in History
+            myNewLocation = myNewLocation.replace(/[^\/]+\/$/, this.getNextName() + '/');
+        } else
+            myNewLocation = myNewLocation + this.getNextName() + '/';
+        myNewLocation = myNewLocation.replace(/(&tab_index=[0-9]+)?&history/,"&tab_index=" + this.getNextTabIndex() + "&history");
+        setLocation(myNewLocation);
+    }
 };
 
 categoryDetail.getNextName = function()
@@ -83,7 +88,9 @@ categoryDetail.loadXml = function(url, refresh) {
     if (categoryDetail.tabs.length > categoryDetail.tab_index &&
         url == categoryDetail.tabs[categoryDetail.tab_index].href) {
         categoryDetail.fixBButton();
-    };
+    // Temp to check Svt.category_detail_max_index
+    } else if (categoryDetail.tabs.length == 0 && Svt.category_detail_max_index == 0)
+        Language.fixBButton();
 
     switch (channel) {
     case "svt":
@@ -108,6 +115,8 @@ categoryDetail.loadSvt = function(url, refresh) {
                    if (!data.responseText.match(/ul class=\"play_category__tab/)) {
                        return Svt.decode_category(data);
                    }
+                   // Temp
+                   Svt.category_detail_max_index = 0;
                    data = data.responseText.split("ul class=\"play_category__tab");
                    tabs = data[1].split("li class=\"play_category__tab-list-item");
                    var tab = null;

@@ -56,8 +56,7 @@ Dplay.getUrl = function(name, new_channel) {
         break;
 
     case "categories":
-        var thisCategory = Dplay.getCurrentLocation();
-        if (thisCategory.match(/\?tab_index=1/))
+        if (Dplay.getCategoryIndex().current == 1)
             return Dplay.getAllShowsUrl();
         else
             return Dplay.makeApiUrl("/genres");
@@ -183,32 +182,12 @@ Dplay.finishSearch = function (completeFun) {
         completeFun();
 };
 
-Dplay.getCurrentLocation = function() {
-    var myNewLocation = myLocation;
-    if (detailsOnTop)
-        myNewLocation = getOldLocation();
-    return myNewLocation;
-};
-
 Dplay.getNextCategory = function() {
-    var thisCategory = Dplay.getCurrentLocation();
-    switch (Dplay.getCategoryIndex().next) {
-    case 0:
-        return thisCategory.replace(/\?tab_index=[0-9]+/, "")
-        break;
-    case 1:
-        return thisCategory.replace(/categories.html(\?tab_index=[0-9]+)?/, "categories.html?tab_index=1")
-        break;
-    }
+    return getNextIndexLocation(1);
 };
 
 Dplay.getCategoryIndex = function () {
-    var thisCategory = Dplay.getCurrentLocation();
-    if (thisCategory.match(/\?tab_index=1/)) {
-        return {current:1, next:0}
-    }  else {
-        return {current:0, next:1}
-    }
+    return getIndex(1);
 };
 
 Dplay.updateCategoryTitle = function() {
@@ -281,10 +260,6 @@ Dplay.decode_search_hits = function(data) {
     try {
         var Name;
         var Duration;
-        var IsLive;
-        var IsLiveText;
-        var running;
-        var starttime;
         var Link;
         var Description;
         var ImgLink;
@@ -388,10 +363,6 @@ Dplay.decode = function(data, target, stripShow, completeFun, onlySave) {
     try {
         var Name;
         var Duration;
-        var IsLive;
-        var IsLiveText;
-        var running;
-        var starttime;
         var Link;
         var Description="";
         var ImgLink;
@@ -601,7 +572,7 @@ Dplay.channelToHtml = function(name, idx, thumb) {
             duration:"",
             is_live:false,
             is_channel:false,
-            running:null,
+            is_running:null,
             starttime:null,
             link:idx,
             link_prefix:'<a href="index.html?dplay_channel=',
@@ -807,7 +778,7 @@ Dplay.resultToHtml = function() {
                 duration:Dplay.other_result[k].duration,
                 is_live:false,
                 is_channel:false,
-                running:null,
+                is_running:null,
                 starttime:null,
                 link:Dplay.other_result[k].link,
                 link_prefix:'<a href="details.html?ilink=',

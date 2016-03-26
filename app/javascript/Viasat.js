@@ -186,10 +186,6 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
     try {
         var Name;
         var Duration;
-        var IsLive;
-        var IsLiveText;
-        var running;
-        var starttime;
         var Link;
         var Description;
         var ImgLink;
@@ -293,7 +289,7 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
                         duration:Viasat.result[k].duration,
                         is_live:false,
                         is_channel:false,
-                        running:null,
+                        is_running:null,
                         starttime:null,
                         link:Viasat.result[k].link,
                         link_prefix:Viasat.result[k].link_prefix,
@@ -374,7 +370,7 @@ Viasat.channelToHtml = function(name, idx) {
             duration:"",
             is_live:false,
             is_channel:false,
-            running:null,
+            is_running:null,
             starttime:null,
             link:idx,
             link_prefix:'<a href="index.html?viasat_channel=',

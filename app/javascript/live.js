@@ -117,56 +117,8 @@ live.getSvtChannelJson = function (refresh) {
     requestUrl('http://www.svtplay.se/kanaler',
                function(status, data)
                {
-                   var html;
-                   var $video;
-                   var Name;
-                   var Duration;
-                   var Link;
-                   var ImgLink;
-                   var starttime;
-                   var endtime;
-                   var BaseUrl = 'http://www.svtplay.se/kanaler';
-
-                   data = data.responseText.split("<div class=\"play_channel-schedules\"")[0];
-	           $(data).find('div').filter(function() {
-                       return $(this).attr('class').indexOf("play_channels__active-video-info") > -1;
-                   }).each(function(){
-                       
-		       $video = $(this); 
-                       Name = $video.attr('data-channel');
-	               Link = BaseUrl + '/' + Name;
-                       // Log("Link:" + Link);
-	               ImgLink  = GetChannelThumb(BaseUrl, Name);
-                       // Log("ImgLink:" + ImgLink);
-                       starttime = $video.find('div').filter(function() {
-                           if ($(this).attr('data-starttime'))
-                               return true;
-                           else 
-                               return false;
-                       }).attr('data-starttime')*1;
-                       endtime = $video.find('div').filter(function() {
-                           if ($(this).attr('data-endtime'))
-                               return true;
-                           else 
-                               return false;
-                       }).attr('data-endtime')*1;
-                       Duration  = Math.round((endtime-starttime)/1000);
-                       starttime = tsToClock(starttime);
-                       endtime   = tsToClock(endtime);
-                       Name = starttime + "-" + endtime + " " + $($video.children()[0]).text();
-                       toHtml({name:Name,
-                               duration:Duration,
-                               is_live:false,
-                               is_channel:true,
-                               running:false,
-                               starttime:"",
-                               link:Link,
-                               link_prefix:'<a href="details.html?ilink=',
-                               description:"",
-                               thumb:ImgLink
-                              });
-	           });
-                   data = null;
+                   Svt.decodeChannels(data);
+                   data = null
 	       },
                {cbComplete:function(xhr, status) {live.getLiveJson(refresh)}}
               );
@@ -190,20 +142,4 @@ live.getLiveJson = function(refresh) {
               );
 };
 
-function GetChannelThumb(url, Name) 
-{
-    var channels = [{"name":"svt1", "thumb":"images/svt1.jpg"},
-                    {"name":"svt2", "thumb":"images/svt2.jpg"},
-                    {"name":"barnkanalen", "thumb":"images/barnkanalen.jpg"},
-                    {"name":"svt24", "thumb":"images/svt24.jpg"},
-                    {"name":"kunskapskanalen", "thumb":"images/kunskapskanalen.jpg"}
-                   ];
-
-    pattern = new RegExp(Name, 'i');
-    for (var i = 0; i < channels.length; i++) {
-        if (pattern.test(channels[i].name))
-            return channels[i].thumb;
-    }
-    return url + '/public/images/channels/backgrounds/' + Name + '-background.jpg';
-};
 //window.location = 'project.html?ilink=' + ilink;

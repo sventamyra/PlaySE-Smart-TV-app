@@ -980,7 +980,21 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                    {
                        if (Player.checkPlayUrlStillValid(gurl)) {
                            var videoReferences, subtitleReferences, srtUrl = null;
-                           data = JSON.parse(data.responseText);
+                           if (gurl.indexOf("/kanaler/") != -1) {
+                               data = Svt.decodeJson(data).context.dispatcher.stores.ScheduleStore;
+		               for (var i = 0; i < data.channels.length; i++) {
+                                   if (data.channels[i].title == data.activeChannelId) {
+                                       data = data.channels[i];
+                                       // No subtitles
+                                       data.disabled = true;
+                                       data.subtitleReferences = []
+                                       break;
+                                   }
+                               }
+                           } else {
+                               data = JSON.parse(data.responseText);
+                           }
+                           
                            if (data.video)
                                videoReferences = data.video.videoReferences
                            else

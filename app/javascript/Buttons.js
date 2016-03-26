@@ -791,18 +791,18 @@ Buttons.handleMenuKeys = function(keyCode){
     }
 };
 
-
 Buttons.playItem = function() {
-    var duration  = itemSelected.find('.ilink').attr("data-length");
-    var isLive    = (itemSelected.find('.ilink').attr("is-live") != null);
-    var starttime = 0;
-    var itemLink  = itemSelected.find('.ilink').attr("href")
+    var duration     = itemSelected.find('.ilink').attr("data-length");
+    var isLive       = (itemSelected.find('.ilink').attr("is-live") != null);
+    var notAvailable = (itemSelected.find('.ilink').attr("not-yet-available") != null);
+    var starttime    = 0;
+    var itemLink     = itemSelected.find('.ilink').attr("href")
 
+    if (notAvailable)
+        // Not available yet
+        return -1;
     if (isLive) {
-        if (itemSelected.html().indexOf('bottomoverlay\"') != -1) {
-            // Not available yet
-            return -1;
-        } else if (itemSelected.html().indexOf('bottomoverlay') == -1) {
+        if (itemSelected.html().indexOf('bottomoverlay') == -1) {
             starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/);
             starttime = (starttime) ? starttime[1] : 0;
         } else if (deviceYear == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
@@ -862,7 +862,7 @@ Buttons.findNextItem = function(play) {
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
              (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
-            (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
+            (!play || tmpItem.html().indexOf('not-yet-available') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
     }
@@ -906,7 +906,7 @@ Buttons.findPriorItem = function(play) {
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
              (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
-            (!play || tmpItem.html().indexOf('bottomoverlay\"') === -1)) {
+            (!play || tmpItem.html().indexOf('not-yet-available') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
         }
     }

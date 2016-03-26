@@ -197,7 +197,7 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
         var Duration;
         var IsLive;
         var IsLiveText;
-        var running;
+        var IsRunning;
         var starttime;
         var Link;
         var Description;
@@ -219,7 +219,7 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
                 continue;
 
             starttime = (IsLive) ? Tv4.getStartTime(data[k].broadcast_date_time) : "";
-            running = IsLive && starttime && !starttime.match(/ /) && (getClock() > starttime);
+            IsRunning = IsLive && starttime && !starttime.match(/ /) && (getClock() > starttime);
 
             if (stripShow) {
                 Name = Name.replace(data[k].program.name,"").replace(/^[,. :\-]*/,"").trim();
@@ -246,7 +246,7 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
                              link_prefix:'<a href="details.html?ilink=',
                              is_live:IsLive,
                              starttime:starttime,
-                             running:running
+                             is_running:IsRunning
                             }
                            );
         }
@@ -283,7 +283,7 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
                         duration:Tv4.result[k].duration,
                         is_live:Tv4.result[k].is_live,
                         is_channel:false,
-                        running:Tv4.result[k].running,
+                        is_running:Tv4.result[k].is_running,
                         starttime:Tv4.result[k].starttime,
                         link:Tv4.result[k].link,
                         link_prefix:Tv4.result[k].link_prefix,
