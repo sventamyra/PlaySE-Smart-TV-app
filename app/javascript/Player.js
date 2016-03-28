@@ -973,7 +973,9 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 
         if (gurl.indexOf('?') != -1)
             url_param = '&output=json'; 
-        var stream_url = (altUrl) ? altUrl : gurl+url_param;
+        var stream_url = gurl;
+        if (gurl.indexOf("/kanaler/") == -1)
+            stream_url = (altUrl) ? altUrl : gurl+url_param;
 
         requestUrl(stream_url,
                    function(status, data)

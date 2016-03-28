@@ -381,11 +381,10 @@ Details.getSvtData = function(url, data) {
             isLive = true;
             NotAvailable = (startTime - getCurrentDate()) > 60*1000;
         } else if (url.indexOf("oppetarkiv") > -1) {
-            Name = $($(data).find('img')[1]).attr('alt');
+            Name = $($(data).find('span.svt-heading-s')[0]).text();
             Title = Name;
             // Log("Name:" + Name);
-	    DetailsImgLink = $($(data).find('img')[1]).attr('srcset');
-            DetailsImgLink = Svt.fixLink(DetailsImgLink.split(",").pop().split(" ")[1]);
+	    DetailsImgLink = Svt.fixLink($($(data).find('video')).attr('poster'));
 	    DetailsPlayTime = $($(data).find('strong')[0]).text();
             VideoLength = $($(data).find('strong')[1]).text();
 
