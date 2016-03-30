@@ -237,8 +237,8 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
             Description = (data[k].summary) ? data[k].summary.trim() : "";
             Link = data[k]._links.stream.href;
 
-            AirDate = data[k].publish_at;
-            if (data[k].format_position)
+            AirDate = Viasat.getAirDate(data[k]);
+            if (data[k].format_position) {
                 Episode = data[k].format_position.episode
             else
                 Episode = undefined
@@ -290,7 +290,6 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
                         is_live:false,
                         is_channel:false,
                         is_running:null,
-                        starttime:null,
                         link:Viasat.result[k].link,
                         link_prefix:Viasat.result[k].link_prefix,
                         description:Viasat.result[k].description,
@@ -318,6 +317,14 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
     if (completeFun)
         completeFun();
 };
+
+Viasat.getAirDate = function(data) {
+    try {
+        return timeToDate(data.broadcasts[0].air_at);
+    } catch (err) {
+        return timeToDate(data.publish_at);
+    }
+}
 
 Viasat.decodeChannels = function(data) {
 
@@ -371,7 +378,6 @@ Viasat.channelToHtml = function(name, idx) {
             is_live:false,
             is_channel:false,
             is_running:null,
-            starttime:null,
             link:idx,
             link_prefix:'<a href="index.html?viasat_channel=',
             description:"",
@@ -567,20 +573,19 @@ Viasat.getDetailsData = function(url, data) {
         Name = data.title;
         Title = Name;
 	DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
-        AirDate = data.publish_at.replace(/T.+/,"");
-        // if (AirDate.indexOf(DetailsClock.replace(":", ".")) == -1)
-        //     AirDate  = AirDate + " " + DetailsClock;
+        AirDate = Viasat.getAirDate(data);
         if (data.unpublish_at || data.premium.time_left.days) {
             if (data.unpublish_at) {
-                AvailDate = data.unpublish_at;
+                AvailDate = timeToDate(data.unpublish_at);
             } else if (data.premium.time_left.days) {
-                var myDate = getCurrentDate();
-                myDate.setDate(myDate.getDate() + data.premium.time_left.days);
-                AvailDate = dateToString(myDate,"-");
+                var AvailDate = getCurrentDate();
+                AvailDate.setDate(AvailDate.getDate() + data.premium.time_left.days);
+                // AvailDate = dateToString(myDate,"-");
             }
-	    AvailDate = AvailDate.replace(/T.+/,"")
-            if (data.premium.time_left.days)
+            if (data.premium.time_left.days) {
+                AvailDate = dateToFullString(AvailDate)
                 AvailDate = AvailDate + " (" + data.premium.time_left.days + " dagar kvar)";
+            }
         }
         VideoLength = dataLengthToVideoLength(null, data.duration);
         if (!data.summary.match(data.description))

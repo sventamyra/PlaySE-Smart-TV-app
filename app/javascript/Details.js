@@ -269,9 +269,9 @@ Details.toHtml = function (programData) {
         if (programData.show) {
 	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
         } else if (!programData.category) {
-	    html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+programData.air_date+'</a></div>';
+	    html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+dateToHuman(programData.air_date)+'</a></div>';
             if (programData.avail_date)
-		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+programData.avail_date+'</a></div>';
+		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+dateToHuman(programData.avail_date)+'</a></div>';
             if (programData.duration)
 		html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
             else 
@@ -366,16 +366,11 @@ Details.getSvtData = function(url, data) {
             } else {
 	        DetailsImgLink = Svt.GetChannelThumb(data.title);
             }
-            startTime = data.schedule[0].broadcastStartTime;
-            startTime = startTime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
-            startTime = new Date(startTime);
-            endTime = data.schedule[0].broadcastEndTime;
-            endTime = endTime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
-            endTime = new Date(endTime);
+            startTime = timeToDate(data.schedule[0].broadcastStartTime);
+            endTime = timeToDate(data.schedule[0].broadcastEndTime);
             VideoLength = dataLengthToVideoLength(null, Math.round((endTime-startTime)/1000));
 	    Description = data.schedule[0].description.trim();
-            DetailsPlayTime = tsToClock(startTime.getTime()) + "-" +
-                tsToClock(endTime.getTime());
+            DetailsPlayTime = dateToClock(startTime) + "-" + dateToClock(endTime);
             Title = DetailsPlayTime + " " + Name;
             isChannel = true;
             isLive = true;

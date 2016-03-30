@@ -214,12 +214,12 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
             IsLive = data[k].is_live;
-            if (!Tv4.isViewable(data[k]))
+            if (!Tv4.isViewable(data[k], IsLive))
                 // Premium/DRM
                 continue;
 
-            starttime = (IsLive) ? Tv4.getStartTime(data[k].broadcast_date_time) : "";
-            IsRunning = IsLive && starttime && !starttime.match(/ /) && (getClock() > starttime);
+            starttime = (IsLive) ? timeToDate(data[k].broadcast_date_time) : null;
+            IsRunning = IsLive && starttime && (getCurrentDate() > starttime);
 
             if (stripShow) {
                 Name = Name.replace(data[k].program.name,"").replace(/^[,. :\-]*/,"").trim();
@@ -412,7 +412,7 @@ Tv4.getDetailsData = function(url, data) {
         Title = Name;
 	DetailsImgLink = Tv4.fixThumb(data.image, TV4_DETAILS_IMG_SIZE);
         Description  = (data.description) ? data.description.trim() : "";
-        AirDate = Tv4.getStartTime(data.broadcast_date_time);
+        AirDate = timeToDate(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
         Details.duration = VideoLength;
         IsLive = data.is_live;
@@ -420,11 +420,11 @@ Tv4.getDetailsData = function(url, data) {
         AvailDate = (AvailDate) ? AvailDate[1] : data.availability.availability_group_free + ' dagar'
         AvailDate = (AvailDate.match(/dagar$/)) ? AvailDate + " kvar" : AvailDate;
         if (data.expire_date_time)
-        AvailDate = data.expire_date_time.replace(/T.+/,"") + ' (' + AvailDate + ')';
+            AvailDate = dateToString(timeToDate(data.expire_date_time),"-") + ' (' + AvailDate + ')';
         if (IsLive) 
-            startTime = Tv4.getStartTime(data.broadcast_date_time);
-        Details.startTime = startTime;
-        NotAvailable = IsLive && (startTime.match(/ /) || startTime > getClock());
+            startTime = timeToDate(data.broadcast_date_time);
+        Details.startTime = dateToClock(startTime);
+        NotAvailable = IsLive && ((startTime - getCurrentDate()) > 60*1000);
 
     } catch(err) {
         Log("Tv4.getDetailsData Exception:" + err.message);
@@ -526,11 +526,16 @@ Tv4.fixThumb = function(thumb, size) {
     return "https://img3.tv4cdn.se/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb;
 };
 
-Tv4.isViewable = function (data) {
-    if (data.is_premium || data.is_drm_protected || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free) || (data.broadcast_date_time.replace(/T.+/,"") > dateToString(getCurrentDate(),'-')))
+Tv4.isViewable = function (data, is_live) {
+    if (data.is_premium || data.is_drm_protected || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free))
         return false;
-    else
-        return true;        
+    else {
+        if (is_live) {
+            // We want to see what's ahead...
+            return true;
+        } else
+            return getCurrentDate() > timeToDate(data.broadcast_date_time);
+    }
 }
 
 Tv4.fetchSubtitle = function (detailsUrl) {
@@ -546,10 +551,6 @@ Tv4.fetchSubtitle = function (detailsUrl) {
                      }
                     );
 };
-
-Tv4.getStartTime = function(broadcastTime) {
-    return broadcastTime.replace(/T([0-9]+:[0-9]+).+/," $1").replace(dateToString(getCurrentDate(),'-'),"").trim();
-}
 
 Tv4.requestNextPage = function(url, callback) {
     requestUrl(url,callback,callback);

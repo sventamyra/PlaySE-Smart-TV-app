@@ -600,11 +600,11 @@ Dplay.getDetailsData = function(url, data) {
         if (data.show)
             Title = data.show.title.trim() + " - " + Title;
 	DetailsImgLink = Dplay.fixThumb(data.thumbnail_image.file, DETAILS_THUMB_FACTOR);
-        AirDate = data.first_run.replace(/T([0-9]+:[0-9]+).+/, " $1");
+        AirDate = timeToDate(data.first_run);
         VideoLength = dataLengthToVideoLength(null, (data.duration)/1000);
 	Description = data.description.trim();
         if (data.available_until) {
-            AvailDate = data.available_until.replace(/T([0-9]+:[0-9]+).+/, " $1");;
+            AvailDate = timeToDate(data.available_until);
         }
         Details.duration = VideoLength;
         Details.startTime = 0;

@@ -99,7 +99,6 @@ Section.decode_recommended = function(data) {
                     is_live:Decoded.is_live,
                     is_running:Decoded.is_live,
                     is_channel:false,
-                    starttime:"",
                     link:Link,
                     link_prefix:LinkPrefix,
                     description:Description,

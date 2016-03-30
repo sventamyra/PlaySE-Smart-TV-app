@@ -11,6 +11,7 @@ Svt.fixLink = function (Link)
     if (Link) {
         Link = Link.replace(/amp;/g, "").replace(/([^:])\/\//g,"$1/")
         Link = Link.replace("{format}", "small");
+        Link = Link.replace(/file:\/\/(localhost\/)?/, "http://");
     }
     if (Link && Link.match(/^\/\//)) {
         return "http:" + Link;
@@ -142,7 +143,6 @@ Svt.decode_recommended = function (data, extra) {
                     is_live:data[k].live,
                     is_running:data[k].live,
                     is_channel:false,
-                    starttime:"",
                     link:Link,
                     link_prefix:LinkPrefix,
                     description:Description,
@@ -420,15 +420,11 @@ Svt.decodeChannels = function(data) {
             Name = data[k].title.trim();
 	    Link = BaseUrl + '/' + Name;
             ImgLink = Svt.GetChannelThumb(Name);
-            starttime = data[k].schedule[0].broadcastStartTime;
-            starttime = starttime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
-            endtime = data[k].schedule[0].broadcastEndTime;
-            endtime = endtime.replace(/-/g," ").replace(/\+.+/,"").replace("T", " ");
-            Duration  = Math.round((new Date(endtime)-new Date(starttime))/1000);
-            IsRunning = (getCurrentDate()-new Date(starttime)) > -60*1000;
-            starttime = starttime.replace(/.+[^0-9]([0-9]+:[0-9]+):.*/, "$1");
-            endtime   = endtime.replace(/.+[^0-9]([0-9]+:[0-9]+):.*/, "$1");
-            Name = starttime + "-" + endtime + " " + data[k].schedule[0].title.trim();
+            starttime = timeToDate(data[k].schedule[0].broadcastStartTime);
+            endtime = timeToDate(data[k].schedule[0].broadcastEndTime);
+            Duration  = Math.round((endtime-starttime)/1000);
+            IsRunning = (getCurrentDate()-starttime) > -60*1000;
+            Name = dateToClock(starttime) + "-" + dateToClock(endtime) + " " + data[k].schedule[0].title.trim();
             toHtml({name:Name,
                     duration:Duration,
                     is_live:false,
@@ -506,7 +502,7 @@ Svt.decode = function(data) {
                 continue;
             IsRunning = data[k].broadcastedNow;
             starttime = data[k].broadcastStartTime;
-            starttime = (!IsRunning && starttime) ? starttime.replace(/([^:]+):.+/, "$1") : "";
+            starttime = (!IsRunning && starttime) ? timeToDate(starttime) : null;
             LinkPrefix = '<a href="showList.html?name=';
             if (Svt.isPlayable(Link)) {
                 Duration = (Duration) ? Duration : 0;
