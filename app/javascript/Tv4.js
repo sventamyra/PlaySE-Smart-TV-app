@@ -421,9 +421,13 @@ Tv4.getDetailsData = function(url, data) {
         AvailDate = (AvailDate.match(/dagar$/)) ? AvailDate + " kvar" : AvailDate;
         if (data.expire_date_time)
             AvailDate = dateToString(timeToDate(data.expire_date_time),"-") + ' (' + AvailDate + ')';
-        if (IsLive) 
+        
+        if (IsLive) {
             startTime = timeToDate(data.broadcast_date_time);
-        Details.startTime = dateToClock(startTime);
+            Details.startTime = dateToClock(startTime);
+        } else {
+            Details.startTime = 0;
+        }
         NotAvailable = IsLive && ((startTime - getCurrentDate()) > 60*1000);
 
     } catch(err) {

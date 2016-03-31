@@ -112,8 +112,7 @@ Main.loadSvtPopular = function(refresh){
     requestUrl(Svt.sections[0].url,
                function(status, data)
                {
-                   data = data.responseText.split("div id=\"gridpage-content")[1];
-                   Section.decode_data(data, recommendedLinks);
+                   Svt.decode_section(data, recommendedLinks);
                },
                {callLoadFinished:true,
                 refresh:refresh

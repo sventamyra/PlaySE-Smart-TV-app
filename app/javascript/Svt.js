@@ -353,6 +353,10 @@ Svt.search = function(query, completeFun, url) {
               );
 };
 
+Svt.decode_section = function (data, filter) {
+    Svt.decode(Svt.decodeJson(data).context.dispatcher.stores.GridStore.content, filter);
+}
+
 Svt.decode_search = function (data) {
     try {
         var html;
@@ -443,7 +447,7 @@ Svt.decodeChannels = function(data) {
     }
 };
 
-Svt.decode = function(data) {
+Svt.decode = function(data, filter) {
     try {
         var html;
         var Titles;
@@ -490,6 +494,9 @@ Svt.decode = function(data) {
             else if (data[k].slug)
                 Link = Svt.fixLink("/genre/" + data[k].slug)
 
+            if (filter && filter.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
+                continue;
+
             if (data[k].imageSmall)
                 ImgLink = Svt.fixLink(data[k].imageSmall);
             else if (data[k].posterImageUrl)
@@ -498,11 +505,13 @@ Svt.decode = function(data) {
                 ImgLink = Svt.fixLink(data[k].thumbnailImage);
 
             IsLive = data[k].live;
+            // This check could be skipped since shows seems to be available anyhow. 
+            // But keep legacy for now at least.
             if (IsLive && data[k].broadcastEnded)
                 continue;
             IsRunning = data[k].broadcastedNow;
             starttime = data[k].broadcastStartTime;
-            starttime = (!IsRunning && starttime) ? timeToDate(starttime) : null;
+            starttime = (IsLive && starttime) ? timeToDate(starttime) : null;
             LinkPrefix = '<a href="showList.html?name=';
             if (Svt.isPlayable(Link)) {
                 Duration = (Duration) ? Duration : 0;

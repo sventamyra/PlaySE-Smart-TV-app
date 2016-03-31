@@ -1,9 +1,11 @@
 var channel = "svt";
 var seqNo = 0;
-var timeOffset = 0;
-var setTimeOffsetTimer = null;
+var clockOffset = 0;
+var setClockOffsetTimer = null;
 var checkOffsetTimer = null;
 var checkOffsetCounter = 0;
+var dateOffset = 0;
+var setDateOffsetTimer = null;
 var isTopRowSelected = true;
 var columnCounter = 0;
 var itemCounter = 0;
@@ -342,8 +344,9 @@ setPosition = function(pos)
 getCurrentDate = function() {
     try {
         var pluginTime = document.getElementById("pluginTime").GetEpochTime();
-        if (pluginTime && pluginTime > 0)
-            return new Date(pluginTime*1000 + timeOffset);
+        if (pluginTime && pluginTime > 0) {
+            return new Date(pluginTime*1000 + clockOffset);
+        }
     } catch(err) {
         // Log("pluginTime failed:" + err);
     }
@@ -352,15 +355,15 @@ getCurrentDate = function() {
 
 setOffsets = function() {
     // Retry once a minute in case of failure
-    window.clearTimeout(setTimeOffsetTimer);
-    setTimeOffsetTimer = window.setTimeout(setOffsets, 60*1000);
+    window.clearTimeout(setClockOffsetTimer);
+    setClockOffsetTimer = window.setTimeout(setOffsets, 60*1000);
     asyncHttpRequest("http://www.timeanddate.com/worldclock/sweden/stockholm", 
                      function(data) {
                          var timeMatch = data.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
                          var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
                          var actualDay = +data.match(/id=ctdat>[^0-9]+([0-9]+)/)[1];
-                         var oldTimeOffset = timeOffset;
-                         timeOffset = 0;
+                         var oldClockOffset = clockOffset;
+                         clockOffset = 0;
                          var now = getCurrentDate();
                          var nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
                          var nowDay = now.getDate();
@@ -373,48 +376,76 @@ setOffsets = function() {
                                  nowSeconds = nowSeconds + 24*3600
                              }
                          }
-                         var newTimeOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
-                         // Log("Clock Offset hours:" + newTimeOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
+                         var newClockOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
+                         // Log("Clock Offset hours:" + newClockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
                          if (checkOffsetTimer == null || checkOffsetCounter > 0) {
                              if (checkOffsetTimer == null) {
                                  checkOffsetCounter = 5;
                              } else {
                                  checkOffsetCounter = checkOffsetCounter - 1;
                              }
-                             if (newTimeOffset != oldTimeOffset && checkOffsetTimer != null) {
+                             if (newClockOffset != oldClockOffset && checkOffsetTimer != null) {
                                  Log("Clock Offset was changed!!!");
                              } else {
                                  checkOffsetTimer = window.setTimeout(setOffsets, 10*1000);
                              }
                          }
-                         timeOffset = newTimeOffset;
-	                 window.clearTimeout(setTimeOffsetTimer);
+                         clockOffset = newClockOffset;
+	                 window.clearTimeout(setClockOffsetTimer);
                      },
                      true
                     );
+    setDateOffset();
+};
+
+setDateOffset = function () {
+    // Retry once a minute in case of failure
+    window.clearTimeout(setDateOffsetTimer);
+    setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
+    asyncHttpRequest("http://www.svtplay.se/kanaler",
+                     function(data)
+                     {
+                         dateOffset = 0;
+                         data = Svt.decodeJson({responseText:data}).context.dispatcher.stores.ScheduleStore.channels[0];
+                         data = data.schedule[0].broadcastStartTime;
+                         var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
+                         var actualSeconds = actualData[2]*3600 + actualData[3]*60;
+                         var actualDateString = actualData[1].replace(/-/g, "")
+                         var tsDate = timeToDate(data)
+                         var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
+                         var tsDateString = dateToString(tsDate);
+                         if (actualDateString > tsDateString) {
+                             // Add 24 hours to actual
+                             actualSeconds = actualSeconds + 24*3600;
+                         } else if (tsDateString > actualDateString) {
+                             // Add 24 hours to ts
+                             tsSeconds = tsSeconds + 24*3600
+                         }
+                         dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
+                         // Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " data:" + data + " starttime:" + actualData[0]);
+	                 window.clearTimeout(setDateOffsetTimer);
+                     },
+                     true
+                    )
 };
 
 timeToDate = function(timeString) {
     var date = new Date(timeString.replace(/-/g," ").replace("T", " ").replace(/\+/," +").replace("Z", " +00:00"));
-    return new Date(date.getTime() + timeOffset);
+    return new Date(date.getTime() + dateOffset);
 }
 
 dateToHuman = function (date) {
     if (date && (date instanceof Date)) {
-        try {
-            var days_diff = new Date(dateToString(date," "))-new Date(dateToString(getCurrentDate()," "));
-            days_diff = days_diff/1000/3600/24;
-            if (days_diff == -1)
-                date = "Igår " + dateToClock(date);
-            else if (days_diff == 0)
-                date = dateToClock(date)
-            else if (days_diff == 1)
-                date = "Imorgon " + dateToClock(date)
-            else
-                date = dateToFullString(date);
-        } catch(err) {
-            date
-        }
+        var days_diff = new Date(dateToString(date," "))-new Date(dateToString(getCurrentDate()," "));
+        days_diff = days_diff/1000/3600/24;
+        if (days_diff == -1)
+            date = ((Language.getisSwedish()) ? "Igår " : "Yesterday ") + dateToClock(date);
+        else if (days_diff == 0)
+            date = dateToClock(date)
+        else if (days_diff == 1)
+            date = ((Language.getisSwedish()) ? "Imorgon " : "Tomorrow ") + dateToClock(date)
+        else
+            date = dateToFullString(date);
     }
     return date
 }

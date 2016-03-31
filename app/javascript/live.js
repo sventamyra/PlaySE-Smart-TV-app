@@ -129,11 +129,7 @@ live.getLiveJson = function(refresh) {
     requestUrl('http://www.svtplay.se/live',
                function(status, data)
                {
-                   data = data.responseText.split("<article");
-                   data.shift();
-                   data = ("<article" + data);
-                   // Log("items:" + data.length + ", channels:" + itemCounter);
-                   Section.decode_data(data);
+                   Svt.decode_section(data);
                    data = null
                },
                {callLoadFinished:true,

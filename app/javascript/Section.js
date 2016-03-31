@@ -33,10 +33,10 @@ Section.loadXml = function(locationUrl, refresh){
                        if (locationUrl.indexOf("nyheter") != -1) {
                            data = data.responseText.split("<section class=\"play_js-tabs")[0];
                            data = "<section class" + data.split("<section class")[1];
+                               Section.decode_data(data);
                        } else {
-                           data = data.responseText.split("div id=\"gridpage-content")[1];
+                           Svt.decode_section(data);
                        }
-                       Section.decode_data(data);
                        loadFinished(status, refresh);
                    } else if (channel == "viasat") {
                        Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(status, refresh)});
@@ -133,11 +133,11 @@ Section.decode_data = function(data, filter) {
         data = data.split("</article>");
         data.pop();
         for (var k=0; k < data.length; k++) {
-
-            if (data[k].match(/data-title="([^"]+)"/))
-                decode_video(data[k], filter);
-            else
-                decode_new_video(data[k]);
+            decode_video(data[k], filter);
+            // if (data[k].match(/data-title="([^"]+)"/))
+            //     decode_video(data[k], filter);
+            // else
+            //     decode_new_video(data[k]);
         }
     } catch(err) {
         Log("Section.decode_data Exception:" + err.message + " data[" + k + "]:" + data[k]);
