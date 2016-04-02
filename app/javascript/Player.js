@@ -758,10 +758,10 @@ Player.setTopOSDText = function(init_text) {
     if (Player.IsAutoBwUsedFor2011()) {
         resolution_text = ""
     } else if (resolution_text == undefined) {
-        resolution_text = $('.topoverlayresolution').text().replace(/^([^)]+\)(.*bps)?)*.*/, "$1");
+        resolution_text = $('.topoverlayresolution').html().replace(/^([^)]+\)(.*bps)?)*.*/, "$1");
     }
     resolution_text = resolution_text + this.getAspectModeText() + this.getRepeatText();
-    $('.topoverlayresolution').html(resolution_text.replace(/^(&nbsp;)*/,""));
+    $('.topoverlayresolution').html(resolution_text.replace(/^(&nbsp;)+/,""));
 };
 
 Player.updateTopOSD = function() {

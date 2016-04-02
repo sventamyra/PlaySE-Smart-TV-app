@@ -504,11 +504,7 @@ Svt.decode = function(data, filter) {
             else if (data[k].thumbnailImage)
                 ImgLink = Svt.fixLink(data[k].thumbnailImage);
 
-            IsLive = data[k].live;
-            // This check could be skipped since shows seems to be available anyhow. 
-            // But keep legacy for now at least.
-            if (IsLive && data[k].broadcastEnded)
-                continue;
+            IsLive    = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
             starttime = data[k].broadcastStartTime;
             starttime = (IsLive && starttime) ? timeToDate(starttime) : null;
