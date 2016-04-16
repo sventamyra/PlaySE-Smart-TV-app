@@ -502,13 +502,17 @@ Player.onRenderingComplete = function()
 };
 
 Player.showControls = function(){
-  Player.infoActive = true;
-  // Restore Top OSD in case of "Auto 2011"
-  this.setTopOSDText();
-  $('.topoverlayresolution').show();
-  $('.video-wrapper').show();				
-  $('.video-footer').show();
-  this.setClock();
+
+    if (Player.infoActive)
+        return
+
+    Player.infoActive = true;
+    // Restore Top OSD in case of "Auto 2011"
+    this.setTopOSDText();
+    $('.topoverlayresolution').show();
+    $('.video-wrapper').show();				
+    $('.video-footer').show();
+    this.setClock();
   // Log("show controls");
 };
 

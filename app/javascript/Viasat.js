@@ -240,8 +240,9 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
             AirDate = Viasat.getAirDate(data[k]);
             if (data[k].format_position) {
                 Episode = data[k].format_position.episode
-            else
+            } else {
                 Episode = undefined
+            }
             if (clipsUrl && !seasonUrl && data[k]._links.season)
                 seasonUrl = data[k]._links.season.href;
             Viasat.result.push({name:Name, 
