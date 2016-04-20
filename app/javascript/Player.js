@@ -42,13 +42,14 @@ var Player =
 
     repeat:0,
     REPEAT_OFF:0,
-    REPEAT_ONE:1,
+    REPEAT_BACK:1,
     REPEAT_ALL:2,
-    REPEAT_BACK:3,
+    REPEAT_ONE:3,
 
     aspectMode: 0,
     ASPECT_NORMAL : 0,
     ASPECT_H_FIT : 1,
+    ASPECT_ZOOM : 2,
     
     STOPPED : 0,
     PLAYING : 1,
@@ -740,15 +741,7 @@ Player.GetDuration = function()
 
 Player.toggleRepeat = function() {
 
-    if (this.repeat === Player.REPEAT_OFF) {
-        this.repeat = Player.REPEAT_ONE;
-    } else if (this.repeat === Player.REPEAT_ONE) {
-        this.repeat = Player.REPEAT_ALL;
-    } else if (this.repeat === Player.REPEAT_ALL) {
-        this.repeat = Player.REPEAT_BACK;
-    } else if (this.repeat === Player.REPEAT_BACK) {
-        this.repeat = Player.REPEAT_OFF;
-    }
+    this.repeat = (this.repeat+1) % (Player.REPEAT_ONE+1);
     this.updateTopOSD();
 };
 
@@ -776,8 +769,8 @@ Player.updateTopOSD = function() {
 
 Player.toggleAspectRatio = function() {
 
-    if (this.aspectMode === Player.ASPECT_NORMAL && !this.IsAutoBwUsedFor2011()) {
-        this.aspectMode = Player.ASPECT_H_FIT;
+    if (!this.IsAutoBwUsedFor2011()) {
+        this.aspectMode = (this.aspectMode+1) % (Player.ASPECT_ZOOM+1)
     }
     else 
     {
@@ -821,6 +814,16 @@ Player.setAspectRatio = function(videoWidth, videoHeight) {
             var cropX      = Math.round(videoWidth/GetMaxVideoWidth()*cropOffset);
             var cropWidth  = videoWidth-(2*cropX);
             this.plugin.SetCropArea(cropX, 0, cropWidth, videoHeight);
+        } else if (Player.aspectMode === Player.ASPECT_ZOOM) {
+            var zoomFactor = Player.getZoomFactor()
+            var cropY      = Math.round(videoHeight*zoomFactor);
+            var cropHeight = videoHeight-(2*cropY);
+            var cropX      = 0;
+            if (videoWidth/cropHeight > 16/9 && zoomFactor > 0) {
+                cropX      = Math.round((videoWidth-(16/9*cropHeight))/2);
+            }
+            var cropWidth  = videoWidth-(2*cropX);
+            this.plugin.SetCropArea(cropX, cropY, cropWidth, cropHeight);
         }
         else
         {
@@ -833,6 +836,8 @@ Player.getAspectModeText = function()
 {
     if (this.aspectMode === Player.ASPECT_H_FIT) {
         return SEPARATOR + "H-FIT";
+    } else if (this.aspectMode === Player.ASPECT_ZOOM) {
+        return SEPARATOR + "ZOOM " + (Player.getZoomFactor()*100).toFixed(1) + "%";
     }
     else 
         return "";
@@ -850,6 +855,41 @@ Player.getRepeatText = function()
         return SEPARATOR + "Repeat BACKWARDS";
     }
 };
+
+Player.getZoomFactor = function () {
+    var savedValue = Config.read("zoomFactor");
+    if (savedValue != null) {
+        return Number(savedValue);
+    } else {
+        return 0.125;
+    }
+};
+
+Player.saveZoomFactor = function (value) {
+    Config.save("zoomFactor", value);
+};
+
+Player.changeZoom = function(increase) {
+
+    if (increase)
+        Player.saveZoomFactor(Player.getZoomFactor() + 0.01);
+    else {
+        Player.saveZoomFactor(Player.getZoomFactor() - 0.005);
+        if (Player.getZoomFactor() < 0)
+            Player.saveZoomFactor(0);
+    }
+    Player.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+    Player.updateTopOSD();
+}
+
+Player.decreaseZoom = function() {
+
+    Player.zoomFactor = Player.zoomFactor - 0.01;
+    if (Player.zoomFactor < 0)
+        Player.zoomFactor = 0;
+    Player.zoom(Player.zoomFactor);
+    Player.updateTopOSD();
+}
 
 Player.startPlayer = function(url, isLive, startTime)
 {
