@@ -295,6 +295,7 @@ Dplay.decode_search_hits = function(data) {
                                       isFollowUp:false
                                      }
                                     );
+            data[k] = null;
         }
         data = null; 
     } catch(err) {
@@ -411,6 +412,7 @@ Dplay.decode = function(data, target, stripShow, completeFun, onlySave) {
                                           isFollowUp:data[k].video_type.match(/FOLLOWUP/)
                                          }
                                         );
+                data[k] = null;
             }
         }
         data = null;
@@ -475,6 +477,7 @@ Dplay.decode_shows = function(data, query, sort, allShows) {
             ImgLink = Dplay.fixThumb(showData.poster_image.file);
             Dplay.show_names.push(Name);
             Dplay.show_result.push({name:Name, thumb:ImgLink, link:Link, genres:Genres});
+            data[k] = null;
         }
         if (sort) {
             Dplay.show_result.sort(function(a, b) {

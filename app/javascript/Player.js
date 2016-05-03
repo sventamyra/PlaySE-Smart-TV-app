@@ -781,9 +781,6 @@ Player.toggleAspectRatio = function() {
     this.updateTopOSD()
     if (this.IsAutoBwUsedFor2011())
         $('.topoverlayresolution').html("ASPECT unsupported when AUTO BW");
-    if (this.state === this.PAUSED) {
-        this.pauseVideo();
-    }
 };
 
 Player.setResolution = function (videoWidth, videoHeight) {
@@ -829,6 +826,10 @@ Player.setAspectRatio = function(videoWidth, videoHeight) {
         {
             this.plugin.SetCropArea(0, 0, videoWidth, videoHeight);
         }
+        // Re-pause
+        if (this.state === this.PAUSED) {
+            this.plugin.Pause();
+        }
     }
 };
 
@@ -871,14 +872,15 @@ Player.saveZoomFactor = function (value) {
 
 Player.changeZoom = function(increase) {
 
+    var oldZoomFactor = Player.getZoomFactor();
     if (increase)
-        Player.saveZoomFactor(Player.getZoomFactor() + 0.01);
-    else {
-        Player.saveZoomFactor(Player.getZoomFactor() - 0.005);
-        if (Player.getZoomFactor() < 0)
-            Player.saveZoomFactor(0);
-    }
-    Player.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+        Player.saveZoomFactor(oldZoomFactor + 0.01);
+    else if (oldZoomFactor >= 0.005)
+        Player.saveZoomFactor(oldZoomFactor - 0.005);
+
+    if (oldZoomFactor != Player.getZoomFactor())
+        Player.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+
     Player.updateTopOSD();
 }
 

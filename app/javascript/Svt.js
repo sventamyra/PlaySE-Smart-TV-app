@@ -101,7 +101,8 @@ Svt.setNextSection = function() {
 
 Svt.decodeJson = function(data) {
     data = data.responseText.split('root\["__svtplay"\]')[1]
-    data = data.replace(/[^{]*(.+);$/, "$1");
+    data = data.replace(/^[^{]*{/, "{");
+    data = data.replace(/;$/, "");
     return JSON.parse(data)
 }
 
