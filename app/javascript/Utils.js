@@ -450,7 +450,8 @@ dateToHuman = function (date) {
             date = ((Language.getisSwedish()) ? "Imorgon " : "Tomorrow ") + dateToClock(date)
         else
             date = dateToFullString(date);
-    }
+    } else if (date == undefined)
+        return "";
     return date
 }
 

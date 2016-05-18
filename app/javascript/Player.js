@@ -548,7 +548,14 @@ Player.showDetailedInfo = function(){
 
 Player.setDetailsData = function(details) {
     $('.detailstitle').html(details.title);
-    $('.detailsdescription').html(details.description); 
+    var extra = "";
+    if (details.air_date)
+        extra = "Sändes " + dateToHuman(details.air_date) + SEPARATOR;
+    if (details.avail_date)
+        extra = extra + "Tillgänglig till " + dateToHuman(details.avail_date);
+    if (extra != "")
+        extra = "<br><br>" + extra
+    $('.detailsdescription').html(details.description + extra);
 };
 
 Player.returnKey = function() {
