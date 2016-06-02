@@ -958,7 +958,7 @@ Player.startPlayer = function(url, isLive, startTime)
 
 Player.refreshStartData = function(details) {
     if (details && details.start_time != 0 && details.start_time != Player.startTime) {
-        Log("refreshStartData, new start" + details.start_time);
+        Log("refreshStartData, new start:" + details.start_time + " old start:" + Player.startTime);
         Player.setNowPlaying(details.title);
         Player.setDuration(details.duration);
         Player.updateOffset(details.start_time);
@@ -992,7 +992,6 @@ Player.updateOffset = function (startTime) {
         Player.offset = (now_secs - (start_mins*60))*1000;
     }
     Player.startTime = startTime;
-        // Log("startTime:" + startTime + " start_mins:" + start_mins + " now_mins:" + now_mins + " Player.offset:" + Player.offset);
 }
 
 Player.startTimeToMinutes = function (startTime) {

@@ -446,7 +446,7 @@ Tv4.getDetailsData = function(url, data) {
             is_live       : IsLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : startTime,
+            start_time    : Details.startTime,
             duration      : VideoLength,
             description   : Description,
             not_available : NotAvailable,

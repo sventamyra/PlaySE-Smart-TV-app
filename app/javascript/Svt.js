@@ -169,6 +169,8 @@ Svt.getDetailsData = function(url, data) {
                 Name = data.MetaStore.title.trim();
                 Description = data.MetaStore.description.trim();
                 data = data.VideoTitlePageStore.data.video
+                if (data.programTitle == data.title)
+                    Name = data.title;
                 Title = Name;
                 if (data.thumbnailXL)
 	            ImgLink = Svt.fixLink(data.thumbnailXL);
@@ -185,7 +187,6 @@ Svt.getDetailsData = function(url, data) {
                 }                    
                 if (isLive) {
                     NotAvailable = data.upcomingBroadcast;
-                    startTime = AirDate;
                 } else {
 		    AvailDate = timeToDate(data.expireDate)
                     var daysLeft = Math.round((AvailDate-getCurrentDate())/1000/3600/24)
@@ -197,7 +198,7 @@ Svt.getDetailsData = function(url, data) {
             VideoLength = dataLengthToVideoLength(null,VideoLength)
             Details.duration = VideoLength;
             if ((isChannel || (isLive && deviceYear == 2013)))
-                Details.startTime = startTime;
+                Details.startTime = dateToClock(startTime);
             else 
                 Details.startTime = 0;
 	    // if (onlySweden != "false" && onlySweden != false) {
@@ -228,7 +229,7 @@ Svt.getDetailsData = function(url, data) {
             is_live       : isLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : startTime,
+            start_time    : Details.startTime,
             duration      : VideoLength,
             description   : Description,
             not_available : NotAvailable,
