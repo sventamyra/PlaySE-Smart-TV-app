@@ -150,7 +150,6 @@ Svt.getDetailsData = function(url, data) {
                 }
                 Name = data.name.trim() + " - " + data.schedule[0].title.trim();
 	        Description = data.schedule[0].description.trim();
-                Title = AirDate + " " + Name;
                 if (data.schedule[0].titlePage) {
 	            ImgLink = Svt.fixLink(data.schedule[0].titlePage.thumbnailXL);
                 } else {
@@ -160,7 +159,7 @@ Svt.getDetailsData = function(url, data) {
                 endTime = timeToDate(data.schedule[0].broadcastEndTime);
                 VideoLength = Math.round((endTime-startTime)/1000);
                 AirDate = dateToClock(startTime) + "-" + dateToClock(endTime);
-
+                Title = AirDate + " " + Name;
                 isChannel = true;
                 isLive = true;
                 NotAvailable = (startTime - getCurrentDate()) > 60*1000;
@@ -176,8 +175,10 @@ Svt.getDetailsData = function(url, data) {
 	            ImgLink = Svt.fixLink(data.thumbnailXL);
                 else
 	            ImgLink = Svt.fixLink(data.posterXL);
-                AirDate = timeToDate(data.broadcastDate);
-                isLive = data.live;
+                if (data.broadcastDate)
+                    AirDate = timeToDate(data.broadcastDate);
+                else
+                    AirDate = null
                 VideoLength = data.materialLength
                 startTime = AirDate;
                 if (data.broadcastEndTime)
@@ -185,9 +186,10 @@ Svt.getDetailsData = function(url, data) {
                 if (!VideoLength && startTime && endTime) {
                     VideoLength = Math.round((endTime-startTime)/1000);
                 }                    
+                isLive = data.live && (endTime > getCurrentDate());
                 if (isLive) {
                     NotAvailable = data.upcomingBroadcast;
-                } else {
+                } else if (data.expireDate) {
 		    AvailDate = timeToDate(data.expireDate)
                     var daysLeft = Math.round((AvailDate-getCurrentDate())/1000/3600/24)
                     if (daysLeft > 1)

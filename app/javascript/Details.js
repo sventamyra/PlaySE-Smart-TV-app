@@ -220,7 +220,8 @@ Details.toHtml = function (programData) {
         if (programData.show) {
 	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
         } else if (!programData.category) {
-	    html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+dateToHuman(programData.air_date)+'</a></div>';
+            if (programData.air_date)
+	        html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+dateToHuman(programData.air_date)+'</a></div>';
             if (programData.avail_date)
 		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+dateToHuman(programData.avail_date)+'</a></div>';
             if (programData.duration)
