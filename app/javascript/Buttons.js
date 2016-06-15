@@ -1,6 +1,6 @@
 var tvKey = new Common.API.TVKeyValue();
 
-var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, player2 = 5, language = 6, imeSearch = 7, blocked = 8, connection error = 9
+var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, player2 = 5, settings = 6, imeSearch = 7, blocked = 8, connection error = 9
 var keyHeld = false;
 var keyTimer;
 var itemSelected;
@@ -14,10 +14,16 @@ var keyCount = 0;
 var first = true;
 var channels = ['svt1', 'svt2', 'svt24', 'barnkanalen', 'kunskapskanalen'];
 var channelId = 0;
-var menuId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5", "#res6"];
 var reslButton = ["#reslauto", "#resl1", "#resl2", "#resl3", "#resl4", "#resl5", "#resl6"];
 var langButton = ["#english", "#swedish"];
+var channelButton = ["#svt", "#viasat", "#tv4", "#dplay"];
+var menuId = 0;
+var menu = [{id:'.language-content .title', button:langButton},
+            {id:'.res-content .title', button:resButton}, 
+            {id:'.res-live-content .title', button:reslButton},
+            {id:'.channel-content .title', button:channelButton}
+           ];
 var animateCallbacked = 0;
 
 var Buttons =
@@ -50,7 +56,7 @@ Buttons.keyDown = function()
 		this.keyHandleForPlayer2();
 	}
 	else if(index == 6){
-		this.keyHandleForLanguage();
+		this.keyHandleForSettings();
 	}
 	else if(index == 7){
 		this.keyHandleForImeSearch();
@@ -347,170 +353,82 @@ Buttons.keyHandleForDetails = function()
     
 };
 
-Buttons.keyHandleForLanguage = function()
+Buttons.keyHandleForSettings = function()
 {
-	var keyCode = event.keyCode;
-	if(menuId == 0){
-		
-		var li = 0;
-		var lSel = -1;
-		for(li = 0; li < langButton.length; li++){
-			if($(langButton[li]).hasClass('selected')){
-				$(langButton[li]).addClass('unselected');
-				$(langButton[li]).removeClass('selected');
-				lSel = li;
-			}
-		}
-		switch(keyCode)
-		{
-			case tvKey.KEY_RIGHT:
-				
-				lSel++;
-				if(lSel < langButton.length){
-					$(langButton[lSel]).addClass('selected');
-					$(langButton[lSel]).removeClass('unselected');
-				}
-				break;
-			case tvKey.KEY_LEFT:
-				lSel--;
-				if(lSel >= 0){
-					$(langButton[lSel]).addClass('selected');
-					$(langButton[lSel]).removeClass('unselected');
-				}
-				break;
-			case tvKey.KEY_ENTER:
-			case tvKey.KEY_PANEL_ENTER:
-				if(lSel == 1){
-					$('#swedish').addClass('checked');
-					$('#swedish').addClass('selected');
-					$('#english').removeClass('checked');
-					Language.setLanguage('Swedish');
-					Language.setLang();
-				}
-				else if(lSel == 0){
-					$('#english').addClass('checked');
-					$('#english').addClass('selected');
-					$('#swedish').removeClass('checked');
-					Language.setLanguage('English');
-					Language.setLang('English');
-				}
-				break;
-			case tvKey.KEY_DOWN:
-				menuId = 1;
-				$('.res-content .title').addClass('stitle');
-				$('.language-content .title').removeClass('stitle');
-				break;
-		}
-		
+    var keyCode = event.keyCode;
+    
+    var selected = -1;
+    var checked  = -1;
+    var button = menu[menuId].button;
+    for(var i = 0; i < button.length; i++){
+	if($(button[i]).hasClass('selected')){
+	    selected = i;
 	}
-	else if(menuId == 1){
-		var ri = 0;
-		var cSel = -1;
-		for(ri = 0; ri < resButton.length; ri++){
-			if($(resButton[ri]).hasClass('selected')){
-				$(resButton[ri]).addClass('unselected');
-				$(resButton[ri]).removeClass('selected');
-				cSel = ri;
-			}
-		}
-		// Log(cSel);
-		switch(keyCode)
-		{
-			case tvKey.KEY_RIGHT:
-				
-				cSel++;
-				if(cSel < resButton.length){
-					$(resButton[cSel]).addClass('selected');
-					$(resButton[cSel]).removeClass('unselected');
-				}
-				break;
-			case tvKey.KEY_LEFT:
-				cSel--;
-				if(cSel >= 0){
-					$(resButton[cSel]).addClass('selected');
-					$(resButton[cSel]).removeClass('unselected');
-				}
-				break;
-			case tvKey.KEY_ENTER:
-			case tvKey.KEY_PANEL_ENTER:
-				if(cSel > -1){
-					var rj = 0;
-					for(rj = 0; rj < resButton.length; rj++){
-						if($(resButton[rj]).hasClass('checked')){
-							$(resButton[rj]).removeClass('checked');
-						}
-					}
-					$(resButton[cSel]).addClass('checked');
-					$(resButton[cSel]).addClass('selected');
-					Resolution.setRes(cSel);
-				}
-				break;
-			case tvKey.KEY_UP:
-				menuId = 0;
-				$('.language-content .title').addClass('stitle');
-				$('.res-content .title').removeClass('stitle');
-				break;
-			case tvKey.KEY_DOWN:
-				menuId = 2;
-				$('.res-live-content .title').addClass('stitle');
-				$('.res-content .title').removeClass('stitle');
-				break;
-		}
-		
-	}
-	else if(menuId == 2){
-		var ri = 0;
-		var cSel = -1;
-		for(ri = 0; ri < reslButton.length; ri++){
-			if($(reslButton[ri]).hasClass('selected')){
-				$(reslButton[ri]).addClass('unselected');
-				$(reslButton[ri]).removeClass('selected');
-				cSel = ri;
-			}
-		}
-		Log(cSel);
-		switch(keyCode)
-		{
-			case tvKey.KEY_RIGHT:
-				
-				cSel++;
-				if(cSel < reslButton.length){
-					$(reslButton[cSel]).addClass('selected');
-					$(reslButton[cSel]).removeClass('unselected');
-				}
-				break;
-			case tvKey.KEY_LEFT:
-				cSel--;
-				if(cSel >= 0){
-					$(reslButton[cSel]).addClass('selected');
-					$(reslButton[cSel]).removeClass('unselected');
-				}
-				break;
-			case tvKey.KEY_ENTER:
-			case tvKey.KEY_PANEL_ENTER:
-				if(cSel > -1){
-					var rj = 0;
-					for(rj = 0; rj < reslButton.length; rj++){
-						if($(reslButton[rj]).hasClass('checked')){
-							$(reslButton[rj]).removeClass('checked');
-						}
-					}
-					$(reslButton[cSel]).addClass('checked');
-					$(reslButton[cSel]).addClass('selected');
-					Resolution.setLiveRes(cSel);
-				}
-				break;
-			case tvKey.KEY_UP:
-				menuId = 1;
-				$('.res-content .title').addClass('stitle');
-				$('.res-live-content .title').removeClass('stitle');
-				break;
-			
-		}
-		
-	}
-	this.handleMenuKeys(keyCode);
-	
+	if($(button[i]).hasClass('checked'))
+            checked = i
+    }
+
+    switch(keyCode)
+    {
+    case tvKey.KEY_RIGHT:
+    case tvKey.KEY_LEFT:
+        var newSelected = (keyCode == tvKey.KEY_RIGHT) ? selected+1 : selected-1
+        if (newSelected >= 0 && newSelected < button.length) {
+            if (selected != -1) {
+	        $(button[selected]).removeClass('selected');
+	        $(button[selected]).addClass('unselected');
+            }
+            selected = newSelected;
+	    $(button[selected]).addClass('selected');
+	    $(button[selected]).removeClass('unselected');
+        }
+	break;
+
+    case tvKey.KEY_DOWN:
+    case tvKey.KEY_UP:
+        var newMenuId = (keyCode == tvKey.KEY_DOWN) ? menuId+1 : menuId-1
+        if (newMenuId  >= 0 && newMenuId < menu.length) {
+            if (selected != -1) {
+	        $(button[selected]).removeClass('selected');
+	        $(button[selected]).addClass('unselected');
+            }
+            $(menu[menuId].id).removeClass('stitle');
+	    menuId=newMenuId;
+            $(menu[menuId].id).addClass('stitle');
+        }
+	break;
+
+    case tvKey.KEY_ENTER:
+    case tvKey.KEY_PANEL_ENTER:
+        if (selected != -1) {
+            if (checked != -1)
+                $(button[checked]).removeClass('checked');
+            $(button[selected]).addClass('checked');
+            $(button[selected]).addClass('selected');
+            switch (menuId) {
+            case 0:
+	        if(selected == 1)
+	            Language.setLanguage('Swedish');
+                else
+                    Language.setLanguage('English');
+	        Language.setLang();
+                break;
+            case 1:
+                Resolution.setRes(selected);
+                break;
+            case 2:
+                Resolution.setLiveRes(selected);
+                break;
+            case 3:
+                Buttons.hideSettings();
+                setChannel($(button[selected]).attr("id"));
+                break;
+            }
+        }
+	break;
+
+    }
+    this.handleMenuKeys(keyCode);	
 };
 
 Buttons.keyHandleForImeSearch = function()
@@ -737,7 +655,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	setLocation('live.html');
 	break;
     case tvKey.KEY_BLUE:
-	Language.hide();
+	Buttons.hideSettings();
         Search.imeShow();
 	break;
     case tvKey.KEY_RETURN:
@@ -745,7 +663,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	var urlpath = myLocation;
 	// var ifound = urlpath.indexOf('index.html');
 	if(index == 6){
-	    Language.hide();
+	    Buttons.hideSettings();
 	}
 	else if(index == 9 || $(".slider-error").is(':visible')) {
             ConnectionError.show(true);
@@ -778,22 +696,45 @@ Buttons.handleMenuKeys = function(keyCode){
 	break;
     case tvKey.KEY_1:
     case tvKey.KEY_2:
-        setChannel("svt");
+        Buttons.changeChannel("svt");
         break;
     case tvKey.KEY_3:
     case tvKey.KEY_6:
     case tvKey.KEY_8:
-        setChannel("viasat");
+        Buttons.changeChannel("viasat");
         break;
     case tvKey.KEY_4:
-        setChannel("tv4");
+        Buttons.changeChannel("tv4");
         break;
     case tvKey.KEY_5:
     case tvKey.KEY_9:
-        setChannel("dplay");
+        Buttons.changeChannel("dplay");
         break;
     }
 };
+
+Buttons.changeChannel = function (channel) {
+    for(var i=0, anySelected=false; i < channelButton.length; i++) {
+        if ($(channelButton[i]).attr("id") == channel) {
+            $(channelButton[i]).addClass('checked');
+        } else {
+            $(channelButton[i]).removeClass('checked');
+        }
+    }
+    Buttons.hideSettings();
+    setChannel(channel)
+};
+
+Buttons.hideSettings = function() {
+    var button = menu[menuId].button;
+    for(var i = 0; i < button.length; i++){
+	if($(button[i]).hasClass('selected')){
+	    $(button[i]).addClass('unselected');
+	    $(button[i]).removeClass('selected');
+	}
+    }
+    Language.hide();
+}
 
 Buttons.playItem = function() {
     var duration     = itemSelected.find('.ilink').attr("data-length");

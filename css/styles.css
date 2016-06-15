@@ -99,6 +99,10 @@ a.link-button2, a.link-button4.selected, .btn-submit, .short-title a:hover, a:ho
 .res-live-content .checked a{ 
  background:url(../images/green_icon_check.png) 68px 4px no-repeat;
 }
+
+.channel-content .checked a{ 
+ background:url(../images/green_icon_check.png) 68px 4px no-repeat;
+}
 	
 .loader
 {
@@ -1221,13 +1225,14 @@ display:none;
 display:none;
 	}
 .slider-language{
-	height:110px;
+	height:125px;
 	position:fixed;
 	width:100%;
 	top:62px;
 	left:0;
 	z-index:200;
 	display:none;
+	background:url(../images/searchback.jpg) repeat;
 }
 .slider-blocked, .slider-error {
 	height:35px;
@@ -1272,6 +1277,17 @@ display:none;
 	color:#232323;
 	height:35px;}
 
+.channel-content{
+	position:fixed;
+	top:153px;
+        left:70px;
+	text-align:center;
+	font-family:'Folks-Normal', Arial, sans-serif;
+	font-size:12px;
+	text-transform:uppercase;
+	color:#232323;
+	height:35px;}
+
 .language-content ul {
 	margin:0 auto;
 	width:320px}
@@ -1281,6 +1297,10 @@ display:none;
 	width:853px}
 	
 .res-live-content ul {
+	margin:0 auto;
+	width:853px}
+
+.channel-content ul {
 	margin:0 auto;
 	width:853px}
 
@@ -1305,6 +1325,16 @@ display:none;
 }
 
 .res-live-content li {
+	margin-left:5px;
+	display:block;
+	float:left;
+	font-size:11px;
+	height:21px;
+	line-height:21px;
+	text-align:left;
+}
+
+.channel-content li {
 	margin-left:5px;
 	display:block;
 	float:left;
@@ -1366,6 +1396,14 @@ display:none;
 	height:21px;
 }
 
+.channel-content a {
+	color:#4b5257;
+	display:block;
+	width:79px;
+	padding-left:7px;
+	height:21px;
+}
+
 .blocked-content a {
 	color:#4b5257;
 	display:block;
@@ -1414,6 +1452,15 @@ display:none;
         white-space:nowrap
 }
 
+.channel-content .title a {
+	width:170px;
+	color:#4b5257;
+	display:block;
+	padding-left:7px;
+	height:21px;
+        white-space:nowrap
+}
+
 .blocked-content .btext a {
 	width:400px;
 	color:#4b5257;
@@ -1449,6 +1496,12 @@ display:none;
 
 .res-live-content .selected {
 	background:url(../images/filter_button_u.gif) 0 0 no-repeat;}
+
+.channel-content .unselected {
+	background:url(../images/filter_button.gif) 0 0 no-repeat;}
+
+.channel-content .selected {
+	background:url(../images/filter_button_u.gif) 0 0 no-repeat;}
 	
 	
 .blocked-content .selected {
@@ -1473,4 +1526,10 @@ display:none;
 	color:#acb4b8}
 
 .res-live-content a:hover {
+	color:#acb4b8}
+
+.channel-content .checked a {
+	color:#acb4b8}
+
+.channel-content a:hover {
 	color:#acb4b8}

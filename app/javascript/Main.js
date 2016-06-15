@@ -123,7 +123,7 @@ Main.loadSvtPopular = function(refresh){
 Main.loadViasat = function(refresh) {
     var newChannel = getLocation(refresh).match(/viasat_channel=([0-9]+|reset)/);
     newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
-    if (newChannel)
+    if (newChannel && !refresh)
         myHistory = [];
     requestUrl(Viasat.getUrl("main", newChannel),
                function(status, data)
@@ -151,7 +151,7 @@ Main.loadTv4 = function(refresh) {
 Main.loadDplay = function(refresh) {
     var newChannel = getLocation(refresh).match(/dplay_channel=([0-9]+|reset)/);
     newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
-    if (newChannel)
+    if (newChannel && !refresh)
         myHistory = [];
     var url = Dplay.getUrl("main", newChannel);
     requestUrl(url,

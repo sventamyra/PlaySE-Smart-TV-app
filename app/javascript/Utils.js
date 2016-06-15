@@ -525,8 +525,7 @@ requestUrl = function(url, cbSucces, extra) {
         	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown + " Headers:" + xhr.getAllResponseHeaders());
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
-                        this.tryCount <= this.retryLimit) 
-                    {
+                        this.tryCount <= this.retryLimit) {
                         //try again
                         return $.ajax(this);
                     } else {
