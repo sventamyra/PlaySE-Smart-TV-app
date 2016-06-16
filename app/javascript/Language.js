@@ -135,25 +135,30 @@ Language.setKanalerLang=function(){
 Language.show = function()
 {
 	
-	if(Buttons.getKeyHandleID() != 6){
-		oldKeyHandle = Buttons.getKeyHandleID();
-		Buttons.setKeyHandleID(6);
-	}
-	else{
-		Buttons.setKeyHandleID(oldKeyHandle);
-	}
-    slideToggle($(".slider-language"), 500, function() {});
+    if(Buttons.getKeyHandleID() != 6){
+	oldKeyHandle = Buttons.getKeyHandleID();
+	Buttons.setKeyHandleID(6);
+        $(".slider-language").show();
+    }
+    else{
+        Language.hide()
+    }
+
 };
 
 Language.hide = function()
 {
-	
-	if(Buttons.getKeyHandleID() == 6){
-	    Buttons.setKeyHandleID(oldKeyHandle);
-            slideToggle($(".slider-language"), 500, function() {})
+    var button = menu[menuId].button;
+    for(var i = 0; i < button.length; i++){
+	if($(button[i]).hasClass('selected')){
+	    $(button[i]).addClass('unselected');
+	    $(button[i]).removeClass('selected');
 	}
-	
-
+    }
+    if(Buttons.getKeyHandleID() == 6){
+	Buttons.setKeyHandleID(oldKeyHandle);
+        $(".slider-language").hide();
+    }
 };
 
 Language.checkLanguage = function()

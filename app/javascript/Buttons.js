@@ -420,7 +420,7 @@ Buttons.keyHandleForSettings = function()
                 Resolution.setLiveRes(selected);
                 break;
             case 3:
-                Buttons.hideSettings();
+                Language.hide();
                 setChannel($(button[selected]).attr("id"));
                 break;
             }
@@ -655,7 +655,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	setLocation('live.html');
 	break;
     case tvKey.KEY_BLUE:
-	Buttons.hideSettings();
+	Language.hide();
         Search.imeShow();
 	break;
     case tvKey.KEY_RETURN:
@@ -663,7 +663,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	var urlpath = myLocation;
 	// var ifound = urlpath.indexOf('index.html');
 	if(index == 6){
-	    Buttons.hideSettings();
+	    Language.hide();
 	}
 	else if(index == 9 || $(".slider-error").is(':visible')) {
             ConnectionError.show(true);
@@ -721,20 +721,9 @@ Buttons.changeChannel = function (channel) {
             $(channelButton[i]).removeClass('checked');
         }
     }
-    Buttons.hideSettings();
+    Language.hide();
     setChannel(channel)
 };
-
-Buttons.hideSettings = function() {
-    var button = menu[menuId].button;
-    for(var i = 0; i < button.length; i++){
-	if($(button[i]).hasClass('selected')){
-	    $(button[i]).addClass('unselected');
-	    $(button[i]).removeClass('selected');
-	}
-    }
-    Language.hide();
-}
 
 Buttons.playItem = function() {
     var duration     = itemSelected.find('.ilink').attr("data-length");

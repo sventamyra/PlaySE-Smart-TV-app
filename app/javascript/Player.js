@@ -1033,7 +1033,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                    function(status, data)
                    {
                        if (Player.checkPlayUrlStillValid(gurl)) {
-                           var videoReferences, subtitleReferences, srtUrl = null;
+                           var videoReferences, subtitleReferences = [], srtUrl = null;
                            if (gurl.indexOf("/kanaler/") != -1) {
                                data = Svt.decodeJson(data).context.dispatcher.stores.ScheduleStore;
 		               for (var i = 0; i < data.channels.length; i++) {
@@ -1046,7 +1046,11 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                                    }
                                }
                            } else {
-                               data = JSON.parse(data.responseText);
+                               try {
+                                   data = Svt.decodeJson(data).context.dispatcher.stores.VideoTitlePageStore.data;
+                               } catch (err) {
+                                   data = JSON.parse(data.responseText);
+                               }
                            }
                            
                            if (data.video)
@@ -1061,9 +1065,11 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 			           break;
 		               }
 		           }
-                           if (data.video)
+                           if (data.video && data.video.subtitleReference)
                                subtitleReferences = data.video.subtitleReferences
-                           else
+                           else if (data.video && data.video.subtitles)
+                               subtitleReferences = data.video.subtitles
+                           else if (data.subtitleReferences)
                                subtitleReferences = data.subtitleReferences;
 
                            for (var i = 0; i < subtitleReferences.length; i++) {
@@ -1075,11 +1081,18 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 			           break;
 		               }
 		           }
-                           if (!altUrl && !srtUrl && !data.disabled && data.context.programVersionId) {
-                               // Try alternative url
-                               altUrl = SVT_ALT_API_URL + data.context.programVersionId;
-                               return Player.GetPlayUrl(gurl, isLive, altUrl);
-                           }
+                           if (!altUrl && !srtUrl && !data.disabled) {
+                               var programVersionId = null;
+                               if (data.video)
+                                   programVersionId = data.video.programVersionId;
+                               else if (data.context)
+                                   programVersionId  = data.context.programVersionId
+                               if (programVersionId) {
+                                   // Try alternative url
+                                   altUrl = SVT_ALT_API_URL + programVersionId;
+                                   return Player.GetPlayUrl(gurl, isLive, download, altUrl);
+                               }
+                           } 
 
 		           if(videoUrl.indexOf('.m3u8') >= 0){
 		               Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
