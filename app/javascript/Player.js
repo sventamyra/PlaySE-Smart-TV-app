@@ -1090,7 +1090,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                                if (programVersionId) {
                                    // Try alternative url
                                    altUrl = SVT_ALT_API_URL + programVersionId;
-                                   return Player.GetPlayUrl(gurl, isLive, download, altUrl);
+                                   return Player.GetPlayUrl(gurl, isLive, altUrl);
                                }
                            } 
 
