@@ -524,8 +524,7 @@ Dplay.decode_season = function(targetUrl, data, completeFun) {
         }
         data = null;
         if (seasons.length == 1) {
-            replaceLocation('showList.html?name=' + Link + '&history=' + getHistory(Name));
-            return;
+            return callTheOnlySeason(seasons[0].name, seasons[0].link);
         }
         seasons.sort(function(a, b){
                 if (a.season > b.season)

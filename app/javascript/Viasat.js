@@ -526,7 +526,7 @@ Viasat.decode_shows = function(data, url, allShows, skipHtml, completeFun, isNex
 
         if (url && url.match(/\/seasons/)) {
             if (Viasat.result.length == 1) {
-                replaceLocation('showList.html?name=' + Viasat.result[0].link + '&history=' + getHistory(Viasat.result[0].name));
+                callTheOnlySeason(Viasat.result[0].name, Viasat.result[0].link);
                 Viasat.result = [];
                 return;
             }

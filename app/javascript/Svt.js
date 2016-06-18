@@ -6,7 +6,7 @@ var Svt =
     category_detail_name:""
 };
 
-Svt.fixLink = function (Link) 
+Svt.fixLink = function (Link, Base) 
 {
     if (Link) {
         Link = Link.replace(/amp;/g, "").replace(/([^:])\/\//g,"$1/")
@@ -14,7 +14,9 @@ Svt.fixLink = function (Link)
         Link = Link.replace(/file:\/\/(localhost\/)?/, "http://");
     }
     if (Link && Link.match(/^<>[0-9]+<>/)) {
-        return "http://www.svtstatic.se/image-cms/svtse" + Link.replace(/^<>[0-9]+<>/,"");
+        var Prefix = (Base) ? Base.match(/(^http[^0-9]+)/) : null;
+        Prefix = (!Prefix) ? "http://www.svtstatic.se/image-cms/svtse/" : Prefix[1];
+        return Prefix + Link.replace(/^<>[0-9]+<>\//,"");
     } else if (Link && Link.match(/^\/\//)) {
         return "http:" + Link;
     } else if (Link && !Link.match("https*:")) {
@@ -166,17 +168,20 @@ Svt.getDetailsData = function(url, data) {
             } else {
                 data = data.context.dispatcher.stores;
                 Name = data.MetaStore.title.trim();
+                var BaseThumb = data.MetaStore.image;
                 Description = data.MetaStore.description.trim();
                 data = data.VideoTitlePageStore.data.video
                 if (data.programTitle == data.title)
                     Name = data.title;
                 Title = Name;
                 if (data.thumbnailXL)
-	            ImgLink = Svt.fixLink(data.thumbnailXL);
+	            ImgLink = Svt.fixLink(data.thumbnailXL, BaseThumb);
                 else
-	            ImgLink = Svt.fixLink(data.posterXL);
+	            ImgLink = Svt.fixLink(data.posterXL, BaseThumb);
                 if (data.broadcastDate)
                     AirDate = timeToDate(data.broadcastDate);
+                else if (data.publishDate)
+                    AirDate = timeToDate(data.publishDate);
                 else
                     AirDate = null
                 VideoLength = data.materialLength
@@ -247,23 +252,24 @@ Svt.getShowData = function(url, data) {
     var Description="";
 
     try {
-        data = data.responseText.split("<section class=\"play_title-page__title-info")[1];
-        data = data.split("<section class=\"play_js-tabs")[0];
-        data = data.split("id=\"videos-in-same-category")[0];
-        var $show = $(data);
+        data = Svt.decodeJson(data).context.dispatcher.stores;
+        var base_thumb = data.MetaStore.image;
+        data = data.VideoTitlePageStore.data.titlePage
 
-        Name  = $show.find('h1').text();
-	ImgLink = Svt.fixLink($show.find('img').attr('data-imagename'));
-	Description = $($show.find('p.play_title-page-info__description')[1]).text();
+        Name  = data.title.trim();
+	ImgLink = Svt.fixLink(data.thumbnailXL, base_thumb);
+	Description = data.shortDescription.trim()
+        if (Description && data.description.indexOf(Description) == -1)
+            Description = "<p>" + Description + "</p>" + data.description.trim();
+        else
+            Description = data.description.trim();
         Genre = [];
-        GenreData = $show.find('li.play_tag-list__tag').find("a");
-        for (var i=0; i < GenreData.length;i++) {
-            Genre.push($(GenreData[i]).text());
+        for (var i=0; i < data.tagList.length; i++) {
+            Genre.push(data.tagList[i].name.trim());
         }
+        Genre.sort();
         Genre = Genre.join('/');
         if (!Genre)
-            Genre = $($show.find('p.play_title-page-info__description')[0]).text();
-        if (Genre == Description)
             Genre == "";
 
     } catch(err) {
@@ -523,6 +529,63 @@ Svt.decode_category = function (data) {
 
 }
 
+Svt.decode_show = function (data, url, is_clips, requested_season) {
+    data = Svt.decodeJson(data).context.dispatcher.stores;
+    var seasons = []
+    var has_clips = false
+    var base_thumb = data.MetaStore.image;
+    data = data.VideoTitlePageStore.data
+    if (!is_clips && !requested_season) {
+        for (var i=0; i < data.relatedVideoTabs.length; i++) {
+            if (data.relatedVideoTabs[i].season)
+                seasons.push({season:data.relatedVideoTabs[i].season,
+                              name  : data.relatedVideoTabs[i].name.trim()
+                             });
+            if (!has_clips && data.relatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS")
+                has_clips = true
+        }
+        if (seasons.length > 1) {
+            seasons.sort(function(a, b){return b.season-a.season})
+            for (var i=0; i < seasons.length; i++) {
+                seasonToHtml(seasons[i].name,
+                             Svt.fixLink(data.titlePage.thumbnailSmall, base_thumb),
+                             url,
+                             seasons[i].season
+                            )
+            };
+        } else if (requested_season!=0 && seasons.length == 1) {
+            requested_season = seasons[0].season
+            return callTheOnlySeason(seasons[0].name, url);
+        }
+    }
+    // Get Correct Tab
+    var videos;
+    for (var i=0; i < data.relatedVideoTabs.length; i++) {
+        if (requested_season && requested_season != 0) {
+            if (data.relatedVideoTabs[i].season == +requested_season) {
+                videos = data.relatedVideoTabs[i].videos
+                break
+            }
+        } else if (is_clips) {
+            if (data.relatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS") {
+                videos = data.relatedVideoTabs[i].videos
+                break
+            }
+        } else {
+            if (data.relatedVideoTabs[i].type != "VIDEO_TYPE_CLIPS") {
+                videos = data.relatedVideoTabs[i].videos
+                break
+            }
+        }
+    };
+
+    if (requested_season || is_clips || seasons.length < 2)
+        Svt.decode(videos, null, true, base_thumb);
+
+    if (has_clips)
+        clipToHtml(Svt.fixLink(data.titlePage.thumbnailSmall,base_thumb), url)
+};
+
 Svt.search = function(query, completeFun, url) {
 
     requestUrl('http://www.svtplay.se/sok?q=' + query,
@@ -631,7 +694,7 @@ Svt.decodeChannels = function(data) {
     }
 };
 
-Svt.decode = function(data, filter) {
+Svt.decode = function(data, filter, stripShow, thumbPrefix) {
     try {
         var html;
         var Titles;
@@ -643,6 +706,14 @@ Svt.decode = function(data, filter) {
         var ImgLink;
         var starttime;
         var IsRunning;
+        var Season;
+        var Episode;
+        var Variant;
+        var SEASON_REGEXP = new RegExp("((s[^s]+song\\s*([0-9]+))\\s*-\\s*)?(.+)","i");
+        var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|teckenspr[^k]+k|originalspr[^k]+k)","i");
+        var Names = [];
+        var Shows = [];
+        var AnyNonInfoEpisode = false;
 
         for (var k=0; k < data.length; k++) {
             if (data[k].title)
@@ -655,17 +726,18 @@ Svt.decode = function(data, filter) {
                 Name = "WHAT?!?!?"
             Duration = data[k].materialLength;
             Description = data[k].description;
-            if (Name.match(/^(avsnitt|del)/i)) {
-                if (data[k].season > 0)
-                    Name = "Säsong " + data[k].season + " - " + Name;
-                if (data[k].programTitle) {
-                    Description = Name;
-                    Name = data[k].programTitle.trim();
+            if (!stripShow) {
+                if (Name.match(/^(avsnitt|del)/i)) {
+                    if (data[k].season > 0)
+                        Name = "Säsong " + data[k].season + " - " + Name;
+                    if (data[k].programTitle) {
+                        Description = Name;
+                        Name = data[k].programTitle.trim();
+                    }
+                } else if (data[k].programTitle && Name.indexOf(data[k].programTitle.trim()) == -1) {
+                    Name = data[k].programTitle.trim() + " - " + Name;
                 }
-            } else if (data[k].programTitle && Name.indexOf(data[k].programTitle.trim()) == -1) {
-                Name = data[k].programTitle.trim() + " - " + Name;
             }
-
             Description = (Description) ? Description.trim() : "";
             if (data[k].contentUrl)
                 Link = Svt.fixLink(data[k].contentUrl);
@@ -674,7 +746,8 @@ Svt.decode = function(data, filter) {
                 if (!Link.match(/^\//))
                     Link = "/genre/" + Link;
                 Link = Svt.fixLink(Link);
-            }
+            } else if (data[k].url)
+                Link = Svt.fixLink(data[k].url);
             else if (data[k].slug)
                 Link = Svt.fixLink("/genre/" + data[k].slug)
 
@@ -682,13 +755,14 @@ Svt.decode = function(data, filter) {
                 continue;
 
             if (data[k].imageSmall)
-                ImgLink = Svt.fixLink(data[k].imageSmall);
+                ImgLink = Svt.fixLink(data[k].imageSmall, thumbPrefix);
+            else if (data[k].thumbnailSmall)
+                ImgLink = Svt.fixLink(data[k].thumbnailSmall, thumbPrefix);
             else if (data[k].posterImageUrl)
-                ImgLink = Svt.fixLink(data[k].posterImageUrl);
+                ImgLink = Svt.fixLink(data[k].posterImageUrl, thumbPrefix);
             else if (data[k].thumbnailImage)
-                ImgLink = Svt.fixLink(data[k].thumbnailImage);
-
-            IsLive    = data[k].live && !data[k].broadcastEnded;
+                ImgLink = Svt.fixLink(data[k].thumbnailImage, thumbPrefix);
+            IsLive = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
             starttime = data[k].broadcastStartTime;
             starttime = (IsLive && starttime) ? timeToDate(starttime) : null;
@@ -703,21 +777,83 @@ Svt.decode = function(data, filter) {
             else {
                 Duration = 0;
             }
-            toHtml({name:Name,
-                    duration:Duration,
-                    is_live:IsLive,
-                    is_channel:false,
-                    is_running:IsRunning,
-                    starttime:starttime,
-                    link:Link,
-                    link_prefix:LinkPrefix,
-                    description:Description,
-                    thumb:ImgLink,
-                    largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null
-                   })
+            Season  = data[k].season;
+            Episode = data[k].episodeNumber; // || Name.match(/avsnitt\s*([0-9]+)/i) || Description.match(/[Dd]el\s([0-9]+)/i);
+            Variant = Name.match(VARIANT_REGEXP);
+            Variant = (Variant) ? Variant[1] : null;
+            AnyNonInfoEpisode = (AnyNonInfoEpisode) ? AnyNonInfoEpisode : !Svt.IsClip({link:Link}) && !Episode;
+            if (stripShow && !Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
+                Description = Name.replace(SEASON_REGEXP, "$4")
+                Description = Description.replace(VARIANT_REGEXP, "")
+                Name = Name.replace(SEASON_REGEXP, "$1Avsnitt " + Episode);
+                Name = (Variant) ? Name + " - " + Variant : Name;
+            } else if (stripShow) {
+                Description = "";
+            }
+            Names.push(Name);
+            Shows.push({name:Name,
+                        duration:Duration,
+                        is_live:IsLive,
+                        is_channel:false,
+                        is_running:IsRunning,
+                        starttime:starttime,
+                        link:Link,
+                        link_prefix:LinkPrefix,
+                        description:Description,
+                        thumb:ImgLink,
+                        largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null,
+                        season:Season,
+                        episode:Episode,
+                        variant:Variant
+                       })
             data[k] = "";
 	};
+        if (stripShow) 
+            Svt.sortEpisodes(Shows, Names, AnyNonInfoEpisode);
+        for (var k=0; k < Shows.length; k++) {
+            toHtml(Shows[k])
+        };
     } catch(err) {
         Log("Svt.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
     }
 };
+
+Svt.sortEpisodes = function(Episodes, Names, AnyNonInfoEpisode) {
+    Episodes.sort(function(a, b){
+        if (Svt.IsClip(a) && Svt.IsClip(b)) {
+            // Keep SVT sorting amongst clips
+            return Names.indexOf(a.name) - Names.indexOf(b.name)
+        } else if(Svt.IsClip(a)) {
+            // Clips has lower prio
+            return 1
+        } else if(Svt.IsClip(b)) {
+            // Clips has lower prio
+            return -1
+        } else if (a.variant == b.variant) {
+            if (AnyNonInfoEpisode)
+                // Keep SVT sorting in case not all videos has an episod number.
+                return Names.indexOf(a.name) - Names.indexOf(b.name)
+            else if (Svt.IsNewer(a,b))
+                return -1
+            else
+                return 1
+        } else if (!a.variant || (b.variant && b.variant > a.variant)) {
+            return -1
+        } else {
+            return 1
+        }
+    });
+};
+
+Svt.IsNewer = function(a,b) {
+    if (a.season == b.season) {
+        return a.episode > b.episode
+    } else if (b.season && a.season) {
+        return a.season > b.season
+    } else
+        return a.season
+}
+
+Svt.IsClip = function(a) {
+    return a.link.match(/\/klipp\//)
+}
