@@ -169,7 +169,8 @@ decode_video = function(data, filter) {
     IsRunning = data.search(/play_graphics-live--inactive/) == -1;
     starttime = data.match(/alt="([^"]+)"/);
     Description = (!Description) ? "" : Description[1].trim();
-    ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/)[1] : ImgLink[1];
+    ImgLink = (!ImgLink) ? data.match(/src="([^"]+)"/) : ImgLink;
+    ImgLink = (ImgLink) ? ImgLink[1] : null
     ImgLink = Svt.fixLink(ImgLink);
     starttime = (IsLive) ? starttime[1].replace(/([^:]+):.+/, "$1") : "";
     data = "";

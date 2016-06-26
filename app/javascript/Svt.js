@@ -3,10 +3,11 @@ var Svt =
     sections:[],
     section_max_index:0,
     category_detail_max_index:0,
-    category_detail_name:""
+    category_detail_name:"",
+    thumbs_index:null
 };
 
-Svt.fixLink = function (Link, Base) 
+Svt.fixLink = function (Link, Publication) 
 {
     if (Link) {
         Link = Link.replace(/amp;/g, "").replace(/([^:])\/\//g,"$1/")
@@ -14,9 +15,13 @@ Svt.fixLink = function (Link, Base)
         Link = Link.replace(/file:\/\/(localhost\/)?/, "http://");
     }
     if (Link && Link.match(/^<>[0-9]+<>/)) {
-        var Prefix = (Base) ? Base.match(/(^http[^0-9]+)/) : null;
-        Prefix = (!Prefix) ? "http://www.svtstatic.se/image-cms/svtse/" : Prefix[1];
-        return Prefix + Link.replace(/^<>[0-9]+<>\//,"");
+        var index = +Link.match(/^<>([0-9]+)<>/)[1]
+        if (Publication)
+            Svt.checkThumbIndex(index, Publication);
+        else
+            Publication = Svt.getThumbIndex(index);
+        Publication = (Publication) ? Publication : "svtse";
+        return Link.replace(/^<>[0-9]+<>/, "http://www.svtstatic.se/image-cms/" + Publication);
     } else if (Link && Link.match(/^\/\//)) {
         return "http:" + Link;
     } else if (Link && !Link.match("https*:")) {
@@ -27,6 +32,46 @@ Svt.fixLink = function (Link, Base)
         return Link
     }
 };
+
+Svt.checkThumbIndex = function(index, data) {
+    if (data && Svt.getThumbIndex(+index)!=data) {
+        Svt.thumbs_index[+index] = data;
+        Config.save("svtThumbs", Svt.thumbs_index);
+    }
+};
+
+Svt.getThumbIndex = function(index) {
+    if (Svt.thumbs_index == null) {
+        Svt.thumbs_index = Config.read("svtThumbs")
+        if (Svt.thumbs_index == null)
+            Svt.thumbs_index = []
+    }
+    return Svt.thumbs_index[+index]
+};
+
+Svt.getThumb = function(data, size) {
+    var Thumb = "";
+    if (data.thumbnail)
+        Thumb = data.thumbnail;
+    else if (data.imageSmall)
+        Thumb = data.imageSmall;
+    else if (data.thumbnailXL)
+        Thumb = data.thumbnailXL;
+    else if (data.imageLarge)
+        Thumb = data.imageLarge;
+    else if (data.thumbnailImage)
+        Thumb = data.thumbnailImage;
+    else if (data.posterImageUrl)
+        Thumb = data.posterImageUrl;
+    else if (data.posterXL)
+        Thumb = data.posterXL
+    Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
+    if (!size || size == "small")
+        return Thumb.replace(/\/(extra)?large\//, "/small/")
+    else if (size == "large")
+        return Thumb.replace(/\/(small|extralarge)\//, "/large/")
+    return Thumb
+}
 
 Svt.isPlayable = function (url) {
     return url.match(/\/video|klipp\//)
@@ -153,7 +198,7 @@ Svt.getDetailsData = function(url, data) {
                 Name = data.name.trim() + " - " + data.schedule[0].title.trim();
 	        Description = data.schedule[0].description.trim();
                 if (data.schedule[0].titlePage) {
-	            ImgLink = Svt.fixLink(data.schedule[0].titlePage.thumbnailXL);
+                    ImgLink = Svt.getThumb(data.schedule[0].titlePage, "large")
                 } else {
 	            ImgLink = Svt.GetChannelThumb(data.title);
                 }
@@ -168,16 +213,12 @@ Svt.getDetailsData = function(url, data) {
             } else {
                 data = data.context.dispatcher.stores;
                 Name = data.MetaStore.title.trim();
-                var BaseThumb = data.MetaStore.image;
                 Description = data.MetaStore.description.trim();
                 data = data.VideoTitlePageStore.data.video
                 if (data.programTitle == data.title)
                     Name = data.title;
                 Title = Name;
-                if (data.thumbnailXL)
-	            ImgLink = Svt.fixLink(data.thumbnailXL, BaseThumb);
-                else
-	            ImgLink = Svt.fixLink(data.posterXL, BaseThumb);
+                ImgLink = Svt.getThumb(data, "large");
                 if (data.broadcastDate)
                     AirDate = timeToDate(data.broadcastDate);
                 else if (data.publishDate)
@@ -253,11 +294,10 @@ Svt.getShowData = function(url, data) {
 
     try {
         data = Svt.decodeJson(data).context.dispatcher.stores;
-        var base_thumb = data.MetaStore.image;
         data = data.VideoTitlePageStore.data.titlePage
 
         Name  = data.title.trim();
-	ImgLink = Svt.fixLink(data.thumbnailXL, base_thumb);
+        ImgLink = Svt.getThumb(data, "large");
 	Description = data.shortDescription.trim()
         if (Description && data.description.indexOf(Description) == -1)
             Description = "<p>" + Description + "</p>" + data.description.trim();
@@ -305,8 +345,8 @@ Svt.decode_recommended = function (data, extra) {
         var Description;
         var Duration;
         var ImgLink;
+        var recommendedLinks = [];
 
-        recommendedLinks = [];
         if (!extra.json) {
             data = Svt.decodeJson(data).context.dispatcher.stores;
             if (extra && extra.addSections)
@@ -318,8 +358,7 @@ Svt.decode_recommended = function (data, extra) {
             Name = data[k].title.trim();
             Link = Svt.redirectUrl(Svt.fixLink(data[k].url));
             Description = data[k].description;
-	    ImgLink = Svt.fixLink(data[k].imageMedium).replace("_imax", "");
-            ImgLink = ImgLink.replace("medium", "small");
+            ImgLink = Svt.getThumb(data[k]);
             if (Svt.isPlayable(Link)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
@@ -370,7 +409,7 @@ Svt.decodeCategories = function (data) {
                         Link    = data.allClusters[key][k][i].uri.replace(/^tag.+:([^:]+)$/,"/genre/$1");
                         Link    = Svt.fixLink(Link);
                         if (data.allClusters[key][k][i].metaData)
-                            ImgLink = Svt.fixLink(data.allClusters[key][k][i].metaData.backgroundImageSmall);
+                            ImgLink = Svt.getThumb(data.allClusters[key][k][i].metaData);
                         toHtml({name:        Name,
                                 link:        Link,
                                 link_prefix: '<a href="categoryDetail.html?category=',
@@ -533,7 +572,6 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     data = Svt.decodeJson(data).context.dispatcher.stores;
     var seasons = []
     var has_clips = false
-    var base_thumb = data.MetaStore.image;
     data = data.VideoTitlePageStore.data
     if (!is_clips && !requested_season) {
         for (var i=0; i < data.relatedVideoTabs.length; i++) {
@@ -548,7 +586,7 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
             seasons.sort(function(a, b){return b.season-a.season})
             for (var i=0; i < seasons.length; i++) {
                 seasonToHtml(seasons[i].name,
-                             Svt.fixLink(data.titlePage.thumbnailSmall, base_thumb),
+                             Svt.getThumb(data.titlePage),
                              url,
                              seasons[i].season
                             )
@@ -580,10 +618,10 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     };
 
     if (requested_season || is_clips || seasons.length < 2)
-        Svt.decode(videos, null, true, base_thumb);
+        Svt.decode(videos, null, true);
 
     if (has_clips)
-        clipToHtml(Svt.fixLink(data.titlePage.thumbnailSmall,base_thumb), url)
+        clipToHtml(Svt.getThumb(data.titlePage), url)
 };
 
 Svt.search = function(query, completeFun, url) {
@@ -606,17 +644,7 @@ Svt.decode_section = function (data, filter) {
 
 Svt.decode_search = function (data) {
     try {
-        var html;
-        var Titles;
-        var Name;
-        var Link;
-        var LinkPrefix;
-        var Description;
-        var Duration;
-        var ImgLink;
         var keys = [];
-
-        recommendedLinks = [];
         data = Svt.decodeJson(data).context.dispatcher.stores.SearchStore;
         for (var key in data){
             if (!data[key][0] || (!data[key][0].contentType && !data[key][0].name))
@@ -694,7 +722,7 @@ Svt.decodeChannels = function(data) {
     }
 };
 
-Svt.decode = function(data, filter, stripShow, thumbPrefix) {
+Svt.decode = function(data, filter, stripShow) {
     try {
         var html;
         var Titles;
@@ -754,14 +782,7 @@ Svt.decode = function(data, filter, stripShow, thumbPrefix) {
             if (filter && filter.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
                 continue;
 
-            if (data[k].imageSmall)
-                ImgLink = Svt.fixLink(data[k].imageSmall, thumbPrefix);
-            else if (data[k].thumbnailSmall)
-                ImgLink = Svt.fixLink(data[k].thumbnailSmall, thumbPrefix);
-            else if (data[k].posterImageUrl)
-                ImgLink = Svt.fixLink(data[k].posterImageUrl, thumbPrefix);
-            else if (data[k].thumbnailImage)
-                ImgLink = Svt.fixLink(data[k].thumbnailImage, thumbPrefix);
+            ImgLink = Svt.getThumb(data[k]);
             IsLive = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
             starttime = data[k].broadcastStartTime;

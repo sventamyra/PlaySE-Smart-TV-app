@@ -229,7 +229,7 @@ Details.toHtml = function (programData) {
             else 
                 html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
         }
-	html+='<div class="project-desc">'+programData.description+'</div>';
+	html+='<div class="project-desc">'+programData.description.replace(/\\\"/g, "\"")+'</div>';
 	html+='<div class="bottom-buttons">';
         if (programData.category) {
             html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till Kategorin</a>';
