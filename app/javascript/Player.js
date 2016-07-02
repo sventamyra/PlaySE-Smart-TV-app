@@ -1065,7 +1065,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 			           break;
 		               }
 		           }
-                           if (data.video && data.video.subtitleReference)
+                           if (data.video && data.video.subtitleReferences)
                                subtitleReferences = data.video.subtitleReferences
                            else if (data.video && data.video.subtitles)
                                subtitleReferences = data.video.subtitles
@@ -1083,7 +1083,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 		           }
                            if (!altUrl && !srtUrl && !data.disabled) {
                                var programVersionId = null;
-                               if (data.video)
+                               if (data.video && data.video.programVersionId)
                                    programVersionId = data.video.programVersionId;
                                else if (data.context)
                                    programVersionId  = data.context.programVersionId

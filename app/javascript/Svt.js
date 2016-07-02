@@ -237,9 +237,12 @@ Svt.getDetailsData = function(url, data) {
                     NotAvailable = data.upcomingBroadcast;
                 } else if (data.expireDate) {
 		    AvailDate = timeToDate(data.expireDate)
-                    var daysLeft = Math.round((AvailDate-getCurrentDate())/1000/3600/24)
-                    if (daysLeft > 1)
-                        AvailDate = dateToHuman(AvailDate) + " (" + daysLeft + " dagar kvar)"
+                    var hoursLeft = Math.floor((AvailDate-getCurrentDate())/1000/3600);
+                    AvailDate = dateToHuman(AvailDate);
+                    if (hoursLeft > 24)
+                        AvailDate = AvailDate + " (" + Math.floor(hoursLeft/24) + " dagar kvar)"
+                    else
+                        AvailDate = AvailDate + " (" + hoursLeft + " timmar kvar)"
                 }
 	        onlySweden = data.onlyAvailableInSweden
             }

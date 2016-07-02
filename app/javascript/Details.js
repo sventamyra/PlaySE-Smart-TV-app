@@ -229,7 +229,7 @@ Details.toHtml = function (programData) {
             else 
                 html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
         }
-	html+='<div class="project-desc">'+programData.description.replace(/\\\"/g, "\"")+'</div>';
+	html+='<div class="project-desc">'+programData.description+'</div>';
 	html+='<div class="bottom-buttons">';
         if (programData.category) {
             html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till Kategorin</a>';
@@ -271,13 +271,17 @@ Details.fetchData = function(detailsUrl) {
 Details.getData = function(url, data) {
 
     if (channel == "svt") 
-        return Svt.getDetailsData(url, data);
+        data = Svt.getDetailsData(url, data);
     else if (channel == "viasat") 
-        return Viasat.getDetailsData(url,data)
+        data = Viasat.getDetailsData(url,data)
     else if (channel == "tv4") 
-        return Tv4.getDetailsData(url,data)
+        data = Tv4.getDetailsData(url,data)
     else if (channel == "dplay") 
-        return Dplay.getDetailsData(url,data)
+        data = Dplay.getDetailsData(url,data)
+
+    if (data.description && data.description.length > 0)
+        data.description = data.description.replace(/\\\"/g, "\"")
+    return data
 };
 
 Details.startPlayer = function()
