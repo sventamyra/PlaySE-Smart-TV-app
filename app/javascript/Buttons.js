@@ -137,8 +137,6 @@ Buttons.keyHandleForExit = function()
         break;
     }
 };
-        
-            
 
 Buttons.keyHandleForList = function()
 {
@@ -321,14 +319,35 @@ Buttons.keyHandleForDetails = function()
     var keyCode = event.keyCode;
     switch(keyCode)
     {
+
+    case tvKey.KEY_DOWN:
+        if($('#extraButton').is(':visible')) {
+	    $('#extraButton').addClass('selected');
+	    $('#playButton').removeClass('selected');
+	    $('#enterShowButton').removeClass('selected');
+        }
+	break;
+
+    case tvKey.KEY_UP:
+        if($('#extraButton').is(':visible') &&
+           !$('#notStartedButton').is(':visible')) {
+	    $('#extraButton').removeClass('selected');
+            if ($('#playButton').is(':visible'))
+                $('#playButton').addClass('selected')
+            else ($('#enterShowButton').is(':visible'))
+                $('#enterShowButton').addClass('selected')
+        }
+        break;
+
     case tvKey.KEY_ENTER:
     case tvKey.KEY_PANEL_ENTER:
-	if($('#enterShowButton').is(':visible')) {
+	if ($('#enterShowButton').hasClass('selected')) {
 	    setLocation(itemSelected.find('.ilink').attr("href"));
-	}
-	else if($('#playButton').is(':visible')) {
+	} else if ($('#playButton').hasClass('selected')) {
 	    Details.startPlayer();
-	}
+	} else if ($('#extraButton').hasClass('selected')) {
+            setLocation($('#extraButton').attr('href'));
+        }
 	break;
 	
     case tvKey.KEY_INFO:

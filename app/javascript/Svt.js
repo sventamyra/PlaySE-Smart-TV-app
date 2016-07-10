@@ -2,8 +2,8 @@ var Svt =
 {
     sections:[],
     section_max_index:0,
+    category_details:[],
     category_detail_max_index:0,
-    category_detail_name:"",
     thumbs_index:null
 };
 
@@ -64,12 +64,14 @@ Svt.getThumb = function(data, size) {
     else if (data.posterImageUrl)
         Thumb = data.posterImageUrl;
     else if (data.posterXL)
-        Thumb = data.posterXL
+        Thumb = data.posterXL;
+    else if (data.imageMedium)
+        Thumb = data.imageMedium;
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
     if (!size || size == "small")
-        return Thumb.replace(/\/(extra)?large\//, "/small/")
+        return Thumb.replace(/\/(medium|(extra)?large)\//, "/small/")
     else if (size == "large")
-        return Thumb.replace(/\/(small|extralarge)\//, "/large/")
+        return Thumb.replace(/\/(small|medium|extralarge)\//, "/large/")
     return Thumb
 }
 
@@ -170,6 +172,7 @@ Svt.getDetailsData = function(url, data) {
     var NotAvailable=false;
     var startTime=0;
     var endTime=0;
+    var Show = null;
     try {
 
         if (url.indexOf("oppetarkiv") > -1) {
@@ -214,7 +217,14 @@ Svt.getDetailsData = function(url, data) {
                 data = data.context.dispatcher.stores;
                 Name = data.MetaStore.title.trim();
                 Description = data.MetaStore.description.trim();
-                data = data.VideoTitlePageStore.data.video
+                data = data.VideoTitlePageStore.data;
+                if (data.titlePage && data.titlePage.title.trim().toLowerCase() != data.titlePage.category.trim().toLowerCase()) {
+                    
+                    Show = {name : data.titlePage.title.trim(),
+                            url  : Svt.fixLink(data.titlePage.urlFriendlyTitle)
+                           }
+                }
+                data = data.video;
                 if (data.programTitle == data.title)
                     Name = data.title;
                 Title = Name;
@@ -244,7 +254,7 @@ Svt.getDetailsData = function(url, data) {
                     else
                         AvailDate = AvailDate + " (" + hoursLeft + " timmar kvar)"
                 }
-	        onlySweden = data.onlyAvailableInSweden
+	        onlySweden = data.onlyAvailableInSweden;
             }
             VideoLength = dataLengthToVideoLength(null,VideoLength)
             Details.duration = VideoLength;
@@ -284,8 +294,9 @@ Svt.getDetailsData = function(url, data) {
             duration      : VideoLength,
             description   : Description,
             not_available : NotAvailable,
-            thumb         : ImgLink
-           }
+            thumb         : ImgLink,
+            parent_show   : Show
+    }
 };
 
 Svt.getShowData = function(url, data) {
@@ -463,19 +474,12 @@ Svt.updateCategoryTitle = function() {
 };
 
 Svt.getNextCategoryDetail = function() {
-    var nextLocation = getNextIndexLocation(Svt.category_detail_max_index);
-    switch (Svt.getCategoryDetailIndex().next) {
-    case 0:
-        nextLocation = nextLocation.replace("Relaterat/", "");
-        break;
-    case 1:
-        nextLocation =  nextLocation + "Rekommenderat/"
-        break;
-    case 2:
-        nextLocation =  nextLocation.replace("Rekommenderat/", "") + "Relaterat/"
-        break
-    }
-    return nextLocation;
+    var nextLocation    = getNextIndexLocation(Svt.category_detail_max_index);
+    var category_detail = Svt.getCategoryDetailIndex()
+    var old_detail     = Svt.category_details[category_detail.current].section
+    var new_detail     = Svt.category_details[category_detail.next].section
+    nextLocation =  nextLocation.replace(new RegExp(old_detail+"/$"), "")
+    return nextLocation + new_detail + "/";
 }
 
 Svt.getCategoryDetailIndex = function () {
@@ -513,42 +517,62 @@ Svt.toggleBButtonForCategories = function() {
 };
 
 Svt.toggleBButtonForCategoryDetail = function() {
-    var language = Language.checkLanguage();
-
-    switch (Svt.getCategoryDetailIndex().next) {
-    case 0:
+    if(Svt.getCategoryDetailIndex().next == 0)
         Language.fixBButton();
-        break;
-    case 1:
-        if (language == "Swedish")
-            $("#b-button").text(Svt.category_detail_name + " - Rekommenderat");
-        else
-            $("#b-button").text(Svt.category_detail_name + " - Recommended");
-        break;
-    case 2:
-        if (language == "Swedish")
-            $("#b-button").text(Svt.category_detail_name + " - Relaterat");
-        else
-            $("#b-button").text(Svt.category_detail_name + " - Related");
-        break;
-    }
+    else
+        $("#b-button").text(Svt.category_details[Svt.getCategoryDetailIndex().next].name);
 };
 
 Svt.decode_category = function (data) {
     data = Svt.decodeJson(data).context.dispatcher.stores;
-    Svt.category_detail_name = data.ClusterStore.name.trim();
+    Svt.category_details = [];
     Svt.category_detail_max_index = 0;
+
+    var main_name = data.ClusterStore.name.trim()
+    var popular   = {};
+    var current;
+
     for (var key in data.DisplayWindowStore) {
         if (data.DisplayWindowStore[key].length > 0) {
-            Svt.category_detail_max_index = 1
-            if (data.ClusterStore.relatedClusters.length > 0)
-                Svt.category_detail_max_index = 2;
+            popular.name = main_name + " - Rekommenderat";
+            popular.section = "Rekommenderat";
+            popular.recommended = true;
             break;
         }
     };
 
-    switch (Svt.getCategoryDetailIndex().current) {
-    case 0:
+    if (data.ClusterStore.tabs) {
+        for (var k=0; k < data.ClusterStore.tabs.length; k++) {
+            if (data.ClusterStore.tabs[k].name.match(/^Popul/)) {
+                // Popular is special and merged with recommended
+                popular.name = main_name + " - " + data.ClusterStore.tabs[k].name.trim();
+                popular.section = data.ClusterStore.tabs[k].name.trim();
+                popular.tab_index = k;
+            } else {
+                Svt.category_details.push({name:      main_name + " - " + data.ClusterStore.tabs[k].name.trim(),
+                                           section: data.ClusterStore.tabs[k].name.trim(),
+                                           tab_index: k
+                                          });
+            }
+        }
+    };
+    if (data.ClusterStore.relatedClusters.length > 0) {
+        Svt.category_details.push({name   : main_name + " - Relaterat",
+                                   section: "Relaterat",
+                                   related: true
+                                  });
+    }
+
+    if (popular.name)
+        Svt.category_details.unshift(popular)
+
+    // Add main view as well
+    Svt.category_details.unshift({name:main_name, main:true, section:"none"})
+    Svt.category_detail_max_index = Svt.category_details.length-1;
+
+    current = Svt.category_details[Svt.getCategoryDetailIndex().current];
+    var recommendedLinks = []
+    if (current.main) {
         if (data.ClusterStore.contents) {
             alert("CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!")
             Svt.decode(data.ClusterStore.contents)
@@ -557,18 +581,18 @@ Svt.decode_category = function (data) {
             Svt.decode(data.ClusterStore.titles)
         if (Svt.category_detail_max_index == 0 && data.ClusterStore.clips)
             Svt.decode(data.ClusterStore.clips)
-        break;
-    case 1:
+    } else if (current.recommended) {
         for (var key in data.DisplayWindowStore) {
-            Svt.decode_recommended(data.DisplayWindowStore[key], {json:true});
+            recommendedLinks = recommendedLinks.concat(Svt.decode_recommended(data.DisplayWindowStore[key], {json:true}));
         }
-        break;
-    case 2:
+    } else if (current.related) {
         Svt.decode(data.ClusterStore.relatedClusters);
-        break;
-    };
-    Svt.toggleBButton();
+    }
+        
+    if (current.tab_index >= 0)
+        Svt.decode(data.ClusterStore.tabs[current.tab_index].content, recommendedLinks);
 
+    Svt.toggleBButton();
 }
 
 Svt.decode_show = function (data, url, is_clips, requested_season) {
@@ -578,10 +602,11 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     data = data.VideoTitlePageStore.data
     if (!is_clips && !requested_season) {
         for (var i=0; i < data.relatedVideoTabs.length; i++) {
-            if (data.relatedVideoTabs[i].season)
+            if (data.relatedVideoTabs[i].season >= 0) {
                 seasons.push({season:data.relatedVideoTabs[i].season,
                               name  : data.relatedVideoTabs[i].name.trim()
                              });
+            }
             if (!has_clips && data.relatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS")
                 has_clips = true
         }
@@ -739,6 +764,7 @@ Svt.decode = function(data, filter, stripShow) {
         var IsRunning;
         var Season;
         var Episode;
+        var AllSameEpisode=true;
         var Variant;
         var SEASON_REGEXP = new RegExp("((s[^s]+song\\s*([0-9]+))\\s*-\\s*)?(.+)","i");
         var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|teckenspr[^k]+k|originalspr[^k]+k)","i");
@@ -746,6 +772,16 @@ Svt.decode = function(data, filter, stripShow) {
         var Shows = [];
         var AnyNonInfoEpisode = false;
 
+        if (stripShow) {
+            for (var k=0; k < data.length; k++) {
+                if (k == 0 && data[k].episodeNumber >= 0) {
+                    Episode = data[k].episodeNumber
+                } else if (k == 0 || Episode!=data[k].episodeNumber) {
+                    AllSameEpisode = false;
+                    break
+                }
+            }
+        }
         for (var k=0; k < data.length; k++) {
             if (data[k].title)
                 Name = data[k].title.trim()
@@ -806,7 +842,8 @@ Svt.decode = function(data, filter, stripShow) {
             Variant = Name.match(VARIANT_REGEXP);
             Variant = (Variant) ? Variant[1] : null;
             AnyNonInfoEpisode = (AnyNonInfoEpisode) ? AnyNonInfoEpisode : !Svt.IsClip({link:Link}) && !Episode;
-            if (stripShow && !Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
+            
+            if (stripShow && !AllSameEpisode && !Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
                 Description = Name.replace(SEASON_REGEXP, "$4")
                 Description = Description.replace(VARIANT_REGEXP, "")
                 Name = Name.replace(SEASON_REGEXP, "$1Avsnitt " + Episode);

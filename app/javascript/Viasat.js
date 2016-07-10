@@ -59,7 +59,7 @@ Viasat.getUrl = function(name, new_channel) {
         url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.latest_clips&device=mobile&premium=open&country=se'
         break;
     default:
-        url = name;
+        url = name.replace("https:", "http:");
         break;
     }
     return Viasat.addChannel(url)
@@ -567,6 +567,7 @@ Viasat.getDetailsData = function(url, data) {
     var VideoLength = "";
     var AvailDate=null;
     var Description="";
+    var Show=null;
     try {
 
         data = JSON.parse(data.responseText);
@@ -596,7 +597,11 @@ Viasat.getDetailsData = function(url, data) {
 
         Details.duration = VideoLength;
         Details.startTime = 0;
-
+        if (data._embedded && data._embedded.format) {
+            Show = {name : data._embedded.format.title,
+                    url  : data._embedded.format._links.seasons.href.replace("https", "http")
+                   }
+        }
     } catch(err) {
         Log("Viasat.getDetailsData Exception:" + err.message);
         Log("Name:" + Name);
@@ -616,7 +621,8 @@ Viasat.getDetailsData = function(url, data) {
             duration      : VideoLength,
             description   : Description,
             not_available : false,
-            thumb         : DetailsImgLink
+            thumb         : DetailsImgLink,
+            parent_show   : Show
     }
 };
 

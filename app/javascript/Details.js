@@ -211,6 +211,7 @@ Details.loadXml = function(isBackground) {
 
 Details.toHtml = function (programData) {
     loadThumb(programData.thumb, function() {
+        var extra = null;
         if(programData.name.length > 47){
 	    programData.name = programData.name.substring(0, 47)+ "...";
         }
@@ -220,28 +221,47 @@ Details.toHtml = function (programData) {
         if (programData.show) {
 	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
         } else if (!programData.category) {
+            // Ignore extra if inside show
+            if (getPriorLocation().indexOf("showList.html") ==-1 &&
+                programData.parent_show) {
+                extra = {loc: makeShowLink(programData.parent_show.name,
+                                           programData.parent_show.url
+                                          ),
+                         name: "Till Programmet"
+                        }
+            }
             if (programData.air_date)
 	        html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+dateToHuman(programData.air_date)+'</a></div>';
             if (programData.avail_date)
-		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till </a><a>'+dateToHuman(programData.avail_date)+'</a></div>';
+		html+='<div class="project-meta border"><a id="available" type="text">Tillgänglig till: </a><a>'+dateToHuman(programData.avail_date)+'</a></div>';
             if (programData.duration)
 		html+='<div class="project-meta"><a id="duration" type="text">Längd: </a><a>'+programData.duration+'</a></div>';
             else 
                 html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
         }
-	html+='<div class="project-desc">'+programData.description+'</div>';
+        if (extra)
+            styles = ' style="max-height:161px;"'
+        else 
+            styles= ""
+	html+='<div class="project-desc"'+styles+'>'+programData.description+'</div>';
 	html+='<div class="bottom-buttons">';
         if (programData.category) {
-            html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till Kategorin</a>';
+            html+='<a href="#" id="enterShowButton" class="link-button selected">Till Kategorin</a>';
         }
         else if (programData.show) {
             var title = myLocation.match(/title=([^&]+)/);
             title = (title) ? title[1] : "Programmet"
-            html+='<a href="#" id="enterShowButton" class="link-button selected" style="margin-left:80px;">Till ' + title + '</a>';
+            html+='<a href="#" id="enterShowButton" class="link-button selected">Till ' + title + '</a>';
         } else if (programData.not_available) {
-            html+='<a href="#" id="notStartedButton" class="link-button" style="margin-left:80px;">Ej Startat</a>';
+            html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
         } else {
-            html+='<a href="#" id="playButton" class="link-button selected" style="margin-left:80px;">Spela upp</a>';
+            html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a>';
+        }
+        if (extra) {
+            html+='<a href="'+extra.loc+'" id="extraButton" class="link-button'
+            if (programData.not_available)
+                html+=' selected'
+            html+='" style="margin-top:3px;">'+extra.name+'</a>';
         }
         html+=' </div>';
 	html+=' </div>';
@@ -256,9 +276,10 @@ Details.toHtml = function (programData) {
 }
 
 
-Details.fetchData = function(detailsUrl) {
+Details.fetchData = function(detailsUrl, refresh) {
     Details.init();
-    Details.fetchedDetails = null;
+    if (!refresh)
+        Details.fetchedDetails = null;
     detailsUrl = this.Geturl(detailsUrl);
     asyncHttpRequest(detailsUrl,
                      function(data) 

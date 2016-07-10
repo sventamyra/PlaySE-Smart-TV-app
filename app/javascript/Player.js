@@ -550,9 +550,9 @@ Player.setDetailsData = function(details) {
     $('.detailstitle').html(details.title);
     var extra = "";
     if (details.air_date)
-        extra = "Sändes " + dateToHuman(details.air_date) + SEPARATOR;
+        extra = "Sändes " + dateToHuman(details.air_date).toLowerCase() + SEPARATOR;
     if (details.avail_date)
-        extra = extra + "Tillgänglig till " + dateToHuman(details.avail_date);
+        extra = extra + "Tillgänglig till " + dateToHuman(details.avail_date).toLowerCase();
     if (extra != "")
         extra = "<br><br>" + extra
     $('.detailsdescription').html(details.description + extra);
@@ -693,7 +693,7 @@ Player.showDetails = function()
         window.clearTimeout(osdTimer);
     } else {
         // Update in case of channel where details may change
-        Details.fetchData(detailsUrl)
+        Details.fetchData(detailsUrl, true)
         this.hideDetailedInfo();
     }
 };
@@ -1291,7 +1291,7 @@ Player.refreshDetailsTimer = function() {
     window.clearTimeout(detailsTimer); 
     if (detailsUrl.indexOf("/kanaler/") > -1) {
         detailsTimer = window.setTimeout(function () {
-            Details.fetchData(detailsUrl);
+            Details.fetchData(detailsUrl, true);
             Player.refreshDetailsTimer();
         }, 1*60*1000);
     }

@@ -282,6 +282,13 @@ getLocation = function (refresh)
     return myLocation;
 };
 
+getPriorLocation = function () {
+    if (myHistory.length > 0)
+        return myHistory[myHistory.length-1].loc;
+    else 
+        return "";
+};
+
 getIndexLocation = function() {
     var myNewLocation = (myRefreshLocation) ? myRefreshLocation : myLocation;
     if (myNewLocation.match(/details.html/))
@@ -680,6 +687,14 @@ showToHtml = function(Name, Thumb, Link, LinkPrefix) {
            });
 };
 
+makeShowLink = function(Name, Url) {
+    return makeLink("showList.html?name=", Name, Url);
+}
+
+makeLink = function(LinkPrefix, Name, Url) {
+    return LinkPrefix + Url + '&history=' + getHistory(Name);
+}
+
 toHtml = function(Item) {
 
     var html;
@@ -706,7 +721,7 @@ toHtml = function(Item) {
         Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
     }
     html += '<div class="scroll-item-img">';
-    html += Item.link_prefix + Item.link + '&history=' + getHistory(Item.name) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
+    html += makeLink(Item.link_prefix,Item.name,Item.link) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
 
     Item.starttime = dateToHuman(Item.starttime);
     if (Item.is_live && !Item.is_running) {

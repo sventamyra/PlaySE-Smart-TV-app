@@ -124,6 +124,10 @@ Dplay.makeApiUrl = function(path, extra) {
     return "http://www.dplay.se/api/v2/content/device" + path + "?appVersion=3.0.0&platform=IPHONE&realm=DPLAYSE&site=SE&embed=reference,show,package,genres,videos,shows,season&package=41&limit=500" + channel + extra;
 };
 
+Dplay.makeShowUrl = function(id) {
+    return Dplay.makeApiUrl('/shows/' + id + '/seasons');
+};
+
 Dplay.getPrefix = function(channel_idx) {
     var Name = channel;
     if (channel_idx)
@@ -473,7 +477,7 @@ Dplay.decode_shows = function(data, query, sort, allShows) {
             }
             for (var i=0; i < showData.genres.length; i++)
                 Genres.push(showData.genres[i].id);
-            Link = Dplay.makeApiUrl('/shows/' + showData.id + '/seasons');
+            Link = Dplay.makeShowUrl(showData.id);
             ImgLink = Dplay.fixThumb(showData.poster_image.file);
             Dplay.show_names.push(Name);
             Dplay.show_result.push({name:Name, thumb:ImgLink, link:Link, genres:Genres});
@@ -595,6 +599,7 @@ Dplay.getDetailsData = function(url, data) {
     var AvailDate=null;
     var VideoLength = "";
     var Description="";
+    var Show=null;
     try {
         data = JSON.parse(data.responseText).data;
         Name = Dplay.determineEpisodeName(data);
@@ -610,6 +615,11 @@ Dplay.getDetailsData = function(url, data) {
         }
         Details.duration = VideoLength;
         Details.startTime = 0;
+        if (data.show && Dplay.isItemOk(data.show.title.trim(),data.show)) {
+            Show = {name : data.show.title.trim(),
+                    url  : Dplay.makeShowUrl(data.show.id)
+                   }
+        }
 
     } catch(err) {
         Log("Dplay.getDetailsData Exception:" + err.message);
@@ -629,7 +639,8 @@ Dplay.getDetailsData = function(url, data) {
             duration      : VideoLength,
             description   : Description,
             not_available : false,
-            thumb         : DetailsImgLink
+            thumb         : DetailsImgLink,
+            parent_show   : Show
     }
 };
 

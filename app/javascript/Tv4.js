@@ -293,7 +293,13 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
             }
 	}
         if (stripShow && !isClip) {
-            var clips_url = Tv4.getUrl("clips") + data[0].program.nid;
+            var clips_url;
+            if (data.length > 0) {
+                clips_url = Tv4.getUrl("clips") + data[0].program.nid;
+            } else {
+                clips_url = getLocation().replace(/.+(http.+)&history.+/, "$1")
+                clips_url = clips_url.replace("episode", "clips")
+            }
             var data = JSON.parse(syncHttpRequest(clips_url+"&per_page=1").data);
             if (data.total_hits > 0) {
                 clipToHtml(Tv4.fixThumb(data.results[0].program.program_image),
@@ -404,6 +410,7 @@ Tv4.getDetailsData = function(url, data) {
     var isChannel=false;
     var NotAvailable=false;
     var startTime=0;
+    var Show=null;
     try {
 
         data = JSON.parse(data.responseText).results[0];
@@ -428,6 +435,12 @@ Tv4.getDetailsData = function(url, data) {
         } else {
             Details.startTime = 0;
         }
+        if (data.program && !data.program.is_premium && Tv4.drmShows.indexOf(data.program.nid) == -1) {
+            Show = {name : data.program.name,
+                    // Will fail if there's only clips...
+                    url  : Tv4.getUrl("episodes") + data.program.nid
+                   }
+        }
         NotAvailable = IsLive && ((startTime - getCurrentDate()) > 60*1000);
 
     } catch(err) {
@@ -450,7 +463,8 @@ Tv4.getDetailsData = function(url, data) {
             duration      : VideoLength,
             description   : Description,
             not_available : NotAvailable,
-            thumb         : DetailsImgLink
+            thumb         : DetailsImgLink,
+            parent_show   : Show
     }
 };
 
