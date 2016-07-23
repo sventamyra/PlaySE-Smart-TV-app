@@ -380,6 +380,9 @@ Svt.decode_recommended = function (data, extra) {
                 LinkPrefix = '<a href="showList.html?name=';
                 if (Link.match(/\/genre\//))
                     LinkPrefix = '<a href="categoryDetail.html?category='
+                else {
+                    recommendedLinks.push(Link.replace(/.+\/([^\/]+)$/, "$1"))
+                }
             }
             toHtml({name:Name,
                     duration:0,
@@ -625,7 +628,7 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
         }
     }
     // Get Correct Tab
-    var videos;
+    var videos = [];
     for (var i=0; i < data.relatedVideoTabs.length; i++) {
         if (requested_season && requested_season != 0) {
             if (data.relatedVideoTabs[i].season == +requested_season) {
@@ -764,21 +767,32 @@ Svt.decode = function(data, filter, stripShow) {
         var IsRunning;
         var Season;
         var Episode;
-        var AllSameEpisode=true;
         var Variant;
         var SEASON_REGEXP = new RegExp("((s[^s]+song\\s*([0-9]+))\\s*-\\s*)?(.+)","i");
         var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|teckenspr[^k]+k|originalspr[^k]+k)","i");
         var Names = [];
         var Shows = [];
-        var AnyNonInfoEpisode = false;
+        var IgnoreEpisodes = false;
 
         if (stripShow) {
+            var Episodes = [];
             for (var k=0; k < data.length; k++) {
-                if (k == 0 && data[k].episodeNumber >= 0) {
-                    Episode = data[k].episodeNumber
-                } else if (k == 0 || Episode!=data[k].episodeNumber) {
-                    AllSameEpisode = false;
-                    break
+                if (data[k].episodeNumber >= 1) {
+                    if (Episodes[data[k].episodeNumber]) {
+                        Episodes[data[k].episodeNumber]++
+                    } else {
+                        Episodes[data[k].episodeNumber] = 1;
+                    }
+                } else {
+                    IgnoreEpisodes = true
+                }
+            }
+            if (!IgnoreEpisodes == 1) {
+                for (var k=0; k < Episodes.length; k++) {
+                    if (Episodes[k] > 1) {
+                        IgnoreEpisodes = true
+                        break;
+                    }
                 }
             }
         }
@@ -818,8 +832,12 @@ Svt.decode = function(data, filter, stripShow) {
             else if (data[k].slug)
                 Link = Svt.fixLink("/genre/" + data[k].slug)
 
-            if (filter && filter.indexOf(Link.replace(/.+\/video\/([0-9]+).*/, "$1")) != -1)
-                continue;
+            if (filter) {
+                if (filter.indexOf(Link.replace(/.+\/(video|klipp)\/([0-9]+).*/, "$2")) != -1)
+                    continue;
+                else if (filter.indexOf(Link.replace(/.+\/(video|klipp)\/[0-9]+\/([^\/]+)\/.+$/, "$2")) != -1)
+                    continue;
+            }
 
             ImgLink = Svt.getThumb(data[k]);
             IsLive = data[k].live && !data[k].broadcastEnded;
@@ -840,16 +858,17 @@ Svt.decode = function(data, filter, stripShow) {
             Season  = data[k].season;
             Episode = data[k].episodeNumber; // || Name.match(/avsnitt\s*([0-9]+)/i) || Description.match(/[Dd]el\s([0-9]+)/i);
             Variant = Name.match(VARIANT_REGEXP);
-            Variant = (Variant) ? Variant[1] : null;
-            AnyNonInfoEpisode = (AnyNonInfoEpisode) ? AnyNonInfoEpisode : !Svt.IsClip({link:Link}) && !Episode;
+            Variant = (Variant) ? Variant[1] : null;            
             
-            if (stripShow && !AllSameEpisode && !Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
-                Description = Name.replace(SEASON_REGEXP, "$4")
-                Description = Description.replace(VARIANT_REGEXP, "")
-                Name = Name.replace(SEASON_REGEXP, "$1Avsnitt " + Episode);
-                Name = (Variant) ? Name + " - " + Variant : Name;
-            } else if (stripShow) {
-                Description = "";
+            if (stripShow && !IgnoreEpisodes) {
+                if (!Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
+                    Description = Name.replace(SEASON_REGEXP, "$4")
+                    Description = Description.replace(VARIANT_REGEXP, "")
+                    Name = Name.replace(SEASON_REGEXP, "$1Avsnitt " + Episode);
+                    Name = (Variant) ? Name + " - " + Variant : Name;
+                } else {
+                    Description = "";
+                }
             }
             Names.push(Name);
             Shows.push({name:Name,
@@ -870,7 +889,7 @@ Svt.decode = function(data, filter, stripShow) {
             data[k] = "";
 	};
         if (stripShow) 
-            Svt.sortEpisodes(Shows, Names, AnyNonInfoEpisode);
+            Svt.sortEpisodes(Shows, Names, IgnoreEpisodes);
         for (var k=0; k < Shows.length; k++) {
             toHtml(Shows[k])
         };
@@ -879,7 +898,7 @@ Svt.decode = function(data, filter, stripShow) {
     }
 };
 
-Svt.sortEpisodes = function(Episodes, Names, AnyNonInfoEpisode) {
+Svt.sortEpisodes = function(Episodes, Names, IgnoreEpisodes) {
     Episodes.sort(function(a, b){
         if (Svt.IsClip(a) && Svt.IsClip(b)) {
             // Keep SVT sorting amongst clips
@@ -891,7 +910,7 @@ Svt.sortEpisodes = function(Episodes, Names, AnyNonInfoEpisode) {
             // Clips has lower prio
             return -1
         } else if (a.variant == b.variant) {
-            if (AnyNonInfoEpisode)
+            if (IgnoreEpisodes)
                 // Keep SVT sorting in case not all videos has an episod number.
                 return Names.indexOf(a.name) - Names.indexOf(b.name)
             else if (Svt.IsNewer(a,b))
