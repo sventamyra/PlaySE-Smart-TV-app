@@ -602,13 +602,17 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     data = Svt.decodeJson(data).context.dispatcher.stores;
     var seasons = []
     var has_clips = false
+    var has_zero_season = false
     data = data.VideoTitlePageStore.data
     if (!is_clips && !requested_season) {
         for (var i=0; i < data.relatedVideoTabs.length; i++) {
-            if (data.relatedVideoTabs[i].season >= 0) {
+            if (!has_zero_season && data.relatedVideoTabs[i].season > 0) {
                 seasons.push({season:data.relatedVideoTabs[i].season,
                               name  : data.relatedVideoTabs[i].name.trim()
                              });
+            } else if (data.relatedVideoTabs[i].season == 0) {
+                has_zero_season = true;
+                seasons = [];
             }
             if (!has_clips && data.relatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS")
                 has_clips = true
@@ -641,10 +645,15 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
                 break
             }
         } else {
-            if (data.relatedVideoTabs[i].type != "VIDEO_TYPE_CLIPS") {
-                videos = data.relatedVideoTabs[i].videos
-                break
-            }
+                if (has_zero_season) {
+                    if (data.relatedVideoTabs[i].key == "RELATED_VIDEO_TABS_LATEST") {
+                        videos = data.relatedVideoTabs[i].videos
+                        break;
+                    }
+                } else if (data.relatedVideoTabs[i].type != "VIDEO_TYPE_CLIPS") {
+                    videos = data.relatedVideoTabs[i].videos
+                    break
+                }
         }
     };
 

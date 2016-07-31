@@ -25,9 +25,10 @@ Main.onLoad = function(refresh)
     if (!refresh)
 	Header.display(document.title);
     if (!this.loaded) {
+        fixCss();
         $("#page-cover").hide();
         var model = document.getElementById("pluginObjectDEVICE").GetRealModel();
-        isEmulator = (model === "VALENCIA" || model === "SDK");
+        isEmulator = (model === "VALENCIA" || model === "SDK" | !model);
         deviceYear = getDeviceYear();
         if (deviceYear > 2011)
             LINE_LENGTH = 36;
@@ -35,6 +36,7 @@ Main.onLoad = function(refresh)
         loadingStart();
         Main.setClock();
         Main.startKeepAlive();
+        checkDateFormat();
         this.loaded = true;
 	Audio.init();
 	Audio.showMuteFooter();

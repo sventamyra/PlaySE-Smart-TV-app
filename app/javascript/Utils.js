@@ -16,6 +16,7 @@ var myUrls    = [];
 var myPos = null;
 var loadingTimer = 0;
 var detailsOnTop = false;
+var dateFormat = 0;
 
 setChannel = function(newChannel) {
     if (channel != newChannel || 
@@ -436,8 +437,16 @@ setDateOffset = function () {
                     )
 };
 
+checkDateFormat = function() {
+    if (isNaN(new Date("2016 07 25 22:00:00 +0200")))
+        dateFormat = 1;
+    else
+        dateFormat = 0;
+    alert("dateFormat:" + dateFormat);
+}
+
 timeToDate = function(timeString) {
-    if (deviceYear == 2012)
+    if (dateFormat == 1)
         timeString = timeString.replace(/-/g,"/").replace("T", " ").replace(/\+([0-9]+):([0-9]+)/,"+$1$2").replace("Z", "+0000")
     else
         timeString = timeString.replace(/-/g," ").replace("T", " ").replace(/\+/," +").replace("Z", " +00:00")
@@ -640,7 +649,10 @@ loadFinished = function(status, refresh) {
 }
 
 fixCss = function() {
-    if (deviceYear > 2011) {
+    if (deviceYear >= 2014) {
+        $('#footer-clock').css({"bottom":"16px"});
+        $('.confirmExit').css({"padding":"6px 10px"});
+    } else if (deviceYear > 2011) {
         $('.confirmExit').css({"padding":"10px", "padding-bottom":"5px"});
     };
 };
