@@ -1409,10 +1409,14 @@ Player.setSubtitleProperties = function() {
         $("#srtId").css("line-height", lineHeight + "%");
     else
         $("#srtId").css("line-height", "");
-    if (subBack)
-        $("#srtId").css("background-color", "rgba(0, 0, 0, 0.5)");
-    else
+    if (subBack) {
+        if (deviceYear >= 2014)
+            $("#srtId").css("background-color", "rgba(0, 0, 0, 0.7)");
+        else
+            $("#srtId").css("background-color", "rgba(0, 0, 0, 0.5)");
+    } else {
         $("#srtId").css("background-color", "");
+    }
 };
 
 Player.enableScreenSaver = function() {

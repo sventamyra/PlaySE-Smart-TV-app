@@ -100,7 +100,7 @@ Svt.redirectUrl = function(url) {
 
 Svt.addSections = function(data) {
     Svt.sections = [];
-    data = data.StartStore
+    data = data.StartPageStore
     var name, url;
     for (var key in data) {
         if (key.match(/Url$/) && !key.match(/live/i)) {
@@ -679,7 +679,7 @@ Svt.search = function(query, completeFun, url) {
 };
 
 Svt.decode_section = function (data, filter) {
-    Svt.decode(Svt.decodeJson(data).context.dispatcher.stores.GridStore.content, filter);
+    Svt.decode(Svt.decodeJson(data).context.dispatcher.stores.GridPageStore.content, filter);
 }
 
 Svt.decode_search = function (data) {
