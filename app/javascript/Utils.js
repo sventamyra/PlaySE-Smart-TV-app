@@ -525,6 +525,14 @@ requestUrl = function(url, cbSucces, extra) {
             tryCount : 0,
             retryLimit : 3,
 	    timeout: 15000,
+            beforeSend: function (request)
+            {
+                if (deviceYear == 2014 && extra.cookie) {
+                    extra.cookie = extra.cookie.replace(/ *;.*/,"")
+                    Log("Sending " + extra.cookie + " in Headers.");
+                    request.setRequestHeader("Cookie", extra.cookie)
+                }
+            },
             success: function(data, status, xhr)
             {
                 Log('Success:' + this.url);
