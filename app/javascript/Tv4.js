@@ -2,79 +2,82 @@ var TV4_DETAILS_IMG_SIZE="600x336";
 var Tv4 =
 {
     result:[],
-    drmShows:[],
-    updatingDrmShows:false
+    unavailableShows:[],
+    updatingUnavailableShows:false
 };
 
-Tv4.fetchDrmShows = function() {
-    var savedShows = Config.read("tv4DrmShows");
+Tv4.fetchUnavailableShows = function() {
+    if (Config.read("tv4DrmShows"))
+        Config.remove("tv4DrmShows");
+    var savedShows = Config.read("tv4UnavailableShows");
     var days = 24*3600*1000;
     var tsDiff = (savedShows) ? (getCurrentDate().getTime()-savedShows.ts)/days : null;
-    if (savedShows && tsDiff < 7) {
-        Tv4.drmShows = savedShows.shows.split(";");
-        Log("Found saved DRM shows, Days:" + Math.floor(tsDiff) + " length:" + Tv4.drmShows.length);
+    if (savedShows && tsDiff < 7 && tsDiff >= 0) {
+        Tv4.unavailableShows = savedShows.shows.split(";");
+        Log("Found saved unavailable shows, Days:" + Math.floor(tsDiff) + " length:" + Tv4.unavailableShows.length);
     } else {
-        Tv4.refreshdDrmShows();
+        Tv4.refreshdUnavailableShows();
     }
 }
 
-Tv4.refreshdDrmShows = function() {
-    if (Tv4.updatingDrmShows)
+Tv4.refreshdUnavailableShows = function() {
+    if (Tv4.updatingUnavailableShows)
         // Already updating
         return;
-    Tv4.updatingDrmShows = true;
+    Tv4.updatingUnavailableShows = true;
     asyncHttpRequest(Tv4.getUrl("allShows"),
                      function(data) {
-                         Tv4.drmShows = [];
+                         Tv4.unavailableShows = [];
                          data = JSON.parse(data);
                          var i = 0;
-                         return Tv4.checkDrm(i, data.results);
+                         return Tv4.checkShows(i, data.results);
                      },
                      true
                     );
 };
 
-Tv4.checkDrm = function(i, data) {
+Tv4.checkShows = function(i, data) {
     if (i < data.length)
     {
         asyncHttpRequest(Tv4.getUrl("episodes") + data[i].nid,
                          function(episode) {
                              episode = JSON.parse(episode).results;
-                             var anyNonDrm = false;
+                             var anyViewable = false;
                              for (var k=0; k < episode.length; k++) {
                                  if (Tv4.isViewable(episode[k])) {
-                                     anyNonDrm = true
+                                     anyViewable = true
                                      break;
                                  }
                              }
-                             if (!anyNonDrm) {
-                                 Tv4.drmShows.push(data[i].nid)
+                             if (!anyViewable) {
+                                 Tv4.unavailableShows.push(data[i].nid)
                              }
-                             return Tv4.checkDrm(i+1, data);
+                             return Tv4.checkShows(i+1, data);
                          },
                          true
                         );
     }
     else {
-        Log("Saving DRM shows, length:" + Tv4.drmShows.length);
-        Config.save("tv4DrmShows", {ts:getCurrentDate().getTime(), shows:Tv4.drmShows.join(";")});
-        Tv4.updatingDrmShows = false;
+        Log("Saving unavailable shows, length:" + Tv4.unavailableShows.length);
+        Config.save("tv4UnavailableShows", {ts:getCurrentDate().getTime(), shows:Tv4.unavailableShows.join(";")});
+        Tv4.updatingUnavailableShows = false;
         data = null;
     }
 }
 
 Tv4.getUrl = function(name) {
     var type = "episode"
+    var drm = (deviceYear > 2011) ? "" : "&is_drm_protected=false"
     switch (name)
     {
     case "main":
-        Tv4.fetchDrmShows();
+        Tv4.fetchUnavailableShows();
     case "PopularClips.html":
         if (name == "PopularClips.html") {
             document.title = 'Populära Klipp'; 
             type = "clip"
         }
-        return 'http://webapi.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type;
+        return 'http://webapi.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
         break;
 
     case "live":
@@ -99,7 +102,7 @@ Tv4.getUrl = function(name) {
     case "clips":
         type = "clip"
     case "episodes":
-        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=' + type + '&node_nids='
+        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=' + type + drm + '&node_nids='
         break;
 
     case "Latest.html":
@@ -114,14 +117,14 @@ Tv4.getUrl = function(name) {
         endDate.setDate(endDate.getDate() + 1)
         var startDate = getCurrentDate();
         startDate.setDate(startDate.getDate() - 7);
-        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&platform=web&is_premium=false&premium=false&sort=broadcast_date_time&sort_order=desc&per_page=100&broadcast_from=' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&type=' + type;
+        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&platform=web&is_premium=false&premium=false&sort=broadcast_date_time&sort_order=desc&per_page=100&broadcast_from=' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&type=' + type + drm;
         break;
 
     case "queryShow":
         return 'http://webapi.tv4play.se/play/programs?per_page=100&platform=web&is_premium=false&q='
 
     case "query":
-        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&per_page=200&is_premium=false&platform=web&q='
+        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&per_page=200&is_premium=false&platform=web' + drm + '&q='
 
     default:
         return name;
@@ -208,7 +211,6 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
         var Episode=null;
 
         Tv4.result = [];
-
         data = JSON.parse(data).results;
 
         for (var k=0; k < data.length; k++) {
@@ -361,8 +363,8 @@ Tv4.decode_shows = function(data, query, completeFun) {
             Name = data[k].name;
             if (queryTest && !queryTest.test(Name))
                 continue;
-            if (Tv4.drmShows.indexOf(data[k].nid) != -1)
-                // Only drm episodes
+            if (Tv4.unavailableShows.indexOf(data[k].nid) != -1)
+                // Only drm/premium episodes
                 continue;
             ImgLink = Tv4.fixThumb(data[k].program_image);
             Link = Tv4.getUrl("episodes") + data[k].nid
@@ -435,7 +437,7 @@ Tv4.getDetailsData = function(url, data) {
         } else {
             Details.startTime = 0;
         }
-        if (data.program && !data.program.is_premium && Tv4.drmShows.indexOf(data.program.nid) == -1) {
+        if (data.program && !data.program.is_premium && Tv4.unavailableShows.indexOf(data.program.nid) == -1) {
             Show = {name : data.program.name,
                     // Will fail if there's only clips...
                     url  : Tv4.getUrl("episodes") + data.program.nid
@@ -512,26 +514,40 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
 
     var reqUrl;
     if (isLive)
-        reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/html5/asset/$1/play?protocol=hls");
+        reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/html5/asset/$1/play.json?protocol=hls");
     else
-        reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play?protocol=hls&videoFormat=MP4+WEBVTT");
+        reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play.json?protocol=hls&videoFormat=mp4+ism+webvtt");
         
     requestUrl(reqUrl,
                function(status, data)
                {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
-                       var stream;
-                       var srtUrl = data.responseText.match(/(http.+\.webvtt[^<]*)/);
-                       if (isLive) 
-                           stream = data.responseText.match(/(http.+\.m3u8(.*hdnea)?[^<]*)/); 
-                       else
-                           stream = data.responseText.match(/(http.+\.mp4.+\.m3u8[^<]*)/);
+                       var stream=null, license=null, srtUrl=null;
+                       data = JSON.parse(data.responseText).playback.items.item;
+                       if (data.length == undefined)
+                           data = [data]
+                       for (var i = 0; i < data.length; i++) {
+                           if (data[i].mediaFormat == "webvtt") {
+                               srtUrl = data[i].url
+                           } else if (!stream && data[i].mediaFormat == "ism") {
+                               stream = data[i].url
+                               for (var key in data[i].license) {
+                                   if (key.match(/uri/)) {
+                                       license = data[i].license[key];
+                                       if (!license.match(/^http/))
+                                           license = "https://prima.tv4play.se" + license
+                                       break
+                                   }
+                               }
+                           } else if (data[i].mediaFormat == "mp4" ||
+                                      data[i].mediaFormat == "livehls") {
+                               stream = data[i].url
+                           }
+                       }
                        if (!stream) {
                            $('.bottomoverlaybig').html('Not Available!');
                        }
-                       stream = stream[1];
-                       srtUrl = (srtUrl && srtUrl.length > 0) ? srtUrl[1] : null;
-                       Resolution.getCorrectStream(stream, false, srtUrl);
+                       Resolution.getCorrectStream(stream, srtUrl, {license:license});
                    }
                }
               );
@@ -545,14 +561,15 @@ Tv4.fixThumb = function(thumb, size) {
 };
 
 Tv4.isViewable = function (data, is_live) {
-    if (data.is_premium || data.is_drm_protected || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free))
+    if (data.is_premium || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free || (data.is_drm_protected && deviceYear < 2012)))
         return false;
     else {
         if (is_live) {
             // We want to see what's ahead...
             return true;
-        } else
+        } else {
             return getCurrentDate() > timeToDate(data.broadcast_date_time);
+        }
     }
 }
 

@@ -442,7 +442,7 @@ checkDateFormat = function() {
         dateFormat = 1;
     else
         dateFormat = 0;
-    alert("dateFormat:" + dateFormat);
+    Log("dateFormat:" + dateFormat);
 }
 
 timeToDate = function(timeString) {

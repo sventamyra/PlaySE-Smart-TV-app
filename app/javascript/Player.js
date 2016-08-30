@@ -96,13 +96,16 @@ Player.init = function()
   //  this.setWindow();
     
     this.plugin.OnCurrentPlayTime = 'Player.setCurTime';
-    this.plugin.OnStreamInfoReady = 'Player.onStreamInfoReady';
-    this.plugin.OnBufferingStart = 'Player.onBufferingStart';
-    this.plugin.OnBufferingProgress = 'Player.onBufferingProgress';
-    this.plugin.OnBufferingComplete = 'Player.onBufferingComplete';           
-    this.plugin.OnRenderingComplete  = 'Player.onRenderingComplete'; 
+    this.plugin.OnStreamInfoReady = 'Player.OnStreamInfoReady';
+    this.plugin.OnBufferingStart = 'Player.OnBufferingStart';
+    this.plugin.OnBufferingProgress = 'Player.OnBufferingProgress';
+    this.plugin.OnBufferingComplete = 'Player.OnBufferingComplete';           
+    this.plugin.OnRenderingComplete  = 'Player.OnRenderingComplete'; 
     this.plugin.OnNetworkDisconnected = 'Player.OnNetworkDisconnected';
-    this.plugin.OnConnectionFailed = 'Player.OnNetworkDisconnected';
+    this.plugin.OnConnectionFailed = 'Player.OnConnectionFailed';
+    this.plugin.OnStreamNotFound   = 'Player.OnStreamNotFound';
+    this.plugin.OnRenderError      = 'Player.OnRenderError';
+    this.plugin.OnAuthenticationFailed = 'Player.OnAuthenticationFailed';
     return success;
 };
 
@@ -153,20 +156,26 @@ Player.setFullscreen = function()
     this.plugin.SetDisplayArea(0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
 };
 
-Player.setVideoURL = function(url, srtUrl, bw)
+Player.setVideoURL = function(url, srtUrl, extra)
 {
-
+    if (!extra) extra  = {};
     if (srtUrl && srtUrl != "") {
         this.fetchSubtitle(srtUrl);
     }
 
-    if (bw && +bw >= 1000000) {
-        this.bw = " " + (+bw/1000000).toFixed(1) + " mbps";
-    } else if (bw) {
-        this.bw = " " + Math.round(+bw/1000) + " kbps";
+    if (extra.bw && +extra.bw >= 1000000) {
+        this.bw = " " + (+extra.bw/1000000).toFixed(1) + " mbps";
+    } else if (extra.bw) {
+        this.bw = " " + Math.round(+extra.bw/1000) + " kbps";
     } else
         this.bw = "";
 
+    if (extra.license && deviceYear >= 2011)
+    {
+        Log("LICENSE URL: " + extra.license)
+        this.plugin.InitPlayer(videoUrl);
+        this.plugin.SetPlayerProperty(4, extra.license, extra.license.length);
+    }
     videoUrl = url;
     Log("VIDEO URL: " + videoUrl);
 };
@@ -241,13 +250,6 @@ Player.playVideo = function()
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.state = this.PLAYING;
-        if (channel == "svt" && videoUrl.indexOf("=HLS") != -1) {
-            var hls_version = Player.getHlsVersion(videoUrl.replace(/\|.+/,""));
-            if (hls_version && hls_version > 3) {
-                // Unsupported 
-                $('.bottomoverlaybig').html('HLS Version ' + hls_version + ' unsupported.');
-            }
-        }
         this.setWindow();
         
         this.plugin.SetInitialBuffer(640*1024);
@@ -261,7 +263,7 @@ Player.playVideo = function()
             $('.muteoverlay').hide();
             smute = 0;
         }
-        this.plugin.Play( videoUrl );
+        this.plugin.Play(videoUrl);
         // work-around for samsung bug. Video player start playing with sound independent of the value of GetUserMute() 
         // GetUserMute() will continue to have the value of 1 even though sound is playing
         // so I set SetUserMute(0) to get everything synced up again with what is really happening
@@ -440,7 +442,12 @@ Player.getState = function()
 
 // Global functions called directly by the player 
 
-Player.onBufferingStart = function()
+Player.SetBufferingText = function(percent) {
+    var buff = (Language.getisSwedish()) ? 'Buffrar' : 'Buffering';
+    $('.bottomoverlaybig').html(buff + ': ' + percent + '%');
+}
+
+Player.OnBufferingStart = function()
 {
     Log("onBufferingStart");
     loadingStart();
@@ -448,32 +455,22 @@ Player.onBufferingStart = function()
     subtitlesEnabled = this.getSubtitlesEnabled();
     this.setSubtitleProperties();
     this.showControls();
-	if(Language.getisSwedish()){
-	buff='Buffrar';
-	}else{
-	buff='Buffering';
-	}
-	$('.bottomoverlaybig').html(buff+': 0%');
+    Player.SetBufferingText(0);
 };
 
-Player.onBufferingProgress = function(percent)
+Player.OnBufferingProgress = function(percent)
 {
     Log("onBufferingProgress");
     // Ignore if received without onBufferingStart. Seems sometimes 
     // it's received after onBufferingComplete.
     if (!Player.infoActive)
         return
-    if(Language.getisSwedish()){
-	buff='Buffrar';
-    }else{
-	buff='Buffering';
-    }
     this.showControls();
-    $('.bottomoverlaybig').html(buff+': ' + percent + '%');
+    Player.SetBufferingText(percent);
     Player.refreshDetailsTimer();
 };
 
-Player.onBufferingComplete = function()
+Player.OnBufferingComplete = function()
 {
     Log("onBufferingComplete");
         loadingStop();
@@ -489,7 +486,7 @@ Player.onBufferingComplete = function()
    //$('.loader').css("display", "none");
 };
 
-Player.onRenderingComplete = function()
+Player.OnRenderingComplete = function()
 {
     Log("onRenderingComplete");
 	Player.stopVideo();
@@ -594,7 +591,7 @@ Player.setCurTime = function(time)
         Player.refreshStartData(Details.fetchedDetails);
         // Seem onStreamInfoReady isn't invoked in case new stream in playlist is chosen.
         if (this.plugin.GetVideoWidth() != videoWidth) {
-            Player.onStreamInfoReady();
+            Player.OnStreamInfoReady();
             Player.updateTopOSD()
         }
 };
@@ -635,7 +632,7 @@ Player.updateSeekBar = function(time){
 	
 }; 
 
-Player.onStreamInfoReady = function()
+Player.OnStreamInfoReady = function()
 {
     videoWidth = this.plugin.GetVideoWidth();
     this.setTotalTime();
@@ -698,42 +695,75 @@ Player.showDetails = function()
     }
 };
 
-Player.OnNetworkDisconnected = function()
+Player.OnConnectionFailed = function()
 {
+    Player.OnNetworkDisconnected(true);
+};
+
+Player.OnNetworkDisconnected = function(conn_failed)
+{
+    if (conn_failed)
+        Log("OnConnectionFailed");
+    else
+        Log("OnNetworkDisconnected");
+
+    if (!reloaded) {
+        // Check if we should reload or not.
+        loadingStart();
+        $.ajax({type: 'GET',
+	        // url: 'http://188.40.102.5/recommended.ashx',
+                url: 'http://www.svtplay.se',
+	        timeout: 5000,
+	        success: function(data, status, xhr)
+	        {
+		    Log('Success:' + this.url);
+                    if (channel == "dplay")
+                        Dplay.refreshPlayUrl(function(){Player.reloadVideo()});
+                    else
+                        Player.reloadVideo();
+	        },
+	        error: function(XMLHttpRequest, textStatus, errorThrown)
+	        {
+		    Log('Failure:' + this.url);
+                    Player.PlaybackFailed('Network Error!');
+                    
+	        }
+	       });
+    } else {
+        Player.PlaybackFailed('Network Error!');
+    }
+
+};
+
+Player.OnStreamNotFound = function()
+{
+    Player.PlaybackFailed('OnStreamNotFound');
+};
+
+Player.OnRenderError = function(number)
+{
+    var text = "Can't play this. Error: " + number;
+    if(videoUrl.indexOf("=HLS") != -1 && videoUrl.indexOf(":10666/") == -1) {
+        var hls_version = Player.getHlsVersion(videoUrl.replace(/\|.+/,""));
+        if (hls_version && hls_version > 3) {
+            text = 'HLS Version ' + hls_version + ' unsupported.';
+        }
+    }
+    Player.PlaybackFailed(text);
+};
+
+Player.OnAuthenticationFailed = function()
+{
+    Player.PlaybackFailed('OnAuthenticationFailed');
+};
+
+Player.PlaybackFailed = function(text)
+{
+        Log(text); 
         loadingStop();
 	Player.showControls();
         Player.enableScreenSaver();
-	$('.bottomoverlaybig').html('Network Error!');
-	// just to test the network so that we know when to resume
-	 $.ajax(
-			    {
-			        type: 'GET',
-			        // url: 'http://188.40.102.5/recommended.ashx',
-                                url: 'http://www.svtplay.se/populara?sida=1',
-					timeout: 10000,
-			        success: function(data, status, xhr)
-			        {
-                                    if (xhr.responseText.split("</article>").length > 1)
-                                    {
-			        	Log('Success:' + this.url);
-                                        if (!reloaded) {
-                                            if (channel == "dplay")
-                                                Dplay.refreshPlayUrl(function(){Player.reloadVideo()});
-                                            else
-                                                Player.reloadVideo();
-                                        }
-			            } else {
-			        	Log('Failure');
-			        	$.ajax(this);
-			            }
-			        },
-			        error: function(XMLHttpRequest, textStatus, errorThrown)
-			        {
-			        		Log('Failure');
-			        		$.ajax(this);
-         
-			        }
-			    });
+	$('.bottomoverlaybig').html(text);
 };
 
 Player.GetDuration = function()
@@ -908,11 +938,6 @@ Player.startPlayer = function(url, isLive, startTime)
     Player.startTime = 0;
     Player.offset = 0;
     Player.durationOffset = 0;
-    if(Language.getisSwedish()){
-	buff='Buffrar';
-    }else{
-	buff='Buffering';
-    }
 
     if (isLive && +startTime != 0) {
         Player.updateOffset(startTime);
@@ -931,7 +956,7 @@ Player.startPlayer = function(url, isLive, startTime)
     $('#outer').hide();
     this.hideDetailedInfo();
     this.showControls();
-    $('.bottomoverlaybig').html(buff+': 0%');
+    $('.bottomoverlaybig').html('');
     
     var oldKeyHandleID = Buttons.getKeyHandleID();
     Buttons.setKeyHandleID(2);
@@ -1095,7 +1120,8 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                            } 
 
 		           if(videoUrl.indexOf('.m3u8') >= 0){
-		               Resolution.getCorrectStream(videoUrl, isLive, srtUrl);
+                               // videoUrl = videoUrl + "&set-akamai-hls-revision=1"
+		               Resolution.getCorrectStream(videoUrl, srtUrl, {isLive:isLive});
 		           }
                            else{
 		               gurl = gurl + '?type=embed';
