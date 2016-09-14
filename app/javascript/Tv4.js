@@ -405,13 +405,12 @@ Tv4.getDetailsData = function(url, data) {
     var DetailsImgLink="";
     var AirDate="";
     var VideoLength = "";
-    var IsLive;
     var AvailDate=null;
     var Description="";
     var onlySweden="";
     var isChannel=false;
     var NotAvailable=false;
-    var startTime=0;
+    var isLive=false;
     var Show=null;
     try {
 
@@ -423,19 +422,17 @@ Tv4.getDetailsData = function(url, data) {
         Description  = (data.description) ? data.description.trim() : "";
         AirDate = timeToDate(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
-        Details.duration = VideoLength;
-        IsLive = data.is_live;
+        isLive = data.is_live;
         AvailDate = data.availability.human.match(/\(([^)]+ dag[^) ]+)/);
         AvailDate = (AvailDate) ? AvailDate[1] : data.availability.availability_group_free + ' dagar'
         AvailDate = (AvailDate.match(/dagar$/)) ? AvailDate + " kvar" : AvailDate;
         if (data.expire_date_time)
             AvailDate = dateToString(timeToDate(data.expire_date_time),"-") + ' (' + AvailDate + ')';
         
-        if (IsLive) {
-            startTime = timeToDate(data.broadcast_date_time);
-            Details.startTime = dateToClock(startTime);
+        if (isLive) {
+            NotAvailable = ((AirDate - getCurrentDate()) > 60*1000);
         } else {
-            Details.startTime = 0;
+            NotAvailable = false;
         }
         if (data.program && !data.program.is_premium && Tv4.unavailableShows.indexOf(data.program.nid) == -1) {
             Show = {name : data.program.name,
@@ -443,8 +440,6 @@ Tv4.getDetailsData = function(url, data) {
                     url  : Tv4.getUrl("episodes") + data.program.nid
                    }
         }
-        NotAvailable = IsLive && ((startTime - getCurrentDate()) > 60*1000);
-
     } catch(err) {
         Log("Tv4.getDetailsData Exception:" + err.message);
         Log("Name:" + Name);
@@ -458,10 +453,10 @@ Tv4.getDetailsData = function(url, data) {
     data = null;
     return {name          : Name,
             title         : Title,
-            is_live       : IsLive,
+            is_live       : isLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : Details.startTime,
+            start_time    : AirDate,
             duration      : VideoLength,
             description   : Description,
             not_available : NotAvailable,
@@ -512,11 +507,7 @@ Tv4.getDetailsUrl = function(streamUrl) {
 
 Tv4.getPlayUrl = function(streamUrl, isLive) {
 
-    var reqUrl;
-    if (isLive)
-        reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/html5/asset/$1/play.json?protocol=hls");
-    else
-        reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play.json?protocol=hls&videoFormat=mp4+ism+webvtt");
+    var reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play.json?protocol=hls&videoFormat=mp4+ism+webvtt+livehls");
         
     requestUrl(reqUrl,
                function(status, data)

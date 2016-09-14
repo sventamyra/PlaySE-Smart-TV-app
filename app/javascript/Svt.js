@@ -100,7 +100,7 @@ Svt.redirectUrl = function(url) {
 
 Svt.addSections = function(data) {
     Svt.sections = [];
-    data = data.StartPageStore
+    data = data.startPage.content
     var name, url;
     for (var key in data) {
         if (key.match(/Url$/) && !key.match(/live/i)) {
@@ -173,8 +173,8 @@ Svt.getDetailsData = function(url, data) {
     var startTime=0;
     var endTime=0;
     var Show = null;
+    var isLive = false;
     try {
-
         if (url.indexOf("oppetarkiv") > -1) {
             data = data.responseText.split("<aside class=\"svtoa-related svt-position-relative")[0];
             Name = $($(data).find('span.svt-heading-s')[0]).text();
@@ -188,13 +188,13 @@ Svt.getDetailsData = function(url, data) {
 	    onlySweden = ($(data).find('span').filter(function() {
                 return $(this).attr('class') == "svtoa-icon-geoblock svtIcon";
             }).length > 0);
+            isLive = false;
         } else {
             data = Svt.decodeJson(data);
             if (url.indexOf("/kanaler/") > -1) {
-                data = data.context.dispatcher.stores.ScheduleStore;
-	        for (var i = 0; i < data.channels.length; i++) {
-                    if (data.channels[i].title == data.activeChannelId) {
-                        data = data.channels[i];
+	        for (var i = 0; i < data.channels.schedule.length; i++) {
+                    if (data.channels.schedule[i].name == data.metaData.title) {
+                        data = data.channels.schedule[i];
                         break;
                     }
                 }
@@ -214,10 +214,7 @@ Svt.getDetailsData = function(url, data) {
                 isLive = true;
                 NotAvailable = (startTime - getCurrentDate()) > 60*1000;
             } else {
-                data = data.context.dispatcher.stores;
-                Name = data.MetaStore.title.trim();
-                Description = data.MetaStore.description.trim();
-                data = data.VideoTitlePageStore.data;
+                data = data.context.dispatcher.stores.VideoTitlePageStore.data;
                 if (data.titlePage && data.titlePage.title.trim().toLowerCase() != data.titlePage.category.trim().toLowerCase()) {
                     
                     Show = {name : data.titlePage.title.trim(),
@@ -227,6 +224,9 @@ Svt.getDetailsData = function(url, data) {
                 data = data.video;
                 if (data.programTitle == data.title)
                     Name = data.title;
+                else
+                    Name = data.programTitle + " - " + data.title;
+                Description = data.description.trim();
                 Title = Name;
                 ImgLink = Svt.getThumb(data, "large");
                 if (data.broadcastDate)
@@ -257,11 +257,6 @@ Svt.getDetailsData = function(url, data) {
 	        onlySweden = data.onlyAvailableInSweden;
             }
             VideoLength = dataLengthToVideoLength(null,VideoLength)
-            Details.duration = VideoLength;
-            if ((isChannel || (isLive && deviceYear == 2013)))
-                Details.startTime = dateToClock(startTime);
-            else 
-                Details.startTime = 0;
 	    // if (onlySweden != "false" && onlySweden != false) {
 	    //     //proxy = 'http://playse.kantaris.net/?mode=native&url=';
 	    //     $.getJSON( "http://smart-ip.net/geoip-json?callback=?",
@@ -290,7 +285,7 @@ Svt.getDetailsData = function(url, data) {
             is_live       : isLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : Details.startTime,
+            start_time    : startTime,
             duration      : VideoLength,
             description   : Description,
             not_available : NotAvailable,
@@ -343,7 +338,13 @@ Svt.getShowData = function(url, data) {
 };
 
 Svt.decodeJson = function(data) {
-    data = data.responseText.split('root\["__svtplay"\]')[1]
+    data = data.responseText.split("root\['__svtplay']")
+    if (data.length > 1 && !data[1].match(/"stores":{}/)) {
+        data = data[1]
+    } else {
+        data = data.join("").split("root\['__reduxStore']")[1]
+    }
+    data = data.split(';')[0] 
     data = data.replace(/^[^{]*{/, "{");
     data = data.replace(/;$/, "");
     return JSON.parse(data)
@@ -362,10 +363,10 @@ Svt.decode_recommended = function (data, extra) {
         var recommendedLinks = [];
 
         if (!extra.json) {
-            data = Svt.decodeJson(data).context.dispatcher.stores;
+            data = Svt.decodeJson(data);
             if (extra && extra.addSections)
                 Svt.addSections(data) 
-            data = data.DisplayWindowStore.start_page ;
+            data = data.displayWindow.start_page;
         }
 
         for (var k=0; k < data.length; k++) {
@@ -410,7 +411,7 @@ Svt.decodeCategories = function (data) {
         var Link;
         var ImgLink;
 
-        data = Svt.decodeJson(data).context.dispatcher.stores.ProgramsStore;
+        data = Svt.decodeJson(data).programsPage.content;
 
         switch (Svt.getCategoryIndex().current) {
         case 0:
@@ -527,16 +528,16 @@ Svt.toggleBButtonForCategoryDetail = function() {
 };
 
 Svt.decode_category = function (data) {
-    data = Svt.decodeJson(data).context.dispatcher.stores;
+    data = Svt.decodeJson(data);
     Svt.category_details = [];
     Svt.category_detail_max_index = 0;
 
-    var main_name = data.ClusterStore.name.trim()
+    var main_name = data.clusterPage.content.clusterName.trim()
     var popular   = {};
     var current;
 
-    for (var key in data.DisplayWindowStore) {
-        if (data.DisplayWindowStore[key].length > 0) {
+    for (var key in data.displayWindow) {
+        if (data.displayWindow[key].length > 0) {
             popular.name = main_name + " - Rekommenderat";
             popular.section = "Rekommenderat";
             popular.recommended = true;
@@ -544,22 +545,22 @@ Svt.decode_category = function (data) {
         }
     };
 
-    if (data.ClusterStore.tabs) {
-        for (var k=0; k < data.ClusterStore.tabs.length; k++) {
-            if (data.ClusterStore.tabs[k].name.match(/^Popul/)) {
+    if (data.clusterTabs) {
+        for (var k=0; k < data.clusterTabs.length; k++) {
+            if (data.clusterTabs[k].name.match(/^Popul/)) {
                 // Popular is special and merged with recommended
-                popular.name = main_name + " - " + data.ClusterStore.tabs[k].name.trim();
-                popular.section = data.ClusterStore.tabs[k].name.trim();
+                popular.name = main_name + " - " + data.clusterTabs[k].name.trim();
+                popular.section = data.clusterTabs[k].name.trim();
                 popular.tab_index = k;
             } else {
-                Svt.category_details.push({name:      main_name + " - " + data.ClusterStore.tabs[k].name.trim(),
-                                           section: data.ClusterStore.tabs[k].name.trim(),
+                Svt.category_details.push({name:      main_name + " - " + data.clusterTabs[k].name.trim(),
+                                           section: data.clusterTabs[k].name.trim(),
                                            tab_index: k
                                           });
             }
         }
     };
-    if (data.ClusterStore.relatedClusters.length > 0) {
+    if (data.clusterPage.content.relatedClusters.length > 0) {
         Svt.category_details.push({name   : main_name + " - Relaterat",
                                    section: "Relaterat",
                                    related: true
@@ -576,24 +577,24 @@ Svt.decode_category = function (data) {
     current = Svt.category_details[Svt.getCategoryDetailIndex().current];
     var recommendedLinks = []
     if (current.main) {
-        if (data.ClusterStore.contents) {
+        if (data.clusterPage.content.contents) {
             alert("CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!")
-            Svt.decode(data.ClusterStore.contents)
+            Svt.decode(data.clusterPage.content.contents)
         }
-        if (data.ClusterStore.titles)
-            Svt.decode(data.ClusterStore.titles)
-        if (Svt.category_detail_max_index == 0 && data.ClusterStore.clips)
-            Svt.decode(data.ClusterStore.clips)
+        if (data.clusterPage.content.titles)
+            Svt.decode(data.clusterPage.content.titles)
+        if (Svt.category_detail_max_index == 0 && data.clusterPage.content.clips)
+            Svt.decode(data.clusterPage.content.clips)
     } else if (current.recommended) {
-        for (var key in data.DisplayWindowStore) {
-            recommendedLinks = recommendedLinks.concat(Svt.decode_recommended(data.DisplayWindowStore[key], {json:true}));
+        for (var key in data.displayWindow) {
+            recommendedLinks = recommendedLinks.concat(Svt.decode_recommended(data.displayWindow[key], {json:true}));
         }
     } else if (current.related) {
-        Svt.decode(data.ClusterStore.relatedClusters);
+        Svt.decode(data.clusterPage.content.relatedClusters);
     }
         
     if (current.tab_index >= 0)
-        Svt.decode(data.ClusterStore.tabs[current.tab_index].content, recommendedLinks);
+        Svt.decode(data.clusterTabs[current.tab_index].content, recommendedLinks);
 
     Svt.toggleBButton();
 }
@@ -679,13 +680,13 @@ Svt.search = function(query, completeFun, url) {
 };
 
 Svt.decode_section = function (data, filter) {
-    Svt.decode(Svt.decodeJson(data).context.dispatcher.stores.GridPageStore.content, filter);
+    Svt.decode(Svt.decodeJson(data).gridPage.content, filter);
 }
 
 Svt.decode_search = function (data) {
     try {
         var keys = [];
-        data = Svt.decodeJson(data).context.dispatcher.stores.SearchStore;
+        data = Svt.decodeJson(data).searchResult;
         for (var key in data){
             if (!data[key][0] || (!data[key][0].contentType && !data[key][0].name))
                 continue;
@@ -733,7 +734,7 @@ Svt.decodeChannels = function(data) {
         var IsRunning;
         var BaseUrl = 'http://www.svtplay.se/kanaler';
 
-        data = Svt.decodeJson(data).context.dispatcher.stores.ScheduleStore.channels;
+        data = Svt.decodeJson(data).channels.schedule;
         for (var k=0; k < data.length; k++) {
 
             Name = data[k].title.trim();

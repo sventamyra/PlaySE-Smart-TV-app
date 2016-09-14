@@ -491,8 +491,10 @@ Buttons.keyHandleForPlayer = function(){
 	Player.skipBackwardVideo();
 	break;
     case tvKey.KEY_PAUSE:
-    case tvKey.KEY_ENTER:
 	Player.togglePause();
+	break;
+    case tvKey.KEY_ENTER:
+	Player.keyEnter();
 	break;
     case tvKey.KEY_FF:
 	Player.skipForwardVideo();
@@ -531,9 +533,10 @@ Buttons.keyHandleForPlayer = function(){
 	break;
     case tvKey.KEY_RETURN:
 	widgetAPI.blockNavigation(event); 
-        Player.returnKey();
+        Player.keyReturn();
 	break;
     case tvKey.KEY_EXIT:
+        //Internet/Smart Hub
     case tvKey.KEY_INFOLINK:
     case tvKey.KEY_HOME:
     case tvKey.KEY_12:
@@ -751,14 +754,15 @@ Buttons.playItem = function() {
     var starttime    = 0;
     var itemLink     = itemSelected.find('.ilink').attr("href")
 
-    if (notAvailable)
+    if (notAvailable) {
         // Not available yet
         return -1;
+    }
     if (isLive) {
         if (itemSelected.html().indexOf('bottomoverlay') == -1) {
             starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/);
             starttime = (starttime) ? starttime[1] : 0;
-        } else if (deviceYear == 2013 && itemSelected.html().indexOf('bottomoverlayred') != -1) {
+        } else if (itemSelected.html().indexOf('bottomoverlayred') != -1) {
             starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/);
             starttime = (starttime) ? starttime[1] : 0;
         }
@@ -902,8 +906,8 @@ Buttons.runNextItem = function(direction, play) {
             Details.refresh(play);
         }
         if (play) {
-            Player.stopVideo();
-            this.playItem()
+            Player.stopVideo(true);
+            this.playItem();
         }
 
     } else {

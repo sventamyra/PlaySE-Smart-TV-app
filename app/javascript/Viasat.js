@@ -595,8 +595,6 @@ Viasat.getDetailsData = function(url, data) {
         else
 	    Description = data.summary;
 
-        Details.duration = VideoLength;
-        Details.startTime = 0;
         if (data._embedded && data._embedded.format) {
             Show = {name : data._embedded.format.title,
                     url  : data._embedded.format._links.seasons.href.replace("https", "http")
@@ -614,7 +612,7 @@ Viasat.getDetailsData = function(url, data) {
     data = null;
     return {name          : Name,
             title         : Title,
-            is_live       : isLive,
+            is_live       : false,
             air_date      : AirDate,
             avail_date    : AvailDate,
             start_time    : 0,

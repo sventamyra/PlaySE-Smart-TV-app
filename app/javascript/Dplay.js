@@ -402,20 +402,28 @@ Dplay.decode = function(data, target, stripShow, completeFun, onlySave) {
                     Description = data[k].description.trim();
                 }
                 Duration = (data[k].duration)/1000;
+                if (!Duration && data[k].live) {
+                    Duration = (timeToDate(data[k].live.end)-timeToDate(data[k].live.start))/1000;
+                }
                 ImgLink = Dplay.fixThumb(data[k].thumbnail_image.file);
                 AirDate = data[k].first_run;
                 Link = Dplay.makeApiUrl("/videos/" + data[k].id);
                 Episode = data[k].episode_number
-                Dplay.other_result.push({name:Name, 
-                                          episode:Episode,
-                                          link:Link, 
-                                          thumb:ImgLink, 
-                                          duration:Duration, 
-                                          description:Description,
-                                          airDate:AirDate,
-                                          isFollowUp:data[k].video_type.match(/FOLLOWUP/)
-                                         }
-                                        );
+                Dplay.other_result.push(
+                    {name:Name, 
+                     episode:Episode,
+                     link:Link, 
+                     thumb:ImgLink, 
+                     duration:Duration, 
+                     description:Description,
+                     airDate:AirDate,
+                     isFollowUp:data[k].video_type.match(/FOLLOWUP/),
+                     isLive : data[k].live,
+                     startTime : (data[k].live) ? timeToDate(data[k].live.start) : null,
+                     // Non-running live shows are skipped - so if here it's running...
+                     isRunning : data[k].live
+                    }
+                );
                 data[k] = null;
             }
         }
@@ -600,6 +608,7 @@ Dplay.getDetailsData = function(url, data) {
     var VideoLength = "";
     var Description="";
     var Show=null;
+    var isLive = false;
     try {
         data = JSON.parse(data.responseText).data;
         Name = Dplay.determineEpisodeName(data);
@@ -608,14 +617,20 @@ Dplay.getDetailsData = function(url, data) {
             Title = data.show.title.trim() + " - " + Title;
 	DetailsImgLink = Dplay.fixThumb(data.thumbnail_image.file, DETAILS_THUMB_FACTOR);
         AirDate = timeToDate(data.first_run);
-        VideoLength = dataLengthToVideoLength(null, (data.duration)/1000);
+        VideoLength = data.duration;
+        if (!VideoLength && data.live) {
+            VideoLength = (timeToDate(data.live.end)-timeToDate(data.live.start));
+        }
+        VideoLength = dataLengthToVideoLength(null, VideoLength/1000);
+        if (!VideoLength && data.live) {
+            VideoLength = (timeToDate(data.live.end)-timeToDate(data.live.start))/1000/1000;
+        }
 	Description = data.description.trim();
         if (data.available_until) {
             AvailDate = timeToDate(data.available_until);
         }
-        Details.duration = VideoLength;
-        Details.startTime = 0;
-        if (data.show && Dplay.isItemOk(data.show.title.trim(),data.show)) {
+        isLive = data.live
+        if (data.show && Dplay.isItemOk(data.show.title.trim(), data.show)) {
             Show = {name : data.show.title.trim(),
                     url  : Dplay.makeShowUrl(data.show.id)
                    }
@@ -635,7 +650,7 @@ Dplay.getDetailsData = function(url, data) {
             is_live       : isLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : 0,
+            start_time    : AirDate,
             duration      : VideoLength,
             description   : Description,
             not_available : false,
@@ -766,6 +781,19 @@ Dplay.isCorrectChannel = function(Name, data) {
     return true
 };
 
+Dplay.isAvailable = function(Name, data) {
+
+    if (data.live) {
+        if (timeToDate(data.live.start) > getCurrentDate() || 
+            getCurrentDate() > timeToDate(data.live.end)) {
+            // Future/Ended live show
+            return false;
+        }
+    }
+    return true;
+
+};
+
 Dplay.isItemOk = function(Name, data, genre) {
     if (!Dplay.isPlayable(Name, data)) {
         // alert(Name + ": Premium");
@@ -773,6 +801,10 @@ Dplay.isItemOk = function(Name, data, genre) {
     }
     if (!Dplay.isCorrectChannel(Name, data)) {
         // alert(Name + ": wrong channel");
+        return false;
+    }
+    if (!Dplay.isAvailable(Name, data)) {
+        // alert(Name + ": not yet available");
         return false;
     }
     return true;
@@ -789,10 +821,10 @@ Dplay.resultToHtml = function() {
     for (var k=0; k < Dplay.other_result.length; k++) {
         toHtml({name:Dplay.other_result[k].name,
                 duration:Dplay.other_result[k].duration,
-                is_live:false,
+                is_live:Dplay.other_result[k].isLive,
                 is_channel:false,
-                is_running:null,
-                starttime:null,
+                is_running:Dplay.other_result[k].isRunning,
+                starttime:Dplay.other_result[k].startTime,
                 link:Dplay.other_result[k].link,
                 link_prefix:'<a href="details.html?ilink=',
                 description:Dplay.other_result[k].description,

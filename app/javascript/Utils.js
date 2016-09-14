@@ -414,7 +414,7 @@ setDateOffset = function () {
                      function(data)
                      {
                          dateOffset = 0;
-                         data = Svt.decodeJson({responseText:data}).context.dispatcher.stores.ScheduleStore.channels[0];
+                         data = Svt.decodeJson({responseText:data}).channels.schedule[0];
                          data = data.schedule[0].broadcastStartTime;
                          var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
                          var actualSeconds = actualData[2]*3600 + actualData[3]*60;
@@ -487,7 +487,10 @@ dateToString = function (Date,separator) {
 }
 
 dateToClock = function(Date) {
-    return msToClock(Date.getTime());
+    if (Date)
+        return msToClock(Date.getTime())
+    else
+        return Date
 }
 
 getClock = function() 

@@ -1,5 +1,4 @@
 var widgetAPI = new Common.API.Widget();
-var isLive = false;
 var currentTime = 0;
 var countd=0;
 var downCounter;
@@ -7,12 +6,13 @@ var downCounter;
 var Details =
 {
     duration:null,
+    isLive:false,
     startTime:0,
     fetchedDetails:null
 };
 
 Details.init = function() {
-    isLive = false;
+    Details.isLive = false;
     Details.duration = null;
     Details.startTime = 0;
 };
@@ -67,7 +67,7 @@ Details.Prepare = function(){
 
     this.GetPlayUrl();
 
-    // if(isLive){
+    // if(Details.isLive){
     //     var url= "http://188.40.102.5/CurrentTime.ashx";
     //     Log(url);
     //     $.support.cors = true;
@@ -164,13 +164,13 @@ Details.CountDown = function()
 Details.GetPlayUrl = function() {
     // Unused function ?!?!?
     if (channel == "svt") {
-        Svt.getPlayUrl(gurl, isLive)
+        Svt.getPlayUrl(gurl, Details.isLive)
     } else if (channel == "viasat") {
-        Viasat.getPlayUrl(gurl, isLive);
+        Viasat.getPlayUrl(gurl, Details.isLive);
     } else if (channel == "tv4") {
-        Tv4.getPlayUrl(gurl,isLive);
+        Tv4.getPlayUrl(gurl,Details.isLive);
     } else if (channel == "dplay") {
-        Dplay.getPlayUrl(gurl,isLive);
+        Dplay.getPlayUrl(gurl,Details.isLive);
     }
 };
 
@@ -302,6 +302,11 @@ Details.getData = function(url, data) {
 
     if (data.description && data.description.length > 0)
         data.description = data.description.replace(/\\\"/g, "\"")
+    if (!data.show) {
+        Details.duration  = data.duration;
+        Details.isLive    = data.is_live;
+        Details.startTime = dateToClock(data.start_time);
+    }
     return data
 };
 
@@ -309,7 +314,7 @@ Details.startPlayer = function()
 {
     Player.setDuration(Details.duration);
     // Log("isLive:" + isLive + " startTime:" + Details.startTime);
-    Player.startPlayer(this.Geturl(), isLive, this.startTime);
+    Player.startPlayer(this.Geturl(), Details.isLive, this.startTime);
     
 };
 
