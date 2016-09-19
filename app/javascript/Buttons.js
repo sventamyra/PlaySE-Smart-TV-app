@@ -760,10 +760,10 @@ Buttons.playItem = function() {
     }
     if (isLive) {
         if (itemSelected.html().indexOf('bottomoverlay') == -1) {
-            starttime = itemSelected.find('a').text().match(/([0-9]+[:.][0-9]+)-[0-9]/);
+            starttime = itemSelected.find('a').text().match(/([0-9][0-9][:.][0-9]+)-[0-9]/);
             starttime = (starttime) ? starttime[1] : 0;
         } else if (itemSelected.html().indexOf('bottomoverlayred') != -1) {
-            starttime = itemSelected.html().match(/bottomoverlayred">([0-9]+[:.][0-9]+)/);
+            starttime = itemSelected.html().match(/bottomoverlayred">[^<]*([0-9][0-9][:.][0-9]+)</);
             starttime = (starttime) ? starttime[1] : 0;
         }
     }

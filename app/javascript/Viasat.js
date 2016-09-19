@@ -338,7 +338,10 @@ Viasat.decodeChannels = function(data) {
         Viasat.channels = [];
 
         for (var k=0; k < data.length; k++) {
-            Viasat.channels.push({name:data[k].name.trim(), id:data[k].id});
+            Viasat.channels.push({name:data[k].name.trim(), 
+                                  id:data[k].id,
+                                  thumb:Viasat.fixThumb(data[k].image)
+                                 });
         }
         Viasat.channels.sort(function(a, b){
             var NumberA = a.name.replace(/[^0-9]*/g, "");
@@ -365,7 +368,10 @@ Viasat.decodeChannels = function(data) {
                     continue;
                 }
             }
-            Viasat.channelToHtml(Viasat.channels[k].name, k);
+            Viasat.channelToHtml(Viasat.channels[k].name, 
+                                 k,
+                                 Viasat.channels[k].thumb
+                                );
         }
         data = html = result = null;
     } catch(err) {
@@ -373,7 +379,7 @@ Viasat.decodeChannels = function(data) {
     }
 };
 
-Viasat.channelToHtml = function(name, idx) {
+Viasat.channelToHtml = function(name, idx, thumb) {
     toHtml({name:name,
             duration:"",
             is_live:false,
@@ -382,7 +388,7 @@ Viasat.channelToHtml = function(name, idx) {
             link:idx,
             link_prefix:'<a href="index.html?viasat_channel=',
             description:"",
-            thumb:""
+            thumb:thumb
            });
 };
 

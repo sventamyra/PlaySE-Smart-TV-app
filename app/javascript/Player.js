@@ -664,10 +664,9 @@ Player.setCurTime = function(time)
 	if(startup){
 	    startup = false;
 	    Audio.setCurrentMode(smute);
-            if (Player.isLive && +Player.startTime != 0 && time < 1000) {
+            if (Player.isLive && +Player.startTime != 0 && +time < 30000) {
                 Player.updateOffset(Player.startTime);
-            } else
-                Player.startTime = 0;
+            }
 	}
 	ccTime = +time + Player.offset;
 	if(this.skipState == -1){
@@ -1054,13 +1053,12 @@ Player.startPlayer = function(url, isLive, startTime)
     retries = 0;
     loadingStart();
     window.clearTimeout(detailsTimer);
-    Player.startTime = 0;
+    Player.startTime = startTime;
     Player.isLive = isLive;
     Player.offset = 0;
     Player.durationOffset = 0;
     Player.pluginDuration = 0;
-    Player.startTime = startTime;
-    
+
     subtitles = [];
     ccTime = 0;
     lastPos = 0;
@@ -1102,7 +1100,7 @@ Player.startPlayer = function(url, isLive, startTime)
 };
 
 Player.refreshStartData = function(details) {
-    if (details && details.start_time != 0 && details.start_time != Player.startTime) {
+    if (Player.isLive && details && details.start_time != 0 && details.start_time != Player.startTime) {
         Log("refreshStartData, new start:" + details.start_time + " old start:" + Player.startTime);
         Player.setNowPlaying(details.title);
         Player.pluginDuration = Player.plugin.GetDuration();
@@ -1141,7 +1139,7 @@ Player.updateOffset = function (startTime) {
 }
 
 Player.startTimeToMinutes = function (startTime) {
-    if (startTime == 0)
+    if (!startTime)
         return 0
     var start_mins = startTime.match(/([0-9]+)[:.]/)[1]*60;
     return (start_mins + startTime.match(/[:.]([0-9]+)/)[1]*1);

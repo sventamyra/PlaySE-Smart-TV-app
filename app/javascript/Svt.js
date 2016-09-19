@@ -222,10 +222,14 @@ Svt.getDetailsData = function(url, data) {
                            }
                 }
                 data = data.video;
-                if (data.programTitle == data.title)
+                if (data.programTitle == data.title || !data.programTitle) {
                     Name = data.title;
-                else
+                    if (Show && Show.name != data.title)
+                        Name = Show.name + " - " + Name
+
+                } else {
                     Name = data.programTitle + " - " + data.title;
+                }
                 Description = data.description.trim();
                 Title = Name;
                 ImgLink = Svt.getThumb(data, "large");
@@ -344,7 +348,7 @@ Svt.decodeJson = function(data) {
     } else {
         data = data.join("").split("root\['__reduxStore']")[1]
     }
-    data = data.split(';')[0] 
+    data = data.split('};')[0] + '}'
     data = data.replace(/^[^{]*{/, "{");
     data = data.replace(/;$/, "");
     return JSON.parse(data)
@@ -788,6 +792,9 @@ Svt.decode = function(data, filter, stripShow) {
             var Episodes = [];
             for (var k=0; k < data.length; k++) {
                 if (data[k].episodeNumber >= 1) {
+                    if (data[k].title.match(VARIANT_REGEXP))
+                        // Ignore variants
+                        continue;
                     if (Episodes[data[k].episodeNumber]) {
                         Episodes[data[k].episodeNumber]++
                     } else {

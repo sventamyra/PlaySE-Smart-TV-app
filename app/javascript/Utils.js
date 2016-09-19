@@ -456,7 +456,8 @@ timeToDate = function(timeString) {
 
 dateToHuman = function (date) {
     if (date && (date instanceof Date)) {
-        var days_diff = new Date(dateToString(date," "))-new Date(dateToString(getCurrentDate()," "));
+        var separator = (dateFormat == 1) ? '/' : " ";
+        var days_diff = new Date(dateToString(date,separator))-new Date(dateToString(getCurrentDate(),separator));
         days_diff = days_diff/1000/3600/24;
         if (days_diff == -1)
             date = ((Language.getisSwedish()) ? "Igår " : "Yesterday ") + dateToClock(date);

@@ -303,9 +303,10 @@ Details.getData = function(url, data) {
     if (data.description && data.description.length > 0)
         data.description = data.description.replace(/\\\"/g, "\"")
     if (!data.show) {
+        data.start_time   = dateToClock(data.start_time);
         Details.duration  = data.duration;
         Details.isLive    = data.is_live;
-        Details.startTime = dateToClock(data.start_time);
+        Details.startTime = data.start_time;
     }
     return data
 };
