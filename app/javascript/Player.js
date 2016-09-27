@@ -785,17 +785,14 @@ Player.showDetails = function()
 
 Player.OnConnectionFailed = function()
 {
-    Player.OnNetworkDisconnected(true);
+    Log("OnConnectionFailed"); 
+    Player.checkHls(function(){Player.OnNetworkDisconnected("Connection Failed!")});
 };
 
-Player.OnNetworkDisconnected = function(conn_failed)
+Player.OnNetworkDisconnected = function(text)
 {
-    var text;
-    if (conn_failed) {
-        Log("OnConnectionFailed");
-        text = "Connection Failed!";
-    } else {
-        Log("OnNetworkDisconnected");
+    if (!text) {
+        Log("OnNetworkDisconnected"); 
         text = "Network Error!";
     }
     Player.retryVideo(text)
@@ -845,21 +842,28 @@ Player.OnStreamNotFound = function()
 
 Player.OnRenderError = function(number)
 {
-    // Seems stop before OnBufferingStart gives OnRenderError
+    Log("Player.OnRenderError:" + number);
+    var text = "Can't play this. Error: " + number;
+    Player.checkHls(function(){Player.PlaybackFailed(text)})
+};
+
+Player.checkHls = function(OtherCalback) {
+    // Seems stop before OnBufferingStart gives e.g. OnRenderError
     if (Player.state != Player.STOPPED) {
-        var text = "Can't play this. Error: " + number;
         if(videoUrl.indexOf("=HLS") != -1 && videoUrl.indexOf(":10666/") == -1) {
             var thisVideoUrl = videoUrl;
             Player.getHlsVersion(videoUrl.replace(/\|.+/,""), 
                                  function(hls_version) {
                                      if (hls_version && hls_version > 3) {
-                                         text = 'HLS Version ' + hls_version + ' unsupported.';
+                                         var text = 'HLS Version ' + hls_version + ' unsupported.';
+                                         Player.PlaybackFailed(text);
+                                     } else {
+                                         OtherCalback;
                                      }
-                                     Player.PlaybackFailed(text);
                                  }
                                 )
         } else {
-            Player.PlaybackFailed(text);
+            OtherCalback;
         }
     }
 };

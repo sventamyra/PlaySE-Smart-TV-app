@@ -2,8 +2,7 @@ var channel = "svt";
 var seqNo = 0;
 var clockOffset = 0;
 var setClockOffsetTimer = null;
-var checkOffsetTimer = null;
-var checkOffsetCounter = 0;
+var checkOffsetCounter = 5;
 var dateOffset = 0;
 var setDateOffsetTimer = null;
 var isTopRowSelected = true;
@@ -362,43 +361,44 @@ getCurrentDate = function() {
 }
 
 setOffsets = function() {
+    var months = [/^jan/i, /^feb/i, /^mar/i, /^apr/i, /^ma[^r]/i, /^jun/i, /^jul/i, /^aug/i, /^sep/i, /^o/i, /^nov/i, /^dec/i];
     // Retry once a minute in case of failure
     window.clearTimeout(setClockOffsetTimer);
     setClockOffsetTimer = window.setTimeout(setOffsets, 60*1000);
     asyncHttpRequest("http://www.timeanddate.com/worldclock/sweden/stockholm", 
                      function(data) {
-                         var timeMatch = data.match(/class=h1>([0-9]+):([0-9]+):([0-9]+)</)
-                         var actualSeconds = timeMatch[1]*3600 + timeMatch[2]*60 + timeMatch[3]*1;
+                         var actualTime = data.match(/class=h1>([0-9]+:[0-9]+:[0-9]+)</)[1]
                          var actualDay = +data.match(/id=ctdat>[^0-9]+([0-9]+)/)[1];
+                         var actualYear = data.match(/id=ctdat>[^<]+ ([0-9]+)[ 	]*</)[1];
+                         var actualMonth = data.match(/id=ctdat>[^0-9]+[0-9 	]+([^0-9	 ]+)/)[1];
+                         for (var i=0; i< months.length; i++) {
+                             new RegExp( + "[\\-. 	]*","i");
+                             if (actualMonth.match(months[i])) {
+                                 actualMonth = i+1;
+                                 break;
+                             }
+                         }
                          var oldClockOffset = clockOffset;
                          clockOffset = 0;
                          var now = getCurrentDate();
-                         var nowSeconds = now.getHours()*3600 + now.getMinutes()*60 + now.getSeconds();
-                         var nowDay = now.getDate();
-                         if (actualDay != nowDay) {
-                             if (actualDay > nowDay || actualDay == 1) {
-                                 // Add 24 hours to actual
-                                 actualSeconds = actualSeconds + 24*3600;
-                             } else {
-                                 // Add 24 hours to now
-                                 nowSeconds = nowSeconds + 24*3600
-                             }
-                         }
-                         var newClockOffset = Math.round((actualSeconds-nowSeconds)/3600)*3600*1000;
-                         // Log("Clock Offset hours:" + newClockOffset/3600/1000 + " actualDay:" + actualDay + " nowDay:" + nowDay + " timeMatch:" + timeMatch[0] + " now:" + now);
-                         if (checkOffsetTimer == null || checkOffsetCounter > 0) {
-                             if (checkOffsetTimer == null) {
-                                 checkOffsetCounter = 5;
-                             } else {
-                                 checkOffsetCounter = checkOffsetCounter - 1;
-                             }
-                             if (newClockOffset != oldClockOffset && checkOffsetTimer != null) {
-                                 Log("Clock Offset was changed!!!");
-                             } else {
-                                 checkOffsetTimer = window.setTimeout(setOffsets, 10*1000);
-                             }
+                         // Log("original date:" + now);
+                         // Log("actual :" + (actualYear+" "+actualMonth+" "+actualDay+" "+actualTime) + " meaning:" + makeDate(actualYear, actualMonth, actualDay, actualTime));
+
+                         var newClockOffset = makeDate(actualYear, actualMonth, actualDay, actualTime) - now;
+                         // Only care about minutes
+                         newClockOffset = Math.round(newClockOffset/60/1000)*60*1000;
+                         if (newClockOffset != oldClockOffset && checkOffsetCounter != 5) {
+                             Log("Clock Offset was changed!!!");
+                             checkOffsetCounter = 0;
                          }
                          clockOffset = newClockOffset;
+                         checkOffsetCounter = checkOffsetCounter - 1;
+                         if (checkOffsetCounter >= 0) {
+                             window.setTimeout(setOffsets, 10*1000);
+                         } else {
+                             Log("Clock Offset (hours):" + clockOffset/3600/1000);
+                             // Log("new date:" + getCurrentDate());
+                         }
 	                 window.clearTimeout(setClockOffsetTimer);
                      },
                      true
@@ -430,12 +430,19 @@ setDateOffset = function () {
                              tsSeconds = tsSeconds + 24*3600
                          }
                          dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
-                         // Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " data:" + data + " starttime:" + actualData[0]);
+                         if (checkOffsetCounter == -1) {
+                             Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " data:" + data + " starttime:" + actualData[0]);
+                         }
 	                 window.clearTimeout(setDateOffsetTimer);
                      },
                      true
                     )
 };
+
+makeDate = function (year, month, day, time) {
+    var separator = (dateFormat == 1) ? "/" : " ";
+    return new Date(year+separator+month+separator+day+" "+time)
+}
 
 checkDateFormat = function() {
     if (isNaN(new Date("2016 07 25 22:00:00 +0200")))

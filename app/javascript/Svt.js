@@ -783,7 +783,7 @@ Svt.decode = function(data, filter, stripShow) {
         var Episode;
         var Variant;
         var SEASON_REGEXP = new RegExp("((s[^s]+song\\s*([0-9]+))\\s*-\\s*)?(.+)","i");
-        var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|teckenspr[^k]+k|originalspr[^k]+k)","i");
+        var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|tecken(spr[^k]+ks?)?(tolkat)?|originalspr[^k]+k)","i");
         var Names = [];
         var Shows = [];
         var IgnoreEpisodes = false;
@@ -901,7 +901,7 @@ Svt.decode = function(data, filter, stripShow) {
                         largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null,
                         season:Season,
                         episode:Episode,
-                        variant:Variant
+                        variant:Svt.FixVariant(Variant)
                        })
             data[k] = "";
 	};
@@ -913,6 +913,15 @@ Svt.decode = function(data, filter, stripShow) {
     } catch(err) {
         Log("Svt.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
     }
+};
+
+Svt.FixVariant = function(variant) {
+    if (variant) {
+        variant = variant.toLowerCase();
+        variant = variant.replace(/tecken(spr[^k]+ks?)?(tolkat)?/, "teckentolkat")
+        alert(variant)
+    }
+    return variant;
 };
 
 Svt.sortEpisodes = function(Episodes, Names, IgnoreEpisodes) {

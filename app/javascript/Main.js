@@ -25,7 +25,6 @@ Main.onLoad = function(refresh)
     if (!refresh)
 	Header.display(document.title);
     if (!this.loaded) {
-        fixCss();
         $("#page-cover").hide();
         var model = document.getElementById("pluginObjectDEVICE").GetRealModel();
         isEmulator = (model === "VALENCIA" || model === "SDK" | !model);
@@ -48,6 +47,7 @@ Main.onLoad = function(refresh)
 	Language.setLang();
 	Resolution.displayRes();
         setOffsets();
+        fixCss();
 	this.loadXml(refresh);	
 	// Enable key event processing
 	Buttons.enableKeys();
