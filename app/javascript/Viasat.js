@@ -506,10 +506,9 @@ Viasat.decode_shows = function(data, url, allShows, skipHtml, completeFun, isNex
             }
 
             Viasat.result.sort(function(a, b) {
-                if (a.name.toLowerCase() > b.name.toLowerCase())
-                    return 1
-                else
-                    return -1
+                var name_a = (checkSeasons) ? Number(a.name.replace(/[^0-9]+/, "")) : a.name.toLowerCase();
+                var name_b = (checkSeasons) ? Number(b.name.replace(/[^0-9]+/, "")) : b.name.toLowerCase();
+                return (name_a > name_b) ? 1 : -1;
             });
             if (allShows)
                 Viasat.shows = Viasat.result;

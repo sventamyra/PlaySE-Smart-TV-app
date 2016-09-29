@@ -286,7 +286,7 @@ Dplay.decode_search_hits = function(data) {
 
             Description = data[k].description.trim();
             Duration = (data[k].duration)/1000;
-            ImgLink = Dplay.fixThumb(data[k].thumbnail_image.file);
+            ImgLink = Dplay.fixThumb(data[k].thumbnail_image);
             AirDate = data[k].first_run;
             Link = Dplay.makeApiUrl("/videos/" + data[k].id);
             Dplay.other_result.push({name:Name, 
@@ -405,7 +405,7 @@ Dplay.decode = function(data, target, stripShow, completeFun, onlySave) {
                 if (!Duration && data[k].live) {
                     Duration = (timeToDate(data[k].live.end)-timeToDate(data[k].live.start))/1000;
                 }
-                ImgLink = Dplay.fixThumb(data[k].thumbnail_image.file);
+                ImgLink = Dplay.fixThumb(data[k].thumbnail_image);
                 AirDate = data[k].first_run;
                 Link = Dplay.makeApiUrl("/videos/" + data[k].id);
                 Episode = data[k].episode_number
@@ -486,7 +486,7 @@ Dplay.decode_shows = function(data, query, sort, allShows) {
             for (var i=0; i < showData.genres.length; i++)
                 Genres.push(showData.genres[i].id);
             Link = Dplay.makeShowUrl(showData.id);
-            ImgLink = Dplay.fixThumb(showData.poster_image.file);
+            ImgLink = Dplay.fixThumb(showData.poster_image);
             Dplay.show_names.push(Name);
             Dplay.show_result.push({name:Name, thumb:ImgLink, link:Link, genres:Genres});
             data[k] = null;
@@ -545,7 +545,7 @@ Dplay.decode_season = function(targetUrl, data, completeFun) {
                     return 1
         });
         ImgLink = JSON.parse(syncHttpRequest(Dplay.makeApiUrl("/shows/" + showId)).data).data;
-        ImgLink = Dplay.fixThumb(ImgLink.poster_image.file);
+        ImgLink = Dplay.fixThumb(ImgLink.poster_image);
         for (var k=0; k < seasons.length; k++) {
             seasonToHtml(seasons[k].name, ImgLink, seasons[k].link);
         }
@@ -575,7 +575,7 @@ Dplay.decodeChannels = function(data) {
                 continue;
             }
         }
-        Dplay.channelToHtml(Name, k, Dplay.fixThumb(data[k].logo_image.file));
+        Dplay.channelToHtml(Name, k, Dplay.fixThumb(data[k].logo_image));
     }
 };
 
@@ -615,7 +615,7 @@ Dplay.getDetailsData = function(url, data) {
         Title = (data.episode_number) ? "Avsnitt " + data.episode_number : Name;
         if (data.show)
             Title = data.show.title.trim() + " - " + Title;
-	DetailsImgLink = Dplay.fixThumb(data.thumbnail_image.file, DETAILS_THUMB_FACTOR);
+	DetailsImgLink = Dplay.fixThumb(data.thumbnail_image, DETAILS_THUMB_FACTOR);
         AirDate = timeToDate(data.first_run);
         VideoLength = data.duration;
         if (!VideoLength && data.live) {
@@ -676,7 +676,7 @@ Dplay.getShowData = function(url, data) {
 
         data = JSON.parse(data.responseText).data;
         Name = data.title.trim();
-        DetailsImgLink = Dplay.fixThumb(data.poster_image.file, DETAILS_THUMB_FACTOR);
+        DetailsImgLink = Dplay.fixThumb(data.poster_image, DETAILS_THUMB_FACTOR);
         Description = data.description.trim();
         for (var i=0; i < data.genres.length; i++) {
             if (data.genres[i].name.match(/gratis/i))
@@ -740,10 +740,11 @@ Dplay.refreshPlayUrl = function(callback) {
 };
 
 Dplay.fixThumb = function(thumb, factor) {
-    height = (factor) ? Math.floor(factor*THUMB_HEIGHT) : THUMB_HEIGHT;
-    width  = (factor) ? Math.floor(factor*THUMB_WIDTH)  : THUMB_WIDTH;
-    if (thumb)
-        thumb = "http://a3.res.cloudinary.com/dumrsasw1/image/upload/c_fill,h_" + height + ",w_" + width + "/" + thumb;
+    if (thumb) {
+        var height = (factor) ? Math.floor(factor*THUMB_HEIGHT) : THUMB_HEIGHT;
+        var width  = (factor) ? Math.floor(factor*THUMB_WIDTH)  : THUMB_WIDTH;
+        thumb = "http://a3.res.cloudinary.com/dumrsasw1/image/upload/c_fill,h_" + height + ",w_" + width + "/" + thumb.file;
+    }
     return thumb
 };
 
