@@ -88,7 +88,7 @@ Svt.redirectUrl = function(url) {
         return result.location
     } else if (result.success) {
         try {
-            url = Svt.decodeJson({responseText:result.data}).context.dispatcher.stores.MetaStore.canonical;
+            url = Svt.decodeJson({responseText:result.data}).MetaStore.canonical;
         } catch(err) {
             result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
             if (result && result.length > 0)
@@ -214,7 +214,7 @@ Svt.getDetailsData = function(url, data) {
                 isLive = true;
                 NotAvailable = (startTime - getCurrentDate()) > 60*1000;
             } else {
-                data = data.context.dispatcher.stores.VideoTitlePageStore.data;
+                data = data.videoTitlePage;
                 if (data.titlePage && data.titlePage.title.trim().toLowerCase() != data.titlePage.category.trim().toLowerCase()) {
                     
                     Show = {name : data.titlePage.title.trim(),
@@ -306,8 +306,8 @@ Svt.getShowData = function(url, data) {
     var Description="";
 
     try {
-        data = Svt.decodeJson(data).context.dispatcher.stores;
-        data = data.VideoTitlePageStore.data.titlePage
+        data = Svt.decodeJson(data).videoTitlePage;
+        data = data.titlePage
 
         Name  = data.title.trim();
         ImgLink = Svt.getThumb(data, "large");
@@ -604,22 +604,21 @@ Svt.decode_category = function (data) {
 }
 
 Svt.decode_show = function (data, url, is_clips, requested_season) {
-    data = Svt.decodeJson(data).context.dispatcher.stores;
+    data = Svt.decodeJson(data).videoTitlePage;
     var seasons = []
     var has_clips = false
     var has_zero_season = false
-    data = data.VideoTitlePageStore.data
     if (!is_clips && !requested_season) {
-        for (var i=0; i < data.relatedVideoTabs.length; i++) {
-            if (!has_zero_season && data.relatedVideoTabs[i].season > 0) {
-                seasons.push({season:data.relatedVideoTabs[i].season,
-                              name  : data.relatedVideoTabs[i].name.trim()
+        for (var i=0; i < data.realatedVideoTabs.length; i++) {
+            if (!has_zero_season && data.realatedVideoTabs[i].season > 0) {
+                seasons.push({season:data.realatedVideoTabs[i].season,
+                              name  : data.realatedVideoTabs[i].name.trim()
                              });
-            } else if (data.relatedVideoTabs[i].season == 0) {
+            } else if (data.realatedVideoTabs[i].season == 0) {
                 has_zero_season = true;
                 seasons = [];
             }
-            if (!has_clips && data.relatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS")
+            if (!has_clips && data.realatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS")
                 has_clips = true
         }
         if (seasons.length > 1) {
@@ -638,25 +637,25 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     }
     // Get Correct Tab
     var videos = [];
-    for (var i=0; i < data.relatedVideoTabs.length; i++) {
+    for (var i=0; i < data.realatedVideoTabs.length; i++) {
         if (requested_season && requested_season != 0) {
-            if (data.relatedVideoTabs[i].season == +requested_season) {
-                videos = data.relatedVideoTabs[i].videos
+            if (data.realatedVideoTabs[i].season == +requested_season) {
+                videos = data.realatedVideoTabs[i].videos
                 break
             }
         } else if (is_clips) {
-            if (data.relatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS") {
-                videos = data.relatedVideoTabs[i].videos
+            if (data.realatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS") {
+                videos = data.realatedVideoTabs[i].videos
                 break
             }
         } else {
                 if (has_zero_season) {
-                    if (data.relatedVideoTabs[i].key == "RELATED_VIDEO_TABS_LATEST") {
-                        videos = data.relatedVideoTabs[i].videos
+                    if (data.realatedVideoTabs[i].key == "RELATED_VIDEO_TABS_LATEST") {
+                        videos = data.realatedVideoTabs[i].videos
                         break;
                     }
-                } else if (data.relatedVideoTabs[i].type != "VIDEO_TYPE_CLIPS") {
-                    videos = data.relatedVideoTabs[i].videos
+                } else if (data.realatedVideoTabs[i].type != "VIDEO_TYPE_CLIPS") {
+                    videos = data.realatedVideoTabs[i].videos
                     break
                 }
         }

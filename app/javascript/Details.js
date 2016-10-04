@@ -212,12 +212,7 @@ Details.loadXml = function(isBackground) {
 Details.toHtml = function (programData) {
     loadThumb(programData.thumb, function() {
         var extra = null;
-        if(programData.name.length > 47){
-	    programData.name = programData.name.substring(0, 47)+ "...";
-        }
-	html = '<div class="project-text">';
-	html+='<div class="project-name">';
-	html+='<h1>'+programData.name+'</h1>';
+	html = '<h1>'+programData.name+'</h1>';
         if (programData.show) {
 	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
         } else if (!programData.category) {
@@ -239,11 +234,8 @@ Details.toHtml = function (programData) {
             else 
                 html+='<div class="project-meta"><a id="duration" type="text"></a><a>'+programData.duration+'</a></div>';
         }
-        if (extra)
-            styles = ' style="max-height:161px;"'
-        else 
-            styles= ""
-	html+='<div class="project-desc"'+styles+'>'+programData.description+'</div>';
+	html+='<div class="project-desc">'+programData.description+'</div>';
+	html+='</div>';
 	html+='<div class="bottom-buttons">';
         if (programData.category) {
             html+='<a href="#" id="enterShowButton" class="link-button selected">Till Kategorin</a>';
@@ -268,6 +260,11 @@ Details.toHtml = function (programData) {
 	
         html+='</div>';
 	html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
+        // Add "header" elements last to determine max-height
+        var max_height = (extra) ? "280px" : "315px";
+        html='<div class="project-meta-frame" style="max-height:' +max_height+';overflow:hidden">'+html;
+	html = '<div class="project-name">' + html;
+        html = '<div class="project-text">' + html;
         $('#projdetails').html(html);
 	html = null;
         if (!detailsOnTop)

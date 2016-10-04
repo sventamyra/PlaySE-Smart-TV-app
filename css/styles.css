@@ -768,8 +768,6 @@ a.next {
 	background:url(../images/line.gif) bottom repeat-x}
 
 .project-desc {
-	max-height: 176px;
-	overflow:hidden;
 }
 .project-view {
 	width:150px;
