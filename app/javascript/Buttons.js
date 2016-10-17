@@ -546,6 +546,10 @@ Buttons.keyHandleForPlayer = function(){
     case tvKey.KEY_INFO:
 	Player.showDetails();
 	break;
+    case tvKey.KEY_TOOLS:
+        widgetAPI.blockNavigation(event); 
+	Player.showHelp();
+	break;
     case tvKey.KEY_MUTE:
 	Audio.toggleMute();
 	break;

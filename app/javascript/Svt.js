@@ -88,7 +88,7 @@ Svt.redirectUrl = function(url) {
         return result.location
     } else if (result.success) {
         try {
-            url = Svt.decodeJson({responseText:result.data}).MetaStore.canonical;
+            url = Svt.decodeJson({responseText:result.data}).metaData.canonical;
         } catch(err) {
             result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
             if (result && result.length > 0)
@@ -918,7 +918,7 @@ Svt.FixVariant = function(variant) {
     if (variant) {
         variant = variant.toLowerCase();
         variant = variant.replace(/tecken(spr[^k]+ks?)?(tolkat)?/, "teckentolkat")
-        alert(variant)
+        // alert(variant)
     }
     return variant;
 };

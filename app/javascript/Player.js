@@ -10,6 +10,7 @@ var fpPlugin;
 var ccTime = 0;
 var resumeTime = 0;
 var videoWidth = null;
+var videoBw = null;
 var lastPos = 0;
 var videoUrl;
 var detailsUrl;
@@ -37,6 +38,7 @@ var Player =
     pluginDuration: 0,
     infoActive:false,
     detailsActive:false,
+    helpActive:false,
     isLive:false,
     startTime: null,
     offset:0,
@@ -170,12 +172,11 @@ Player.setVideoURL = function(url, srtUrl, extra)
         this.fetchSubtitle(srtUrl);
     }
 
-    if (extra.bw && +extra.bw >= 1000000) {
-        this.bw = " " + (+extra.bw/1000000).toFixed(1) + " mbps";
-    } else if (extra.bw) {
-        this.bw = " " + Math.round(+extra.bw/1000) + " kbps";
-    } else
+    if (extra.bw) {
+        this.bw = " " + Player.BwToString(extra.bw);
+    } else {
         this.bw = "";
+    }
 
     if (extra.license && deviceYear >= 2011)
     {
@@ -263,9 +264,10 @@ Player.playVideo = function()
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.setWindow();
-        
-        this.plugin.SetInitialBuffer(640*1024);
-        this.plugin.SetPendingBuffer(640*1024);
+       
+        // this.plugin.SetInitialBuffer(640*1024);
+        // this.plugin.SetPendingBuffer(640*1024);
+        // this.plugin.SetTotalBufferSize(640*1024);        
         startup = true;
         if(Audio.plugin.GetUserMute() == 1){
                 $('.muteoverlay').show();
@@ -476,11 +478,14 @@ Player.OnBufferingStart = function()
 {
     Log("onBufferingStart");
     loadingStart();
-    resumeTime = 0;
     currentSubtitle = 0;
     subtitlesEnabled = this.getSubtitlesEnabled();
     this.setSubtitleProperties();
     this.showControls();
+    if ($('.bottomoverlaybig').html().match(/Press ENTER/)) {
+        // No Resume
+        resumeTime = 0
+    }
     Player.SetBufferingText(0);
 };
 
@@ -501,6 +506,7 @@ Player.OnBufferingComplete = function()
     Log("onBufferingComplete");
     loadingStop();
     retries = 0;
+    $('.bottomoverlaybig').html("");
     this.hideControls();
     this.setFullscreen();
     // Only reset in case no additional skip is in progess
@@ -649,6 +655,7 @@ Player.hideDetailedInfo = function(){
     // Log("hideDetailedInfo");
     if (Player.detailsActive) {
         Player.detailsActive = false;
+        Player.helpActive = false;
         $('.detailstitle').html("");
         $('.detailsdescription').html(""); 
         $('.details-wrapper').hide();
@@ -667,6 +674,7 @@ Player.setCurTime = function(time)
             if (Player.isLive && +Player.startTime != 0 && +time < 30000) {
                 Player.updateOffset(Player.startTime);
             }
+            Player.setResolution(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
 	}
 	ccTime = +time + Player.offset;
 	if(this.skipState == -1){
@@ -677,7 +685,8 @@ Player.setCurTime = function(time)
         }
         Player.refreshStartData(Details.fetchedDetails);
         // Seem onStreamInfoReady isn't invoked in case new stream in playlist is chosen.
-        if (this.plugin.GetVideoWidth() != videoWidth) {
+        if (this.plugin.GetVideoWidth()      != videoWidth ||
+            this.plugin.GetCurrentBitrates() != videoBw) {
             Player.OnStreamInfoReady();
             Player.updateTopOSD()
         }
@@ -719,9 +728,19 @@ Player.updateSeekBar = function(time){
 	
 }; 
 
+Player.BwToString = function(bw) {
+    if (!bw)
+        return null;
+    if (Number(bw) >= 1000000) {
+        return (Number(bw)/1000000).toFixed(1) + " mbps";
+    } else
+        return Math.round(Number(bw)/1000) + " kbps";
+}
+
 Player.OnStreamInfoReady = function()
 {
     videoWidth = this.plugin.GetVideoWidth();
+    videoBw    = this.plugin.GetCurrentBitrates();
     this.pluginDuration = this.plugin.GetDuration();
     this.setTotalTime();
     this.setResolution(videoWidth, this.plugin.GetVideoHeight());
@@ -773,7 +792,10 @@ Player.showDetails = function()
         // See if update may help...
         Details.fetchData(detailsUrl)
         Player.showInfo();
-    } else if (!Player.detailsActive) {
+    } else if (Player.helpActive || !Player.detailsActive) {
+        // reset if help is active.
+        Player.helpActive = false;
+        Player.detailsActive = false;
 	this.showDetailedInfo();
         window.clearTimeout(osdTimer);
     } else {
@@ -782,6 +804,18 @@ Player.showDetails = function()
         this.hideDetailedInfo();
     }
 };
+
+Player.showHelp = function () {
+    if (Player.helpActive) {
+        this.hideDetailedInfo();
+    } else {
+        this.showDetailedInfo();
+        $('.detailstitle').html("HELP");
+        $('.detailsdescription').html(Player.GetHelpText());
+        window.clearTimeout(osdTimer);
+        Player.helpActive = true;
+    }
+}
 
 Player.OnConnectionFailed = function()
 {
@@ -811,9 +845,7 @@ Player.retryVideo = function (text, max) {
 	        timeout: 5000,
 	        success: function(data, status, xhr)
 	        {
-                    var time = null
-                    if ($('.bottomoverlaybig').html().match(/Resuming/))
-                        time = (resumeTime-10)*1000;
+                    var time = (resumeTime) ? (resumeTime-10)*1000 : null;
 		    Log('Success:' + this.url);
                     $('.bottomoverlaybig').html("Re-connecting"); 
                     Player.showControls();
@@ -942,10 +974,10 @@ Player.toggleAspectRatio = function() {
         $('.topoverlayresolution').html("ASPECT unsupported when AUTO BW");
 };
 
-Player.setResolution = function (videoWidth, videoHeight) {
+Player.setResolution = function (width, height) {
 
-    if (videoWidth  > 0 && videoHeight > 0) {
-        var aspect = videoWidth / videoHeight;
+    if (width  > 0 && height > 0) {
+        var aspect = width / height;
         if (aspect == 16/9) {
             aspect = "16:9";
         } else if (aspect == 4/3) {
@@ -954,42 +986,77 @@ Player.setResolution = function (videoWidth, videoHeight) {
         else {
             aspect = aspect.toFixed(2) + ":1";
         }
-        Player.setTopOSDText(videoWidth + "x" + videoHeight + " (" + aspect + ")" + this.bw);
-        this.setAspectRatio(videoWidth, videoHeight);
+        // Only use given bw in case of "Auto-mode"
+        var bw = (this.bw || !videoBw) ? this.bw : " " + Player.BwToString(videoBw);
+        Player.setTopOSDText(width + "x" + height + " (" + aspect + ")" + bw);
+        this.setAspectRatio(width, height);
     }
 };
 
-Player.setAspectRatio = function(videoWidth, videoHeight) {
+Player.setAspectRatio = function(width, height) {
 
+    var aspect = width/height;
     // During "AUTO Bandwith" resolution can change which doesn't seem to be
     // reported to 2011 devices. So then Crop Area would be all wrong.
-    if (videoWidth > 0 && videoHeight > 0 && !Player.IsAutoBwUsedFor2011()) {
-        if (Player.aspectMode === Player.ASPECT_H_FIT && videoWidth/videoHeight > 4/3)
+    if (width > 0 && height > 0 && !Player.IsAutoBwUsedFor2011()) {
+        if (Player.aspectMode === Player.ASPECT_H_FIT && aspect > 4/3)
         {
             var cropOffset = Math.floor((GetMaxVideoWidth() - (4/3*GetMaxVideoHeight()))/2);
-            var cropX      = Math.round(videoWidth/GetMaxVideoWidth()*cropOffset);
-            var cropWidth  = videoWidth-(2*cropX);
-            this.plugin.SetCropArea(cropX, 0, cropWidth, videoHeight);
-        } else if (Player.aspectMode === Player.ASPECT_ZOOM) {
-            var zoomFactor = Player.getZoomFactor()
-            var cropY      = Math.round(videoHeight*zoomFactor);
-            var cropHeight = videoHeight-(2*cropY);
-            var cropX      = 0;
-            if (videoWidth/cropHeight > 16/9 && zoomFactor > 0) {
-                cropX      = Math.round((videoWidth-(16/9*cropHeight))/2);
+            var cropX      = Math.round(width/GetMaxVideoWidth()*cropOffset);
+            var cropWidth  = width-(2*cropX);
+            this.plugin.SetCropArea(cropX, 0, cropWidth, height);
+        } else if (Player.aspectMode === Player.ASPECT_H_FIT) {
+            Player.setFullscreen();
+        } else {
+            var resolution = {width:width, height:height, aspect:aspect};
+            if (Player.aspectMode === Player.ASPECT_ZOOM) {
+                Player.zoom(resolution);
+            } else {
+                this.plugin.SetCropArea(0, 0, width, height);
+                Player.scaleDisplay(resolution);
             }
-            var cropWidth  = videoWidth-(2*cropX);
-            this.plugin.SetCropArea(cropX, cropY, cropWidth, cropHeight);
-        }
-        else
-        {
-            this.plugin.SetCropArea(0, 0, videoWidth, videoHeight);
         }
         // Re-pause
         if (this.state === this.PAUSED) {
             this.plugin.Pause();
         }
     }
+};
+
+Player.scaleDisplay = function (resolution) {
+    var factor = (resolution.aspect >= 16/9) ? 
+        // Wider than high - "extend/limit" based on width
+        GetMaxVideoWidth()/resolution.width : 
+        // Wider than high - "extend/limit" based on height
+        GetMaxVideoHeight()/resolution.height;
+        
+    var width  = Math.min(GetMaxVideoWidth(),  resolution.width*factor);
+    var height = Math.min(GetMaxVideoHeight(), resolution.height*factor);
+    
+    var x = Math.floor((GetMaxVideoWidth()-width)/2);
+    var y = Math.floor((GetMaxVideoHeight()-height)/2);
+    // Log("scaleDisplay:"+x+","+y+","+width+","+height + " resolution:" + JSON.stringify(resolution));
+    this.plugin.SetDisplayArea(x, y, Math.floor(width), Math.floor(height));
+};
+
+Player.zoom = function(resolution) {
+
+    var zoomFactor = Player.getZoomFactor()
+    var cropY      = resolution.height*zoomFactor;
+    var cropHeight = resolution.height-(2*cropY);
+    var cropX      = 0;
+
+    if (resolution.width/cropHeight > 16/9 && zoomFactor > 0) {
+        // Must start cropping also in width
+        cropX = (resolution.width-(16/9*cropHeight))/2;
+    }
+    var cropWidth = resolution.width-(2*cropX);
+
+    if (resolution.aspect < 16/9) {
+        Player.scaleDisplay({width:cropWidth, height:cropHeight, aspect:cropWidth/cropHeight});
+    }
+    // Log("SetCropArea:"+cropX+","+cropY+","+cropWidth+","+cropHeight+" resolution:"+JSON.stringify(resolution) + " zoom:" + (Player.getZoomFactor()*100).toFixed(1) + "%");
+    this.plugin.SetCropArea(Math.round(cropX), Math.round(cropY), Math.round(cropWidth), Math.round(cropHeight));
 };
 
 Player.getAspectModeText = function()
@@ -1067,6 +1134,7 @@ Player.startPlayer = function(url, isLive, startTime)
     ccTime = 0;
     lastPos = 0;
     videoWidth = null;
+    videoBw = null;
     skipTime = 0;
     skipTimeInProgress = 0;
     Player.setTopOSDText("");
@@ -1157,7 +1225,7 @@ Player.checkPlayUrlStillValid = function(gurl) {
     return true;
 };
 
-Player.GetPlayUrl = function(gurl, isLive, altUrl) {
+Player.GetPlayUrl = function(gurl, isLive, altUrl, altVideoUrl) {
     gurl = Svt.fixLink(gurl);
     // Log("gurl:" + gurl);
     requestedUrl = gurl;
@@ -1238,7 +1306,7 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
                                if (programVersionId) {
                                    // Try alternative url
                                    altUrl = SVT_ALT_API_URL + programVersionId;
-                                   return Player.GetPlayUrl(gurl, isLive, altUrl);
+                                   return Player.GetPlayUrl(gurl, isLive, altUrl, video_url);
                                }
                            } 
 
@@ -1259,7 +1327,15 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl) {
 		               // //	$('#iframe').attr('src', gurl);
 		           }
 	               }
-                   }
+                   },
+                   {cbError:function(status, data) {
+                       if (altVideoUrl) {
+                           // Clear the "Network Error"
+                           $('.bottomoverlaybig').html('');
+                           loadingStart();
+                           Resolution.getCorrectStream(altVideoUrl, null, {isLive:isLive,download:download});
+                       };
+                   }}
                   );
     };
     return 0
@@ -1587,3 +1663,21 @@ GetMaxVideoHeight = function() {
         return MAX_HEIGHT;
     return 540;
 };
+
+Player.GetHelpText = function() {
+    var help = '<table style="margin-bottom:40px;width:100%;border-collapse:collapse;margin-left:auto;margin-right:auto;">'
+    help = InsertHelpRow(help, "INFO", "Details");
+    help = InsertHelpRow(help, "RED", "Repeat");
+    help = InsertHelpRow(help, "YELLOW", "Subtitles");
+    help = InsertHelpRow(help, "BLUE", "Aspect");
+    help = InsertHelpRow(help, "UP/DOWN", "Subtitles Position/Zoom Level");
+    help = InsertHelpRow(help, "2/8", "Subtitles Size");
+    help = InsertHelpRow(help, "4/6", "Subtitles Distance (if background is used)");
+    return help + "</table>";
+}
+
+InsertHelpRow = function(Html, Key, Text) {
+    var style =' style="padding:4px;border: 1px solid white;"'
+    return Html+'<tr><td'+style+'>'+Key+'</td><td'+style+'>'+Text+"</td></tr>";
+}
+
