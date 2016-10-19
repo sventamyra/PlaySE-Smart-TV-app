@@ -609,16 +609,16 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     var has_clips = false
     var has_zero_season = false
     if (!is_clips && !requested_season) {
-        for (var i=0; i < data.realatedVideoTabs.length; i++) {
-            if (!has_zero_season && data.realatedVideoTabs[i].season > 0) {
-                seasons.push({season:data.realatedVideoTabs[i].season,
-                              name  : data.realatedVideoTabs[i].name.trim()
+        for (var i=0; i < data.realatedVideosTabs.length; i++) {
+            if (!has_zero_season && data.realatedVideosTabs[i].season > 0) {
+                seasons.push({season:data.realatedVideosTabs[i].season,
+                              name  : data.realatedVideosTabs[i].name.trim()
                              });
-            } else if (data.realatedVideoTabs[i].season == 0) {
+            } else if (data.realatedVideosTabs[i].season == 0) {
                 has_zero_season = true;
                 seasons = [];
             }
-            if (!has_clips && data.realatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS")
+            if (!has_clips && data.realatedVideosTabs[i].type == "VIDEO_TYPE_CLIPS")
                 has_clips = true
         }
         if (seasons.length > 1) {
@@ -637,25 +637,25 @@ Svt.decode_show = function (data, url, is_clips, requested_season) {
     }
     // Get Correct Tab
     var videos = [];
-    for (var i=0; i < data.realatedVideoTabs.length; i++) {
+    for (var i=0; i < data.realatedVideosTabs.length; i++) {
         if (requested_season && requested_season != 0) {
-            if (data.realatedVideoTabs[i].season == +requested_season) {
-                videos = data.realatedVideoTabs[i].videos
+            if (data.realatedVideosTabs[i].season == +requested_season) {
+                videos = data.realatedVideosTabs[i].videos
                 break
             }
         } else if (is_clips) {
-            if (data.realatedVideoTabs[i].type == "VIDEO_TYPE_CLIPS") {
-                videos = data.realatedVideoTabs[i].videos
+            if (data.realatedVideosTabs[i].type == "VIDEO_TYPE_CLIPS") {
+                videos = data.realatedVideosTabs[i].videos
                 break
             }
         } else {
                 if (has_zero_season) {
-                    if (data.realatedVideoTabs[i].key == "RELATED_VIDEO_TABS_LATEST") {
-                        videos = data.realatedVideoTabs[i].videos
+                    if (data.realatedVideosTabs[i].key == "RELATED_VIDEO_TABS_LATEST") {
+                        videos = data.realatedVideosTabs[i].videos
                         break;
                     }
-                } else if (data.realatedVideoTabs[i].type != "VIDEO_TYPE_CLIPS") {
-                    videos = data.realatedVideoTabs[i].videos
+                } else if (data.realatedVideosTabs[i].type != "VIDEO_TYPE_CLIPS") {
+                    videos = data.realatedVideosTabs[i].videos
                     break
                 }
         }
