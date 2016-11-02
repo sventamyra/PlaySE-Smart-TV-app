@@ -31,7 +31,7 @@ Main.onLoad = function(refresh)
         deviceYear = getDeviceYear();
         if (deviceYear > 2011)
             LINE_LENGTH = 36;
-        Log("DeviceYear(" + isEmulator + "):" + deviceYear + " curWidget:" + curWidget.name + "Cookies:" + document.cookie);
+        Log("Model:" + model +  " DeviceYear:" + deviceYear + " IsEmulator:" + isEmulator + " curWidget:" + curWidget.name + " Cookies:" + document.cookie);
         loadingStart();
         Main.setClock();
         Main.startKeepAlive();

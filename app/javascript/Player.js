@@ -13,6 +13,7 @@ var videoWidth = null;
 var videoBw = null;
 var lastPos = 0;
 var videoUrl;
+var masterUrl;
 var detailsUrl;
 var requestedUrl;
 var startup = true;
@@ -165,9 +166,12 @@ Player.setFullscreen = function()
     this.plugin.SetDisplayArea(0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
 };
 
-Player.setVideoURL = function(url, srtUrl, extra)
+Player.setVideoURL = function(master, url, srtUrl, extra)
 {
     if (!extra) extra  = {};
+
+    masterUrl = master;
+
     if (srtUrl && srtUrl != "") {
         this.fetchSubtitle(srtUrl);
     }
@@ -554,10 +558,12 @@ Player.storeResumeInfo = function() {
     if (videoUrl && resumeTime > 20 && !Player.isLive) {
         // Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " videoUrl:" + videoUrl + "!Player.isLive:" + !Player.isLive);
 
-        var urlKey     = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
-        var resumeList = Player.removeResumeInfo(urlKey);
+        var streamKey  = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
+        var masterKey  = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");
+        var resumeList = Player.removeResumeInfo(streamKey);
+        resumeList = Player.removeResumeInfo(masterKey);
         if (resumeTime < (0.97*Player.GetDuration()/1000)) {
-            resumeList.unshift({url:urlKey, time:resumeTime});
+            resumeList.unshift({url:masterKey, time:resumeTime});
             resumeList = resumeList.slice(0,20);
         }
         Config.save("resumeList", resumeList);
@@ -566,10 +572,11 @@ Player.storeResumeInfo = function() {
 }
 
 Player.getStoredResumeTime = function() {
-    var url = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
+    var stream = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
+    var master = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");
     var resumeList = Player.getResumeList();
     for (var i = 0; i < resumeList.length; i++) {
-        if (resumeList[i].url == url) {
+        if (resumeList[i].url == master || resumeList[i].url == stream) {
             return resumeList[i].time;
         }
     }
@@ -666,7 +673,6 @@ Player.hideDetailedInfo = function(){
 
 Player.setCurTime = function(time)
 {
-        resumeTime = +time/1000;
 	// work-around for samsung bug. Mute sound first after the player started.
 	if(startup){
 	    startup = false;
@@ -675,7 +681,8 @@ Player.setCurTime = function(time)
                 Player.updateOffset(Player.startTime);
             }
             Player.setResolution(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
-	}
+	} else
+            resumeTime = +time/1000;
 	ccTime = +time + Player.offset;
 	if(this.skipState == -1){
 	    this.updateSeekBar(ccTime);
@@ -890,12 +897,12 @@ Player.checkHls = function(OtherCalback) {
                                          var text = 'HLS Version ' + hls_version + ' unsupported.';
                                          Player.PlaybackFailed(text);
                                      } else {
-                                         OtherCalback;
+                                         OtherCalback();
                                      }
                                  }
                                 )
         } else {
-            OtherCalback;
+            OtherCalback();
         }
     }
 };

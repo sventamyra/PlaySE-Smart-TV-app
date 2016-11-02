@@ -67,6 +67,8 @@ Svt.getThumb = function(data, size) {
         Thumb = data.posterXL;
     else if (data.imageMedium)
         Thumb = data.imageMedium;
+    else if (data.image)
+        Thumb = data.image;
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
     if (!size || size == "small")
         return Thumb.replace(/\/(medium|(extra)?large)\//, "/small/")
@@ -415,23 +417,29 @@ Svt.decodeCategories = function (data) {
         var Link;
         var ImgLink;
 
-        data = Svt.decodeJson(data).programsPage.content;
+        data = Svt.decodeJson(data)
 
         switch (Svt.getCategoryIndex().current) {
         case 0:
-            data.categories.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
-            Svt.decode(data.categories)
+            data = data.programsPage.content;
+            data.mainClusters.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
+            Svt.decode(data.mainClusters)
             break;
         case 1:
-            for (var key in data.allClusters) {
-                for (var k=0; k < data.allClusters[key].length; k++) {
-                    for (var i=0; i < data.allClusters[key][k].length; i++) {
-                        Name    = data.allClusters[key][k][i].name.trim();
+            data = data.programsPage.content;
+            var keys = [];
+            for (var key in data.allClusters)
+                keys.push(key)
+            keys.sort();
+            for (var c in keys) {
+                for (var k=0; k < data.allClusters[keys[c]].length; k++) {
+                    for (var i=0; i < data.allClusters[keys[c]][k].length; i++) {
+                        Name    = data.allClusters[keys[c]][k][i].name.trim();
                         ImgLink = null;
-                        Link    = data.allClusters[key][k][i].uri.replace(/^tag.+:([^:]+)$/,"/genre/$1");
+                        Link    = data.allClusters[keys[c]][k][i].uri.replace(/^tag.+:([^:]+)$/,"/genre/$1");
                         Link    = Svt.fixLink(Link);
-                        if (data.allClusters[key][k][i].metaData)
-                            ImgLink = Svt.getThumb(data.allClusters[key][k][i].metaData);
+                        if (data.allClusters[keys[c]][k][i].metaData)
+                            ImgLink = Svt.getThumb(data.allClusters[keys[c]][k][i].metaData);
                         toHtml({name:        Name,
                                 link:        Link,
                                 link_prefix: '<a href="categoryDetail.html?category=',
@@ -443,11 +451,12 @@ Svt.decodeCategories = function (data) {
             };            
             break;
         case 2:
+            data = data.alphabeticList.content;
             ImgLink = null;
-            for (var key in data.alphabeticList) {
-                for (var k=0; k < data.alphabeticList[key].titles.length; k++) {
-                    Name    = data.alphabeticList[key].titles[k].title.trim();
-                    Link    = data.alphabeticList[key].titles[k].urlFriendlyTitle;
+            for (var key in data) {
+                for (var k=0; k < data[key].titles.length; k++) {
+                    Name    = data[key].titles[k].title.trim();
+                    Link    = data[key].titles[k].urlFriendlyTitle;
                     showToHtml(Name, ImgLink, Svt.fixLink(Link));
                 };
             };

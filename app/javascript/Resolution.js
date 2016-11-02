@@ -39,6 +39,7 @@ Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
         if (!extra) extra  = {};
         var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,"");
         var target = Resolution.getTarget(extra.isLive);
+        var master = videoUrl;
         if (target != "Auto" && videoUrl.match(/\.m3u8|\.ism/)) {
             requestUrl(videoUrl,
                        function(status, data)
@@ -86,7 +87,7 @@ Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
                                videoUrl = videoUrl + "|COMPONENT=HLS"
                            else
                                videoUrl = videoUrl + "|COMPONENT=WMDRM"
-		           Player.setVideoURL(videoUrl, srtUrl, {license:extra.license, bw:target});
+		           Player.setVideoURL(master, videoUrl, srtUrl, {license:extra.license, bw:target});
 		           callback();
 	               }
                       );
@@ -96,7 +97,7 @@ Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
             else if (videoUrl.match(/\.ism/)) {
                 videoUrl = videoUrl + "|STARTBITRATE=CHECK|COMPONENT=WMDRM"
             }
-	    Player.setVideoURL(videoUrl, srtUrl, {license:extra.license});
+	    Player.setVideoURL(master, videoUrl, srtUrl, {license:extra.license});
 	    callback();
 	}
 };
