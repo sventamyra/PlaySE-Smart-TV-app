@@ -507,8 +507,8 @@ Tv4.getDetailsUrl = function(streamUrl) {
 
 Tv4.getPlayUrl = function(streamUrl, isLive) {
 
-    var reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play.json?protocol=hls&videoFormat=mp4+ism+webvtt+livehls");
-        
+    var reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play.json?protocol=hls3&videoFormat=mp4+ism+webvtt+livehls");
+
     requestUrl(reqUrl,
                function(status, data)
                {
@@ -537,8 +537,9 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                        }
                        if (!stream) {
                            $('.bottomoverlaybig').html('Not Available!');
+                       } else {
+                           Resolution.getCorrectStream(stream, srtUrl, {license:license});
                        }
-                       Resolution.getCorrectStream(stream, srtUrl, {license:license});
                    }
                }
               );
