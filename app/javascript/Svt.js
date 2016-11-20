@@ -746,7 +746,7 @@ Svt.decodeChannels = function(data) {
         var IsRunning;
         var BaseUrl = 'http://www.svtplay.se/kanaler';
 
-        data = Svt.decodeJson(data).channels.schedule;
+        data = Svt.decodeJson(data).channelsPage.schedule;
         for (var k=0; k < data.length; k++) {
 
             Name = data[k].title.trim();

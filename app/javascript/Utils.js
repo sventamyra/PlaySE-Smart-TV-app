@@ -414,7 +414,7 @@ setDateOffset = function () {
                      function(data)
                      {
                          dateOffset = 0;
-                         data = Svt.decodeJson({responseText:data}).channels.schedule[0];
+                         data = Svt.decodeJson({responseText:data}).channelsPage.schedule[0];
                          data = data.schedule[0].broadcastStartTime;
                          var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
                          var actualSeconds = actualData[2]*3600 + actualData[3]*60;
