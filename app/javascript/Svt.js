@@ -194,9 +194,9 @@ Svt.getDetailsData = function(url, data) {
         } else {
             data = Svt.decodeJson(data);
             if (url.indexOf("/kanaler/") > -1) {
-	        for (var i = 0; i < data.channels.schedule.length; i++) {
-                    if (data.channels.schedule[i].name == data.metaData.title) {
-                        data = data.channels.schedule[i];
+	        for (var i = 0; i < data.channelsPage.schedule.length; i++) {
+                    if (data.channelsPage.schedule[i].name == data.metaData.title) {
+                        data = data.channelsPage.schedule[i];
                         break;
                     }
                 }

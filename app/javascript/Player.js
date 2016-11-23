@@ -1259,9 +1259,9 @@ Player.GetPlayUrl = function(gurl, isLive, altUrl, altVideoUrl) {
                            var videoReferences, subtitleReferences = [], srtUrl = null;
                            if (gurl.indexOf("/kanaler/") != -1) {
                                data = Svt.decodeJson(data);
-	                       for (var i = 0; i < data.channels.schedule.length; i++) {
-                                   if (data.channels.schedule[i].name == data.metaData.title) {
-                                       data = data.channels.schedule[i];
+	                       for (var i = 0; i < data.channelsPage.schedule.length; i++) {
+                                   if (data.channelsPage.schedule[i].name == data.metaData.title) {
+                                       data = data.channelsPage.schedule[i];
                                        // No subtitles
                                        data.disabled = true;
                                        data.subtitleReferences = []
