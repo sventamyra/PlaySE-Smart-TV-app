@@ -25,6 +25,7 @@ setChannel = function(newChannel) {
        )
     {
         channel = newChannel;
+        Channel.set(newChannel)
         Viasat.resetSubChannel();
         Dplay.resetSubChannel();
         myLocation = null;
@@ -123,6 +124,7 @@ refreshLocation = function(entry)
 {
     myRefreshLocation = entry.loc;
     Language.fixAButton();
+    Language.fixBButton();
     dispatch(myRefreshLocation, true);
 };
 
@@ -167,9 +169,7 @@ setLocation = function(location, oldPos, skipHistory)
         }
     } else {
         Language.fixAButton();
-        if ((channel == "svt" && !location.match(/categoryDetail.html/) && !location.match(/categories.html/)) ||
-            ((channel == "viasat" || channel == "dplay") && !location.match(/categories.html/)))
-            Language.fixBButton();
+        Language.fixBButton();
     }
     if ((isDetails && !detailsOnTop) || !detailsOnTop)
     {
@@ -282,11 +282,11 @@ getLocation = function (refresh)
     return myLocation;
 };
 
-getPriorLocation = function () {
+getOldLocation = function() {
     if (myHistory.length > 0)
-        return myHistory[myHistory.length-1].loc;
-    else 
-        return "";
+        return myHistory[myHistory.length-1].loc
+    else
+        return null
 };
 
 getIndexLocation = function() {
@@ -295,13 +295,6 @@ getIndexLocation = function() {
         myNewLocation = getOldLocation();
     return myNewLocation;
 }
-
-getOldLocation = function() {
-    if (myHistory.length > 0)
-        return myHistory[myHistory.length-1].loc
-    else
-        return null
-};
 
 getIndex = function(MaxIndex, IndexToSkip) {
     var thisLocation = getIndexLocation();
@@ -401,7 +394,7 @@ setOffsets = function() {
                          }
 	                 window.clearTimeout(setClockOffsetTimer);
                      },
-                     true
+                    {no_log:true}
                     );
     setDateOffset();
 };
@@ -435,7 +428,7 @@ setDateOffset = function () {
                          }
 	                 window.clearTimeout(setDateOffsetTimer);
                      },
-                     true
+                     {no_log:true}
                     )
 };
 
@@ -520,7 +513,7 @@ requestUrl = function(url, cbSucces, extra) {
     if (!extra) extra = {};
         
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
-    addToMyUrls(url);
+    addToMyUrls(url, extra);
     if (extra.cookie) {
         
         extra.cookie = addCookiePath(extra.cookie, url);
@@ -538,6 +531,10 @@ requestUrl = function(url, cbSucces, extra) {
 	    timeout: 15000,
             beforeSend: function (request)
             {
+                if (extra.headers) {
+                    for (var i=0;i<extra.headers.length;i++)
+                        request.setRequestHeader(extra.headers[i].key, extra.headers[i].value);
+                }
                 if (deviceYear == 2014 && extra.cookie) {
                     extra.cookie = extra.cookie.replace(/ *;.*/,"")
                     Log("Sending " + extra.cookie + " in Headers.");
@@ -557,15 +554,16 @@ requestUrl = function(url, cbSucces, extra) {
             error: function(xhr, textStatus, errorThrown)
             {
                 if (isRequestStillValid(requestedLocation)) {
-        	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown + " Headers:" + xhr.getAllResponseHeaders());
+        	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown + " Headers:" + xhr.getAllResponseHeaders() + ' ' + xhr.responseText);
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
                         this.tryCount <= this.retryLimit) {
                         //try again
                         return $.ajax(this);
                     } else {
-        	        ConnectionError.show();
-                        callUrlCallBack(requestedLocation, extra.cbError, textStatus, errorThrown);
+                        if (!extra.dont_show_errors)
+        	            ConnectionError.show();
+                        callUrlCallBack(requestedLocation, extra.cbError, textStatus, xhr, errorThrown);
         	    }
                 }
                 if (extra.cookie)
@@ -581,9 +579,9 @@ requestUrl = function(url, cbSucces, extra) {
     );
 };
 
-callUrlCallBack = function(requestedLocation,cb,status,xhr) {
+callUrlCallBack = function(requestedLocation,cb,status,xhr, errorThrown) {
     if (cb && isRequestStillValid(requestedLocation)) {
-        cb(status, xhr);
+        cb(status, xhr, errorThrown);
     } else if (cb)
         Log("Url skipped: " + requestedLocation.url + " Skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " New:" + myLocation + " " +  myRefreshLocation);
 };
@@ -614,7 +612,8 @@ syncHttpRequest = function(url) {
     return {data:data, success:success, status:status, location:location}
 };
 
-asyncHttpRequest = function(url, callback, noLog, timeout) {
+asyncHttpRequest = function(url, callback, extra) {
+    if (!extra) extra = {};
     addToMyUrls(url);
     var xhr = new XMLHttpRequest();
     var timer = null;
@@ -622,7 +621,7 @@ asyncHttpRequest = function(url, callback, noLog, timeout) {
         if (xhr.readyState == 4) {
             window.clearTimeout(timer);
             // if (xhr.status === 200)
-            if (!noLog) {
+            if (!extra.no_log) {
                 if (xhr.status === 200)
                     Log('Success:' + url);
                 else
@@ -636,16 +635,36 @@ asyncHttpRequest = function(url, callback, noLog, timeout) {
         }
     }
     xhr.open("GET", url);
-    if (timeout) {
+    if (extra.headers) {
+        for (var i=0;i<extra.headers.length;i++)
+            xhr.setRequestHeader(extra.headers[i].key, extra.headers[i].value);
+    }
+    if (extra.timeout) {
         timer = window.setTimeout(function() {
             xhr.abort();
             Log('Timeout:' + url);
             if (callback)
                 callback(null, "timeout");
-        }, timeout);
+        }, extra.timeout);
     }
     xhr.send();
 };
+
+asyncHttpLoop = function(urls, urlCallback, cbComplete) {
+    runAsyncHttpLoop(urls, urlCallback, cbComplete, "")
+};
+
+runAsyncHttpLoop = function(urls, urlCallback, cbComplete, totalData) {
+    asyncHttpRequest(urls[0],
+                     function(data, status) {
+                         totalData = totalData + urlCallback(urls[0], data, status)
+                         if (urls.length > 1)
+                             runAsyncHttpLoop(urls.slice(1), urlCallback, cbComplete, totalData)
+                         else {
+                             cbComplete(totalData)
+                         }
+                     });
+}
 
 getHistory = function(Name) {
     var Prefix = document.title;
@@ -806,15 +825,16 @@ slideToggle = function(id, timer, callback) {
         id.slideToggle(timer, callback);
 }
 
-addToMyUrls = function(url) {
-    if (myUrls.indexOf(url) == -1 && url.indexOf("/log?msg") == -1) {
-        myUrls.push(url);
+addToMyUrls = function(url, extra) {
+    if (!extra) extra = {};
+    if (!extra.not_random && myUrls.indexOf(url) == -1) {
+        myUrls.push({url:url, extra:extra});
         myUrls = myUrls.slice(0,10);
     }
 };
 
 Log = function (msg) 
 {
-    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, true);
+    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, not_random:true});
     // alert(msg);
 };

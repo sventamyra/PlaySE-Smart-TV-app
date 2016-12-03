@@ -130,49 +130,65 @@ Viasat.getHeaderPrefix = function() {
     return "Viasat";
 }
 
-Viasat.fixAButton = function(language) {
-    if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
+Viasat.keyRed = function() {
+    if ($("#a-button").text().indexOf("Pop") != -1) {
+	setLocation('index.html');
+    } else if ($("#a-button").text().indexOf("lip") != -1) {
+	setLocation('LatestClips.html');
+    } else {
+	setLocation('Latest.html');
+    }
+}
+
+Viasat.keyGreen = function() {
+    if ($("#b-button").text().indexOf("ateg") != -1)
+	setLocation('categories.html');
+    else
+        setLocation(Viasat.getNextCategory())
+}
+
+Viasat.getAButtonText = function(language) 
+{
+    var loc = getIndexLocation();
+    if (loc.match(/index\.html/)){
         if(language == 'English'){
-	    $("#a-button").text('Latest');
+	    return 'Latest';
         } else {
-	    $("#a-button").text('Senaste');
+	    return 'Senaste';
         }
-    } else if((myRefreshLocation && (myRefreshLocation.indexOf("Latest.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
+    } else if (loc.match(/Latest\.html/)) {
         if(language == 'English'){
-	    $("#a-button").text('Latest Clips');
+	    return 'Latest Clips';
         } else {
-	    $("#a-button").text('Senaste Klipp');
+	    return 'Senaste Klipp';
         }
     } else {
-        if(language == 'English'){
-	    $("#a-button").text('Popular');
-        } else {
-	    $("#a-button").text('Populärt');
-        }
+        // Use Default
+        return null;
     }
 };
 
-Viasat.toggleBButton = function() {
-
-    var language = Language.checkLanguage();
-
-    switch (Viasat.getCategoryIndex().next) {
-    case 0:
-        Language.fixBButton();
-        break;
-    case 1:
-        if (language == "Swedish")
-            $("#b-button").text("Utvalt");
-        else
-            $("#b-button").text("Collections");
-        break;
-    case 2:
-        if (language == "Swedish")
-            $("#b-button").text("Alla Program");
-        else
-            $("#b-button").text("All Shows");
-        break;
-    }
+Viasat.getBButtonText = function(language) {
+    if (getIndexLocation().match(/categories\.html/)) {
+        switch (Viasat.getCategoryIndex().next) {
+        case 0:
+            // Use Default
+            return null;
+        case 1:
+            if (language == "Swedish")
+                return "Utvalt";
+            else
+                return "Collections";
+            break
+        case 2:
+            if (language == "Swedish")
+                return "Alla Program";
+            else
+                return "All Shows";
+            break;
+        }
+    } else
+        return null
 };
 
 Viasat.getCButtonText = function (language) {
@@ -693,27 +709,33 @@ Viasat.fixThumb = function(thumb, size) {
     return thumb.replace(/(({size})|([0-9]+x[0-9]+))/, size);
 }
 
-Viasat.fetchSubtitle = function (subUrls) {
-    if (subUrls.list.length == 0) 
+Viasat.fetchSubtitles = function (subUrls, hlsSubs) {
+    if (hlsSubs && hlsSubs.length > subUrls.list.length) {
+        return Player.fetchHlsSubtitles(hlsSubs);
+    } else if (subUrls.list.length == 0) {
         return;
-    asyncHttpRequest(subUrls.list[0],
-                     function(data, status) {
-                         if (status != 200) {
-                             Log("Viasat.fetchSubtitle sub failed: " + status);
-                             data = ""
-                         }
-                         for (var i=1; i < subUrls.list.length; i++) {
-                             result = syncHttpRequest(subUrls.list[i]);
-                             if (result.success) { 
-                                 data = data + result.data;
-                             } else {
-                                 Log("Viasat.fetchSubtitle sub failed: " + result.status);
-                             }
-                         }
-                         if (data.length > 0)
-                             Viasat.parseSubtitles(data);
-                     }
-                    );
+    } else if (subUrls.list[0].match(/\.(web)?vtt/)) {
+        return Player.fetchSubtitles(subUrls, hlsSubs)
+    }
+    var anyFailed = false
+    asyncHttpLoop(subUrls.list,
+                  function(url, data, status) {
+                      if (status != 200) {
+                          Log("Viasat.fetchSubtitles sub failed: " + status);
+                          data = ""
+                          anyFailed = true;
+                          return ""
+                      } else {
+                          return data
+                      }
+                  },
+                  function(data) {
+                      if (data.length > 0)
+                          Viasat.parseSubtitles(data);
+                      if (anyFailed && hlsSubs)
+                          Player.fetchHlsSubtitles(hlsSubs)
+                  }
+                 );
 };
 
 Viasat.parseSubtitles = function (data) {

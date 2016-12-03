@@ -4,15 +4,16 @@ var osdTimer;
 var clockTimer; 
 var skipTimer; 
 var detailsTimer;
-var delayedPlayTimer;
+var delayedPlayTimer = 0;
 var pluginAPI = new Common.API.Plugin();
 var fpPlugin;
 var ccTime = 0;
 var resumeTime = 0;
-var videoWidth = null;
 var videoBw = null;
 var lastPos = 0;
+var resumeJump = null;
 var videoUrl;
+var videoData = {};
 var masterUrl;
 var detailsUrl;
 var requestedUrl;
@@ -77,7 +78,9 @@ Player.init = function()
     var success = true;
     
     this.state = this.STOPPED;
-    this.plugin = document.getElementById("pluginPlayer");
+    this.plugin = document.getElementById("pluginSef");
+    Log("Player Open:" + this.plugin.Open('Player', '1.010', 'Player'));
+    this.plugin.OnEvent = Player.OnEvent;
     fpPlugin = document.getElementById("pluginFrontPanel");
     
     if (!this.plugin)
@@ -103,19 +106,66 @@ Player.init = function()
     }
     
   //  this.setWindow();
-    
-    this.plugin.OnCurrentPlayTime = 'Player.setCurTime';
-    this.plugin.OnStreamInfoReady = 'Player.OnStreamInfoReady';
-    this.plugin.OnBufferingStart = 'Player.OnBufferingStart';
-    this.plugin.OnBufferingProgress = 'Player.OnBufferingProgress';
-    this.plugin.OnBufferingComplete = 'Player.OnBufferingComplete';           
-    this.plugin.OnRenderingComplete  = 'Player.OnRenderingComplete'; 
-    this.plugin.OnNetworkDisconnected = 'Player.OnNetworkDisconnected';
-    this.plugin.OnConnectionFailed = 'Player.OnConnectionFailed';
-    this.plugin.OnStreamNotFound   = 'Player.OnStreamNotFound';
-    this.plugin.OnRenderError      = 'Player.OnRenderError';
-    this.plugin.OnAuthenticationFailed = 'Player.OnAuthenticationFailed';
     return success;
+};
+
+Player.OnEvent = function(EventType, param1, param2) {
+    switch (EventType) 
+    {
+    case 1: //OnConnectionFailed();
+        Player.OnConnectionFailed();
+        break;
+    case 2: //OnAuthenticationFailed();
+        Player.OnAuthenticationFailed();
+    case 3: //OnStreamNotFound();
+        Player.OnStreamNotFound();
+        break;
+    case 4: //OnNetworkDisconnected();
+        Player.OnNetworkDisconnected();
+        break;
+    case 6: //OnRenderError();
+        Player.OnRenderError(param1);
+        break;
+    case 7: //OnRenderingStart();
+        evt = Player.OnRenderingStart();
+        break;
+    case 8: //OnRenderingComplete();
+        evt = Player.OnRenderingComplete();
+        break;
+    case 9: //OnStreamInfoReady();
+        Player.OnStreamInfoReady();
+        break;
+    case 11: //OnBufferingStart();
+        Player.OnBufferingStart();
+        break;
+    case 12: //OnBufferingComplete();
+        Player.OnBufferingComplete();
+        break;
+    case 13: //OnBufferingProgress();
+        Player.OnBufferingProgress(param1);
+        break;
+    case 14: //SetCurTime(param1);
+        Player.SetCurTime(param1);
+        break;
+        //'15' : 'AD_START',
+        //'16' : 'AD_END',
+    case 17: // 'RESOLUTION_CHANGED'
+        Player.OnStreamInfoReady(true);
+        Player.updateTopOSD();
+        break;
+    case 18: // BITRATE_CHANGED'
+        // Ignore BW since it seems it reacts on new data instead of buffered data. 
+        // I.e. it's updated before resolution... 
+        break;
+        //'19' : 'SUBTITLE'
+    case 100: // LICENSE_FAILURE?'
+        Player.OnRenderError("DRM License failed");
+        break;
+        //'19' : 'SUBTITLE'
+    default:
+        Log("SefPlayer event " + EventType + "(" + param1 + ", " + param2 + ")");
+        break;
+    }
 };
 
 Player.setFrontPanelTime = function (hours, mins, secs) {
@@ -141,8 +191,8 @@ Player.setFrontPanelText = function (text) {
 
 Player.deinit = function()
 {
-        if (this.plugin)
-            Player.plugin.Stop();
+        if (Player.plugin)
+            Player.plugin.Execute("Stop");
         Player.disableScreenSaver();
         Player.storeResumeInfo();
         var mwPlugin = document.getElementById("pluginObjectTVMW");
@@ -157,38 +207,47 @@ Player.deinit = function()
 
 Player.setWindow = function()
 {
-	//this.plugin.SetDisplayArea(0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
-    this.plugin.SetDisplayArea(0, 0, 1, 1);
+	//Player.plugin.Execute("SetDisplayArea", 0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
+    Player.plugin.Execute("SetDisplayArea", 0, 0, 1, 1);
 };
 
 Player.setFullscreen = function()
 {
-    this.plugin.SetDisplayArea(0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
+    Player.plugin.Execute("SetDisplayArea", 0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
 };
 
 Player.setVideoURL = function(master, url, srtUrl, extra)
 {
+    videoData = {};
     if (!extra) extra  = {};
 
     masterUrl = master;
 
-    if (srtUrl && srtUrl != "") {
-        this.fetchSubtitle(srtUrl);
-    }
+    Channel.fetchSubtitles(srtUrl, extra.hls_subs)
 
     if (extra.bw) {
         this.bw = " " + Player.BwToString(extra.bw);
     } else {
         this.bw = "";
     }
-
-    if (extra.license && deviceYear >= 2011)
-    {
-        Log("LICENSE URL: " + extra.license)
-        this.plugin.InitPlayer(videoUrl);
-        this.plugin.SetPlayerProperty(4, extra.license, extra.license.length);
-    }
     videoUrl = url;
+    videoData.url       = videoUrl;
+    videoData.audio_idx = extra.audio_idx;
+
+    if (deviceYear >= 2011 && videoUrl.match(/=WMDRM/)) {
+        Player.plugin.Execute("InitPlayer", videoUrl);
+        if (extra.license) {
+            if (extra.customdata) {
+                videoData.customdata = extra.customdata;
+                Log("CustomData:" + extra.customdata);
+                Player.plugin.Execute("SetPlayerProperty", 3, extra.customdata, extra.customdata.length);
+            }
+            Log("LICENSE URL: " + extra.license)
+            videoData.license = extra.license;
+            Player.plugin.Execute("SetPlayerProperty", 4, extra.license, extra.license.length);
+        }
+    }
+
     Log("VIDEO URL: " + videoUrl);
 };
 
@@ -252,8 +311,8 @@ Player.getHlsVersion = function(url, callback)
                              hls_version = null
                          callback(hls_version)
                      },
-                     false, 
-                     2000)
+                     {timeout:2000}
+                    )
 };
 
 Player.playVideo = function()
@@ -264,14 +323,14 @@ Player.playVideo = function()
     }
     else
     {
-        this.plugin.Stop();
+        Player.plugin.Execute("Stop");
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.setWindow();
        
-        // this.plugin.SetInitialBuffer(640*1024);
-        // this.plugin.SetPendingBuffer(640*1024);
-        // this.plugin.SetTotalBufferSize(640*1024);        
+        // Player.plugin.Execute("SetInitialBuffer", 640*1024);
+        // Player.plugin.Execute("SetPendingBuffer", 640*1024);
+        // Player.plugin.Execute("SetTotalBufferSize", 640*1024);        
         startup = true;
         if(Audio.plugin.GetUserMute() == 1){
                 $('.muteoverlay').show();
@@ -284,15 +343,21 @@ Player.playVideo = function()
 
         resumeTime = this.getStoredResumeTime();
 
+        delayedPlayTimer = 0;
         if (resumeTime) {
             $('.bottomoverlaybig').html("Press ENTER to resume");
             // Give some extra seconds to resume
             window.clearTimeout(delayedPlayTimer);
-            delayedPlayTimer = window.setTimeout(function() {Player.plugin.Play(videoUrl)}, 
+            delayedPlayTimer = window.setTimeout(function() 
+                                                 {
+                                                     delayedPlayTimer = -1;
+                                                     Player.plugin.Execute("Play", videoUrl);
+                                                 }, 
                                                  2000
                                                 );
-        } else
-            this.plugin.Play(videoUrl);
+        } else {
+            Player.plugin.Execute("Play", videoUrl);
+        }
         this.state = this.PLAYING;
 
         // work-around for samsung bug. Video player start playing with sound independent of the value of GetUserMute() 
@@ -329,13 +394,13 @@ Player.pauseVideo = function()
     Player.enableScreenSaver();
     this.state = this.PAUSED;
     Player.setFrontPanelText(Player.FRONT_DISPLAY_PAUSE);
-    this.plugin.Pause();
+    Player.plugin.Execute("Pause");
 };
 
 Player.stopVideo = function(keep_playing)
 {
     this.state = this.STOPPED;
-    this.plugin.Stop();
+    Player.plugin.Execute("Stop");
     window.clearTimeout(delayedPlayTimer);
     Player.storeResumeInfo();
     loadingStop();
@@ -355,7 +420,7 @@ Player.stopVideoNoCallback = function()
     if (this.state != this.STOPPED)
     {
         Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
-        this.plugin.Stop();
+        Player.plugin.Execute("Stop");
     }
     else
     {
@@ -367,24 +432,30 @@ Player.resumeVideo = function()
 {
     Player.disableScreenSaver();
     Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
-	//this.plugin.ResumePlay(vurl, time);
+	//Player.plugin.Execute("ResumePlay", vurl, time);
+    if (this.state == this.PLAYING)
+        Player.plugin.Execute("SetPlaybackSpeed", 1);
     this.state = this.PLAYING;
-    this.plugin.Resume();
+    Player.plugin.Execute("Resume");
     this.hideDetailedInfo();
 };
 
 Player.reloadVideo = function(time)
 {
     retries = retries+1;
-	this.plugin.Stop();
-        if (time)
-            ccTime = time;
-        lastPos = Math.floor((ccTime-Player.offset) / 1000.0);
-        Player.disableScreenSaver();
-        Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
-	this.plugin.ResumePlay(videoUrl, lastPos);
-	Log("video reloaded. url = " + videoUrl + " pos " + lastPos );
-        this.state = this.PLAYING;
+    Player.plugin.Execute("Stop");
+    Player.plugin.Execute("InitPlayer", videoData.url);
+    if (videoData.customdata)
+        Player.plugin.Execute("SetPlayerProperty", 3, videoData.customdata, videoData.customdata.length);
+    if (videoData.license)
+        Player.plugin.Execute("SetPlayerProperty", 4, videoData.license, videoData.license.length);
+    if (time)
+        ccTime = time;
+    lastPos = Math.floor((ccTime-Player.offset) / 1000.0);
+    Player.disableScreenSaver();
+    Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
+    Log("video reloaded result:" + Player.resumePlayback(lastPos) + " url: " + videoUrl + " pos: " + lastPos + " org time:" + time + " ccTime:" + ccTime);
+    this.state = this.PLAYING;
 };
 
 Player.skipInVideo = function()
@@ -393,12 +464,12 @@ Player.skipInVideo = function()
     var timediff = +skipTime - +ccTime;
     timediff = timediff / 1000;
     if(timediff > 0) {
-    	Player.plugin.JumpForward(timediff);
+    	Player.plugin.Execute("JumpForward", timediff);
     	Log("forward jump: " + timediff);
     }
     else if(timediff < 0){
     	timediff = 0 - timediff;
-    	Player.plugin.JumpBackward(timediff);
+    	Player.plugin.Execute("JumpBackward", timediff);
     }
     skipTimeInProgress = skipTime;
     Player.refreshOsdTimer(5000);
@@ -480,7 +551,7 @@ Player.SetBufferingText = function(percent) {
 
 Player.OnBufferingStart = function()
 {
-    Log("onBufferingStart");
+    Log("OnBufferingStart");
     loadingStart();
     currentSubtitle = 0;
     subtitlesEnabled = this.getSubtitlesEnabled();
@@ -495,7 +566,7 @@ Player.OnBufferingStart = function()
 
 Player.OnBufferingProgress = function(percent)
 {
-    Log("onBufferingProgress");
+    Log("OnBufferingProgress");
     // Ignore if received without onBufferingStart. Seems sometimes 
     // it's received after onBufferingComplete.
     if (!Player.infoActive)
@@ -507,10 +578,10 @@ Player.OnBufferingProgress = function(percent)
 
 Player.OnBufferingComplete = function()
 {
-    Log("onBufferingComplete");
+    Log("OnBufferingComplete");
+    $('.bottomoverlaybig').html("");
     loadingStop();
     retries = 0;
-    $('.bottomoverlaybig').html("");
     this.hideControls();
     this.setFullscreen();
     // Only reset in case no additional skip is in progess
@@ -522,9 +593,18 @@ Player.OnBufferingComplete = function()
    //$('.loader').css("display", "none");
 };
 
+Player.OnRenderingStart = function()
+{
+    Log("OnRenderingStart");
+    if (resumeJump) {
+        Log("jump:"+Player.plugin.Execute("JumpForward", resumeJump)+" resumeJump:" + resumeJump);
+        resumeJump = null;
+    }
+};
+
 Player.OnRenderingComplete = function()
 {
-    Log("onRenderingComplete");
+    Log("OnRenderingComplete");
     Player.storeResumeInfo();
     Player.stopVideo(Player.repeat != Player.REPEAT_OFF);
     if (Player.repeat == Player.REPEAT_ONE) {
@@ -651,12 +731,25 @@ Player.keyEnter = function()
     if ($('.bottomoverlaybig').html().match(/Press ENTER/)) {
         $('.bottomoverlaybig').html("Resuming");
         window.clearTimeout(delayedPlayTimer);
-        this.plugin.Stop();
-        this.plugin.ResumePlay(videoUrl, resumeTime-10);
+        // Stop in case delayedPlayTimer already expired...
+        Player.plugin.Execute("Stop");
+        if (!videoUrl.match(/=WMDRM/))
+            Player.plugin.Execute("InitPlayer", videoUrl);
+        Player.resumePlayback(resumeTime-10);
     } else {
         Player.togglePause();
     }
 };
+
+Player.resumePlayback = function(time) {
+    // Seems Auto and at least HLS has issues with resume...
+    if ("Auto" == Resolution.getTarget(Player.isLive)) {
+        Player.plugin.Execute("Play", videoUrl);
+        resumeJump = time;
+    } else {
+        Player.plugin.Execute("StartPlayback", time);
+    }
+}
 
 Player.hideDetailedInfo = function(){
     // Log("hideDetailedInfo");
@@ -671,17 +764,21 @@ Player.hideDetailedInfo = function(){
     Player.hideControls();
 };
 
-Player.setCurTime = function(time)
+Player.GetResolution = function() {
+    var res = Player.plugin.Execute("GetVideoResolution").split("|");
+    return {width:Number(res[0]),height: Number(res[1])}
+}
+Player.SetCurTime = function(time)
 {
 	// work-around for samsung bug. Mute sound first after the player started.
-	if(startup){
+	if(startup) {
 	    startup = false;
 	    Audio.setCurrentMode(smute);
             if (Player.isLive && +Player.startTime != 0 && +time < 30000) {
                 Player.updateOffset(Player.startTime);
             }
-            Player.setResolution(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
-	} else
+            Player.setResolution(Player.GetResolution());
+	} else if (!resumeJump)
             resumeTime = +time/1000;
 	ccTime = +time + Player.offset;
 	if(this.skipState == -1){
@@ -692,11 +789,12 @@ Player.setCurTime = function(time)
         }
         Player.refreshStartData(Details.fetchedDetails);
         // Seem onStreamInfoReady isn't invoked in case new stream in playlist is chosen.
-        if (this.plugin.GetVideoWidth()      != videoWidth ||
-            this.plugin.GetCurrentBitrates() != videoBw) {
-            Player.OnStreamInfoReady();
-            Player.updateTopOSD()
-        }
+        // Ignore to check BW since it seems it reacts on new data instead of buffered data. 
+        // I.e. it's updated before resolution... 
+        // if (Player.GetResolution().width != videoWidth) {
+        //     Player.OnStreamInfoReady(true);
+        //     Player.updateTopOSD()
+        // }
 };
 
 Player.updateSeekBar = function(time){
@@ -744,13 +842,19 @@ Player.BwToString = function(bw) {
         return Math.round(Number(bw)/1000) + " kbps";
 }
 
-Player.OnStreamInfoReady = function()
+Player.OnStreamInfoReady = function(forced)
 {
-    videoWidth = this.plugin.GetVideoWidth();
-    videoBw    = this.plugin.GetCurrentBitrates();
-    this.pluginDuration = this.plugin.GetDuration();
+    Log("OnStreamInfoReady, forced:" + forced);
+    var resolution = Player.GetResolution();
+    videoBw    = Player.plugin.Execute("GetCurrentBitrates");
+    if (this.bw && videoBw && this.bw != (" " + Player.BwToString(videoBw)))
+        Log("videoBw difference:" + Player.BwToString(videoBw) + this.bw);
+    Player.pluginDuration = Player.plugin.Execute("GetDuration");
     this.setTotalTime();
-    this.setResolution(videoWidth, this.plugin.GetVideoHeight());
+    this.setResolution(resolution);
+
+    if (videoData.audio_idx)
+        Log("SetStreamID: " + videoData.audio_idx + " res: " + Player.plugin.Execute("SetStreamID", 1, videoData.audio_idx))
 };
 
 Player.setTotalTime = function()
@@ -853,13 +957,10 @@ Player.retryVideo = function (text, max) {
 	        success: function(data, status, xhr)
 	        {
                     var time = (resumeTime) ? (resumeTime-10)*1000 : null;
-		    Log('Success:' + this.url);
+		    Log('Success:' + this.url + " resumeTime:" + time);
                     $('.bottomoverlaybig').html("Re-connecting"); 
                     Player.showControls();
-                    if (channel == "dplay")
-                        Dplay.refreshPlayUrl(function(){Player.reloadVideo(time)});
-                    else
-                        Player.reloadVideo(time);
+                    Channel.refreshPlayUrl(function(){Player.reloadVideo(time)});
 	        },
 	        error: function(XMLHttpRequest, textStatus, errorThrown)
 	        {
@@ -888,7 +989,8 @@ Player.OnRenderError = function(number)
 
 Player.checkHls = function(OtherCalback) {
     // Seems stop before OnBufferingStart gives e.g. OnRenderError
-    if (Player.state != Player.STOPPED) {
+    // Can also happen in case "resume" is chosen too late...
+    if (Player.state != Player.STOPPED && delayedPlayTimer != -1) {
         if(videoUrl.indexOf("=HLS") != -1 && videoUrl.indexOf(":10666/") == -1) {
             var thisVideoUrl = videoUrl;
             Player.getHlsVersion(videoUrl.replace(/\|.+/,""), 
@@ -923,13 +1025,13 @@ Player.PlaybackFailed = function(text)
 
 Player.GetDuration = function()
 {
-    if (!this.pluginDuration) {
-        if (!this.plugin)
+    if (!Player.pluginDuration) {
+        if (!Player.plugin)
             return this.sourceDuration
-        this.pluginDuration = this.plugin.GetDuration()
+        Player.pluginDuration = Player.plugin.Execute("GetDuration");
     }
         
-    var duration = this.pluginDuration - Player.durationOffset;
+    var duration = Player.pluginDuration - Player.durationOffset;
 
     if (duration > this.sourceDuration)
         return duration;
@@ -974,17 +1076,17 @@ Player.toggleAspectRatio = function() {
     {
         this.aspectMode = Player.ASPECT_NORMAL;
     }
-    this.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+    this.setAspectRatio(Player.GetResolution());
     // Update OSD
     this.updateTopOSD()
     if (this.IsAutoBwUsedFor2011())
         $('.topoverlayresolution').html("ASPECT unsupported when AUTO BW");
 };
 
-Player.setResolution = function (width, height) {
+Player.setResolution = function (resolution) {
 
-    if (width  > 0 && height > 0) {
-        var aspect = width / height;
+    if (resolution.width  > 0 && resolution.height > 0) {
+        var aspect = resolution.width / resolution.height;
         if (aspect == 16/9) {
             aspect = "16:9";
         } else if (aspect == 4/3) {
@@ -995,37 +1097,39 @@ Player.setResolution = function (width, height) {
         }
         // Only use given bw in case of "Auto-mode"
         var bw = (this.bw || !videoBw) ? this.bw : " " + Player.BwToString(videoBw);
-        Player.setTopOSDText(width + "x" + height + " (" + aspect + ")" + bw);
-        this.setAspectRatio(width, height);
+        Player.setTopOSDText(resolution.width + "x" + resolution.height + " (" + aspect + ")" + bw);
+        this.setAspectRatio(resolution);
+    } else {
+        Log("Missing resolution: " + resolution.width + "x" + resolution.height);
     }
 };
 
-Player.setAspectRatio = function(width, height) {
+Player.setAspectRatio = function(resolution) {
 
-    var aspect = width/height;
+    var aspect = resolution.width/resolution.height;
     // During "AUTO Bandwith" resolution can change which doesn't seem to be
     // reported to 2011 devices. So then Crop Area would be all wrong.
-    if (width > 0 && height > 0 && !Player.IsAutoBwUsedFor2011()) {
+    if (resolution.width > 0 && resolution.height > 0 && !Player.IsAutoBwUsedFor2011()) {
         if (Player.aspectMode === Player.ASPECT_H_FIT && aspect > 4/3)
         {
             var cropOffset = Math.floor((GetMaxVideoWidth() - (4/3*GetMaxVideoHeight()))/2);
-            var cropX      = Math.round(width/GetMaxVideoWidth()*cropOffset);
-            var cropWidth  = width-(2*cropX);
-            this.plugin.SetCropArea(cropX, 0, cropWidth, height);
+            var cropX      = Math.round(resolution.width/GetMaxVideoWidth()*cropOffset);
+            var cropWidth  = resolution.width-(2*cropX);
+            Player.plugin.Execute("SetCropArea", cropX, 0, cropWidth, resolution.height);
         } else if (Player.aspectMode === Player.ASPECT_H_FIT) {
             Player.setFullscreen();
         } else {
-            var resolution = {width:width, height:height, aspect:aspect};
+            resolution.aspect = aspect;
             if (Player.aspectMode === Player.ASPECT_ZOOM) {
                 Player.zoom(resolution);
             } else {
-                this.plugin.SetCropArea(0, 0, width, height);
+                Player.plugin.Execute("SetCropArea", 0, 0, resolution.width, resolution.height);
                 Player.scaleDisplay(resolution);
             }
         }
         // Re-pause
         if (this.state === this.PAUSED) {
-            this.plugin.Pause();
+            Player.plugin.Execute("Pause");
         }
     }
 };
@@ -1043,7 +1147,7 @@ Player.scaleDisplay = function (resolution) {
     var x = Math.floor((GetMaxVideoWidth()-width)/2);
     var y = Math.floor((GetMaxVideoHeight()-height)/2);
     // Log("scaleDisplay:"+x+","+y+","+width+","+height + " resolution:" + JSON.stringify(resolution));
-    this.plugin.SetDisplayArea(x, y, Math.floor(width), Math.floor(height));
+    Player.plugin.Execute("SetDisplayArea", x, y, Math.floor(width), Math.floor(height));
 };
 
 Player.zoom = function(resolution) {
@@ -1063,7 +1167,7 @@ Player.zoom = function(resolution) {
         Player.scaleDisplay({width:cropWidth, height:cropHeight, aspect:cropWidth/cropHeight});
     }
     // Log("SetCropArea:"+cropX+","+cropY+","+cropWidth+","+cropHeight+" resolution:"+JSON.stringify(resolution) + " zoom:" + (Player.getZoomFactor()*100).toFixed(1) + "%");
-    this.plugin.SetCropArea(Math.round(cropX), Math.round(cropY), Math.round(cropWidth), Math.round(cropHeight));
+    Player.plugin.Execute("SetCropArea", Math.round(cropX), Math.round(cropY), Math.round(cropWidth), Math.round(cropHeight));
 };
 
 Player.getAspectModeText = function()
@@ -1112,7 +1216,7 @@ Player.changeZoom = function(increase) {
         Player.saveZoomFactor(oldZoomFactor - 0.005);
 
     if (oldZoomFactor != Player.getZoomFactor())
-        Player.setAspectRatio(this.plugin.GetVideoWidth(), this.plugin.GetVideoHeight());
+        Player.setAspectRatio(Player.GetResolution());
 
     Player.updateTopOSD();
 }
@@ -1140,8 +1244,9 @@ Player.startPlayer = function(url, isLive, startTime)
     subtitles = [];
     ccTime = 0;
     lastPos = 0;
-    videoWidth = null;
     videoBw = null;
+    videoData = {};
+    resumeJump = null;
     skipTime = 0;
     skipTimeInProgress = 0;
     Player.setTopOSDText("");
@@ -1171,7 +1276,8 @@ Player.startPlayer = function(url, isLive, startTime)
 	       (by choice or when it reaches the end) */
 	    //   Main.setWindowMode();
 	};
-        this.GetPlayUrl(url, isLive);
+        requestedUrl = url;
+        Channel.getPlayUrl(url, isLive);
         Details.fetchData(url);
         detailsUrl = url;
     } else
@@ -1182,7 +1288,7 @@ Player.refreshStartData = function(details) {
     if (Player.isLive && details && details.start_time != 0 && details.start_time != Player.startTime) {
         Log("refreshStartData, new start:" + details.start_time + " old start:" + Player.startTime);
         Player.setNowPlaying(details.title);
-        Player.pluginDuration = Player.plugin.GetDuration();
+        Player.pluginDuration = Player.plugin.Execute("GetDuration");
         Player.setDuration(details.duration);
         Player.updateOffset(details.start_time);
         Player.setDetailsData(details);
@@ -1232,122 +1338,6 @@ Player.checkPlayUrlStillValid = function(gurl) {
     return true;
 };
 
-Player.GetPlayUrl = function(gurl, isLive, altUrl, altVideoUrl) {
-    gurl = Svt.fixLink(gurl);
-    // Log("gurl:" + gurl);
-    requestedUrl = gurl;
-    if (channel == "viasat") {
-        Viasat.getPlayUrl(gurl, isLive);
-    } else if (channel == "tv4") {
-        Tv4.getPlayUrl(gurl, isLive);
-    } else if (channel == "dplay") {
-        Dplay.getPlayUrl(gurl, isLive);
-    } else {
-
-        var video_url, stream_url, url_param = '?output=json';
-
-        if (gurl.indexOf('?') != -1)
-            url_param = '&output=json'; 
-        var stream_url = gurl;
-        if (gurl.indexOf("/kanaler/") == -1)
-            stream_url = (altUrl) ? altUrl : gurl+url_param;
-
-        requestUrl(stream_url,
-                   function(status, data)
-                   {
-                       if (Player.checkPlayUrlStillValid(gurl)) {
-                           var videoReferences, subtitleReferences = [], srtUrl = null;
-                           if (gurl.indexOf("/kanaler/") != -1) {
-                               data = Svt.decodeJson(data);
-	                       for (var i = 0; i < data.channelsPage.schedule.length; i++) {
-                                   if (data.channelsPage.schedule[i].name == data.metaData.title) {
-                                       data = data.channelsPage.schedule[i];
-                                       // No subtitles
-                                       data.disabled = true;
-                                       data.subtitleReferences = []
-                                       break;
-                                   }
-                               }
-                           } else {
-                               try {
-                                   data = Svt.decodeJson(data).context.dispatcher.stores.VideoTitlePageStore.data;
-                               } catch (err) {
-                                   data = JSON.parse(data.responseText);
-                               }
-                           }
-                           
-                           if (data.video)
-                               videoReferences = data.video.videoReferences
-                           else
-                               videoReferences = data.videoReferences;
-
-		           for (var i = 0; i < videoReferences.length; i++) {
-		               Log("videoReferences:" + videoReferences[i].url);
-		               video_url = videoReferences[i].url;
-		               if(video_url.indexOf('.m3u8') >= 0){
-			           break;
-		               }
-		           }
-                           if (data.video && data.video.subtitleReferences)
-                               subtitleReferences = data.video.subtitleReferences
-                           else if (data.video && data.video.subtitles)
-                               subtitleReferences = data.video.subtitles
-                           else if (data.subtitleReferences)
-                               subtitleReferences = data.subtitleReferences;
-
-                           for (var i = 0; i < subtitleReferences.length; i++) {
-		               Log("subtitleReferences:" + subtitleReferences[i].url);
-                               if (subtitleReferences[i].url.indexOf(".m3u8") != -1)
-                                   continue
-		               srtUrl = subtitleReferences[i].url;
-                               if (srtUrl.length > 0){
-			           break;
-		               }
-		           }
-                           if (!altUrl && !srtUrl && !data.disabled) {
-                               var programVersionId = null;
-                               if (data.video && data.video.programVersionId)
-                                   programVersionId = data.video.programVersionId;
-                               else if (data.context)
-                                   programVersionId  = data.context.programVersionId
-                               if (programVersionId) {
-                                   // Try alternative url
-                                   altUrl = SVT_ALT_API_URL + programVersionId;
-                                   return Player.GetPlayUrl(gurl, isLive, altUrl, video_url);
-                               }
-                           } 
-
-		           if(video_url.indexOf('.m3u8') >= 0){
-                               // video_url = video_url + "&set-akamai-hls-revision=1"
-		               Resolution.getCorrectStream(video_url, srtUrl, {isLive:isLive});
-		           }
-                           else{
-		               gurl = gurl + '?type=embed';
-		               Log(gurl);
-		               widgetAPI.runSearchWidget('29_fullbrowser', gurl);
-		               // //	$('#outer').css("display", "none");
-		               // //	$('.video-wrapper').css("display", "none");
-		               
-		               // //	$('.video-footer').css("display", "none");
-
-		               // //	$('#flash-content').css("display", "block");
-		               // //	$('#iframe').attr('src', gurl);
-		           }
-	               }
-                   },
-                   {cbError:function(status, data) {
-                       if (altVideoUrl) {
-                           // Clear the "Network Error"
-                           $('.bottomoverlaybig').html('');
-                           loadingStart();
-                           Resolution.getCorrectStream(altVideoUrl, null, {isLive:isLive,download:download});
-                       };
-                   }}
-                  );
-    };
-    return 0
-};
-
 // Subtitles support
 Player.toggleSubtitles = function () {
 
@@ -1393,31 +1383,65 @@ Player.getSubtitlesEnabled = function () {
     }
 };
 
-Player.fetchSubtitle = function (srtUrl) {
-    if (channel == "viasat")
-        return Viasat.fetchSubtitle(srtUrl)
-    else if (channel == "tv4")
-        return Tv4.fetchSubtitle(srtUrl)
+Player.fetchSubtitles = function (srtUrls, hlsSubs) {
+    var anyFailed = false;
+    if (srtUrls && srtUrls.list)
+        srtUrls = srtUrls.list
+    else if (srtUrls)
+        srtUrls = [srtUrls]
+    asyncHttpLoop(srtUrls,
+                  function(url, data, status) {
+                      if (status != 200)
+                          anyFailed = true;
+                      else if (data) {
+                          if (url.match(/\.(web)?vtt/)) {
+                              data = data.slice(data.search(/^[0-9]/m));
+                              data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
+                              data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
+                          }
+                          return data + "\n\n"
+                      }
+                      return ""
+                  },
+                  function(srtData) {
+                      if (srtData != "")
+                          Player.parseSubtitle(srtData);
+                      if (anyFailed && hlsSubs)
+                          Player.fetchHlsSubtitles(hlsSubs)
+                  }
+                 );
+};
 
-    asyncHttpRequest(srtUrl,
-                     function(data) {
-                         Player.parseSubtitle(data);
-                     }
-                    );
+Player.fetchHlsSubtitles = function (hlsSubs) {
+    asyncHttpLoop(hlsSubs,
+                  function(url, data) {
+                      var urls = data.match(/^([^#].+)$/mg)
+                      var prefix  = url.replace(/[^\/]+(\?.+)?$/,"");
+                      for (var i=0; i < urls.length; i++) {
+                          if (!urls[i].match(/http[s]?:/))
+                              urls[i] = prefix + urls[i]
+                      }
+                      return urls.join(" ") + " "
+                  },
+                  function (urls) {
+                      urls = urls.trim().split(" ");
+                      Player.fetchSubtitles({list:urls})
+                  }
+                 );
 };
 
 Player.parseSubtitle = function (data) {
     try {
         subtitles = [];
-        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, ""));
+        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, "").replace(/\n\n+/g,"\n\n"));
         srtContent     = srtContent.split('\n\n');
         for (var i = 0; i < srtContent.length; i++) {
             this.parseSrtRecord(srtContent[i]);
         }
+        subtitles.sort(function(a, b){return a.start-b.start})
         // for (var i = 0; i < 10 && i < subtitles.length; i++) {
-        //     Log("start:" + subtitles[i].start + " stop:" + subtitles[i].stop + " text:" + subtitles[i].text);
+        //     alert("start:" + subtitles[i].start + " stop:" + subtitles[i].stop + " text:" + subtitles[i].text);
         //     // Log("srtContent[" + i + "]:" + srtContent[i]);
-        //     this.parseSrtRecord(srtContent[i]);
         // }
     } catch (err) {
         Log("parseSubtitle failed:" + err);

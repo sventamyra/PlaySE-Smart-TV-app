@@ -76,7 +76,8 @@ Main.requestRandomUrl = function() {
     window.clearTimeout(Main.keepAliveTimer);
     if (myUrls.length > 0) {
         // Log("Main.requestRandomUrl")
-        asyncHttpRequest(myUrls[Math.floor(Math.random()*myUrls.length)], null, true);
+        var item = myUrls[Math.floor(Math.random()*myUrls.length)]
+        asyncHttpRequest(item.url, null, true);
     }
     Main.keepAliveTimer = window.setTimeout(Main.requestRandomUrl, 30*1000);
 };

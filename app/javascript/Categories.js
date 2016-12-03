@@ -44,7 +44,6 @@ Categories.loadXml = function(refresh) {
 };
 
 Categories.loadSvt = function(refresh) {
-    Svt.toggleBButton();
     requestUrl('http://www.svtplay.se/program',
                function(status, data)
                {
@@ -57,19 +56,8 @@ Categories.loadSvt = function(refresh) {
               );
 };
 
-Categories.setNextLocation = function()
-{
-    if (channel == "svt")
-        setLocation(Svt.getNextCategory());
-    else if (channel == "viasat")
-        setLocation(Viasat.getNextCategory());
-    else if (channel == "dplay")
-        setLocation(Dplay.getNextCategory());
-};
-
 Categories.loadViasat = function(refresh) {
     url = Viasat.getUrl("categories")
-    Viasat.toggleBButton();
     requestUrl(url,
                function(status, data)
                {
@@ -95,7 +83,6 @@ Categories.loadTv4 = function(refresh) {
 
 Categories.loadDplay = function(refresh) {
     url = Dplay.getUrl("categories")
-    Dplay.toggleBButton();
     Dplay.categories(url, refresh);
 };
 //window.location = 'categoryDetail.html?category=' + ilink + '&history=Kategorier/' + iname +'/';

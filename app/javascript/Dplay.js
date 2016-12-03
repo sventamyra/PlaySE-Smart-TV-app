@@ -213,44 +213,59 @@ Dplay.getHeaderPrefix = function() {
     }
 };
 
-Dplay.fixAButton = function(language) {
-    if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
+Dplay.keyRed = function() {
+    if ($("#a-button").text().indexOf("Re") != -1) {
+	setLocation('index.html');
+    } else if ($("#a-button").text().indexOf("Pop") != -1) {
+	setLocation('Popular.html');
+    } else {
+	setLocation('Latest.html');
+    }
+}
+
+Dplay.keyGreen = function() {
+    if ($("#b-button").text().indexOf("ateg") != -1)
+	setLocation('categories.html');
+    else
+        setLocation(Dplay.getNextCategory())
+}
+
+Dplay.getAButtonText = function(language) {
+    var loc = getIndexLocation();
+    if (loc.match(/index\.html/)) {
         if(language == 'English'){
-	    $("#a-button").text('Latest');
+	    return 'Latest';
         } else {
-	    $("#a-button").text('Senaste');
+	    return 'Senaste';
         }
 
-    } else if((myRefreshLocation && (myRefreshLocation.indexOf("Popular.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
+    } else if (loc.match(/Popular\.html/)) {
         if(language == 'English'){
-	    $("#a-button").text('Popular');
+	    return 'Popular';
         } else {
-	    $("#a-button").text('Populärt');
+	    return 'Populärt';
         }
     } else {
-        if(language == 'English'){
-	    $("#a-button").text('Recommended');
-        } else {
-	    $("#a-button").text('Rekommenderat');
-        }
+        // Use Default
+        return null
     }
 };
 
-Dplay.toggleBButton = function() {
-
-    var language = Language.checkLanguage();
-
-    switch (Dplay.getCategoryIndex().next) {
-    case 0:
-        Language.fixBButton();
-        break;
-    case 1:
-        if (language == "Swedish")
-            $("#b-button").text("Alla Program");
-        else
-            $("#b-button").text("All Shows");
-        break;
-    }
+Dplay.getBButtonText = function(language) {
+    if (getIndexLocation().match(/categories\.html/)) {
+        switch (Dplay.getCategoryIndex().next) {
+        case 0:
+            // Use Default
+            return null;
+        case 1:
+            if (language == "Swedish")
+                return "Alla Program";
+            else
+                return "All Shows";
+            break;
+        }
+    } else
+        return null
 };
 
 Dplay.getCButtonText = function (language) {
@@ -723,9 +738,9 @@ Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
                            srtUrl = null;
                        }
                        if (callback)
-                           Resolution.setStreamUrl(JSON.parse(data.responseText).hls, srtUrl, callback, {useBitrates:true});
+                           Resolution.setStreamUrl(JSON.parse(data.responseText).hls, srtUrl, callback, {useBitrates:true,useCookies:true});
                        else
-                           Resolution.getCorrectStream(JSON.parse(data.responseText).hls, srtUrl, {useBitrates:true});
+                           Resolution.getCorrectStream(JSON.parse(data.responseText).hls, srtUrl, {useBitrates:true,useCookies:true});
                    }
                },
                {cookie:cookie}

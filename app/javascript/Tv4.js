@@ -32,7 +32,7 @@ Tv4.refreshdUnavailableShows = function() {
                          var i = 0;
                          return Tv4.checkShows(i, data.results);
                      },
-                     true
+                     {no_log:true}
                     );
 };
 
@@ -54,7 +54,7 @@ Tv4.checkShows = function(i, data) {
                              }
                              return Tv4.checkShows(i+1, data);
                          },
-                         true
+                         {no_log:true}
                         );
     }
     else {
@@ -159,31 +159,43 @@ Tv4.getHeaderPrefix = function() {
     return "Tv4";
 }
 
-Tv4.fixAButton = function(language) {
-    if ((myRefreshLocation && (myRefreshLocation.indexOf("index.html")) != -1) || myLocation.indexOf("index.html") != -1) {
+Tv4.keyRed = function() {
+    if ($("#a-button").text().match(/Pop.*lip/)) {
+	setLocation('PopularClips.html');
+    } else if ($("#a-button").text().match(/lip/)) {
+	setLocation('LatestClips.html');
+    } else if ($("#a-button").text().match(/Pop/)) {
+	setLocation('index.html');
+    } else {
+	setLocation('Latest.html');
+    }
+}
+
+Tv4.getAButtonText = function(language) {
+
+    var loc = getIndexLocation();
+    
+    if (loc.match(/index\.html/)) {
         if(language == 'English'){
-	    $("#a-button").text('Latest');
+	    return 'Latest';
         } else {
-	    $("#a-button").text('Senaste');
+	    return 'Senaste';
         }
-    } else if((myRefreshLocation && (myRefreshLocation.indexOf("Latest.html")) != -1) || myLocation.indexOf("Latest.html") != -1) {
+    } else if (loc.match(/Latest\.html/)) {
         if(language == 'English'){
-	    $("#a-button").text('Popular Clips');
+	    return 'Popular Clips';
         } else {
-	    $("#a-button").text('Populära Klipp');
+	    return 'Populära Klipp';
         }
-    } else if((myRefreshLocation && (myRefreshLocation.indexOf("PopularClips.html")) != -1) || myLocation.indexOf("PopularClips.html") != -1) {
+    } else if (loc.match(/PopularClips\.html/)) {
         if(language == 'English'){
-	    $("#a-button").text('Latest Clips');
+	    return 'Latest Clips';
         } else {
-	    $("#a-button").text('Senaste Klipp');
+	    return 'Senaste Klipp';
         }
     } else {
-        if(language == 'English'){
-	    $("#a-button").text('Popular');
-        } else {
-	    $("#a-button").text('Populärt');
-        }
+        // Use Default
+        return null;
     }
 };
 
@@ -564,20 +576,6 @@ Tv4.isViewable = function (data, is_live) {
         }
     }
 }
-
-Tv4.fetchSubtitle = function (detailsUrl) {
-    asyncHttpRequest(detailsUrl,
-                     function(data)
-                     {
-                         subtitles = [];
-                         var srtContent = Player.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/(.+-->.+)$/mg,"1\n$1").replace(/.*WEBVTT.*\n+/,"").replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1"));
-                         srtContent     = srtContent.split('\n\n');
-                         for (var i = 0; i < srtContent.length; i++) {
-                             Player.parseSrtRecord(srtContent[i]);
-                         }
-                     }
-                    );
-};
 
 Tv4.requestNextPage = function(url, callback) {
     requestUrl(url,callback,callback);

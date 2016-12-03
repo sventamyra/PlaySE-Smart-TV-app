@@ -183,58 +183,21 @@ Language.fixAButton = function(language) {
     if (!language)
         language = this.checkLanguage();
 
-    if (channel == "svt") {
-        $("#a-button").text(Svt.getNextSectionText());
-    } else if (channel == "viasat") {
-        Viasat.fixAButton(language);
-    } else if (channel == "tv4") {
-        Tv4.fixAButton(language);
-    } else if (channel == "dplay") {
-        Dplay.fixAButton(language);
-    }
+    $("#a-button").text(Channel.getAButtonText(language))
 };
 
 Language.fixBButton = function(language)
 {
-    $("#b-button").text(this.getBButtonText(language))
-};
-
-Language.getBButtonText = function(language)
-{
     if (!language)
         language = this.checkLanguage();
 
-    if(language == 'English')
-        return 'Categories';
-    else
-        return 'Kategorier';
-};
-
-Language.isBButtonChanged = function()
-{
-    return $("#b-button").text() != this.getBButtonText();
+    $("#b-button").text(Channel.getBButtonText(language))
 };
 
 Language.fixCButton = function(language)
 {
-    $("#c-button").text(this.getCButtonText(language))
-};
-
-Language.getCButtonText = function(language)
-{
     if (!language)
         language = this.checkLanguage();
 
-    if (channel == "svt") {
-        if(language == 'English')
-	    return 'Channels & live broadcasts';
-        else
-            return 'Kanaler & livesändningar';
-    } else if (channel == "viasat") {
-        return Viasat.getCButtonText(language);
-    } else if (channel == "tv4") {
-        return Tv4.getCButtonText(language);
-    } else if (channel == "dplay") {
-        return Dplay.getCButtonText(language);
-    }
+    $("#c-button").text(Channel.getCButtonText(language))
 };

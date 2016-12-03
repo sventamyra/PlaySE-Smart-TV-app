@@ -40,16 +40,20 @@ Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
         var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,"");
         var target = Resolution.getTarget(extra.isLive);
         var master = videoUrl;
-        if (target != "Auto" && videoUrl.match(/\.m3u8|\.ism/)) {
-            requestUrl(videoUrl,
-                       function(status, data)
-	               {
-                           var streams, is_hls = videoUrl.match(/\.m3u8/);
-                           if (is_hls) {
-                               streams = Resolution.getHlsStreams(videoUrl, data)
-                           } else {
-                               streams = Resolution.getIsmStreams(videoUrl, data)
-                           }
+        requestUrl(videoUrl,
+                   function(status, data)
+	           {
+                       var streams, is_hls = videoUrl.match(/\.m3u8/);
+                       if (is_hls) {
+                           streams = Resolution.getHlsStreams(videoUrl, data)
+                       } else if (videoUrl.match(/\.ism/)) {
+                           streams = Resolution.getIsmStreams(videoUrl, data)
+                       }
+                       extra.cookies = streams.cookies;
+                       extra.audio_idx = streams.audio_idx;
+                       extra.hls_subs = streams.hls_subs;
+                       if (target != "Auto") {
+                           streams = streams.streams;
                            streams.sort(function(a, b){
                                if (a.bandwidth > b.bandwidth)
                                    return 1
@@ -83,31 +87,33 @@ Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
                            }
 		           Log('current: ' + target);
                            // Log("current url: " + streams[currentId].url);
-                           if (is_hls)
-                               videoUrl = videoUrl + "|COMPONENT=HLS"
-                           else
-                               videoUrl = videoUrl + "|COMPONENT=WMDRM"
-		           Player.setVideoURL(master, videoUrl, srtUrl, {license:extra.license, bw:target});
-		           callback();
+                           extra.bw = target;
 	               }
-                      );
-        } else {
-            if (videoUrl.match(/\.m3u8/))
-                videoUrl = videoUrl + "|COMPONENT=HLS"
-            else if (videoUrl.match(/\.ism/)) {
-                videoUrl = videoUrl + "|STARTBITRATE=CHECK|COMPONENT=WMDRM"
-            }
-	    Player.setVideoURL(master, videoUrl, srtUrl, {license:extra.license});
-	    callback();
-	}
+                       if (is_hls)
+                           videoUrl = videoUrl + "|COMPONENT=HLS"
+                       else if (videoUrl.match(/\.ism/)) {
+                           if (target == "Auto")
+                               videoUrl = videoUrl + "|STARTBITRATE=CHECK";
+                           videoUrl = videoUrl + "|COMPONENT=WMDRM";
+                       } else if (videoUrl.match(/\.mpd/)) {
+                           videoUrl = videoUrl + "|COMPONENT=HAS";
+                       }
+		       Player.setVideoURL(master, videoUrl, srtUrl, extra);
+		       callback();
+                   }
+                  );
 };
 
 Resolution.getHlsStreams = function (videoUrl, data) {
     // Log("M3U8 content: " + data.responseText);
+    
+    var subs = data.responseText.match(/^#.+TYPE=SUBTITLES.+URI="[^"]+.+$/mg);
     var anyResoution = data.responseText.match(/^#.+BANDWIDTH=[0-9]+.+RESOLUTION/mg);
     var bandwidths = data.responseText.match(/^#.+BANDWIDTH=[0-9]+(.+RESOLUTION)?/mg);
     var urls = data.responseText.match(/^([^#\r\n]+)$/mg);
     var streams = [];
+    var subsStreams = [];
+    var cookies = data.getAllResponseHeaders().match(/Set-Cookie:(.+)/gm);
 
     for (var i = 0; i < bandwidths.length; i++) {
         // Ignore audio only streams
@@ -119,12 +125,32 @@ Resolution.getHlsStreams = function (videoUrl, data) {
                      }
                     );
     }
-    return streams;
+    for (var i = 0; subs && i < subs.length; i++) {
+        if (subs.length > 1 && !subs[i].match(/language[ ="]*sv/i)) {
+            // Only keep Swedish subtitles
+            continue;
+        }
+        subsStreams.push(subs[i].match(/URI="([^"]+)/)[1])
+    }
+    if (subsStreams.length == 0)
+        subsStreams = null;
+    return {streams:streams, cookies:cookies, hls_subs:subsStreams}
 }
 
 Resolution.getIsmStreams = function (videoUrl, data) {
-    // Log("ISM content: " + data.responseText);
-    data = data.responseText.split(/StreamIndex.+="video"/)[1];
+    data = data.responseText.replace(/StreamIndex[	 ]*\r?\n/gm,"StreamIndex");
+    // Log("ISM content: " + data);
+    data = data.split(/StreamIndex.+="video"/)
+    var languages = data[0].match(/Language="([^"]+)"/gm);
+    var swe_audio_idx = null;
+    for (var i = 1; languages && i < languages.length; i++) {
+        if (languages[i].match(/swe/i)) {
+            swe_audio_idx = i
+            break;
+        }
+    }
+    
+    data = data[1];
     var bandwidths = data.match(/Bitrate="([0-9]+)"/gm)
     var streams    = [];
     for (var i = 0; i < bandwidths.length; i++) {
@@ -133,7 +159,7 @@ Resolution.getIsmStreams = function (videoUrl, data) {
                      }
                     );
     }
-    return streams;
+    return {streams:streams, audio_idx:swe_audio_idx}
 }
 
 Resolution.setRes = function(value)

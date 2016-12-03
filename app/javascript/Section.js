@@ -30,13 +30,7 @@ Section.loadXml = function(locationUrl, refresh){
                function(status, data)
                {
                    if (channel == "svt") {
-                       if (locationUrl.indexOf("nyheter") != -1) {
-                           data = data.responseText.split("<section class=\"play_js-tabs")[0];
-                           data = "<section class" + data.split("<section class")[1];
-                               Section.decode_data(data);
-                       } else {
-                           Svt.decode_section(data);
-                       }
+                       Svt.decode_section(data, locationUrl);
                        loadFinished(status, refresh);
                    } else if (channel == "viasat") {
                        Viasat.decode(data.responseText, locationUrl, false, function() {loadFinished(status, refresh)});
@@ -46,7 +40,9 @@ Section.loadXml = function(locationUrl, refresh){
                        Dplay.decode(data.responseText, {tag:"section",url:locationUrl}, false, function() {loadFinished(status, refresh)});
                    }
                },
-               {cbError:function(status, data){loadFinished(status, refresh)}}
+               {cbError:function(status, data){loadFinished(status, refresh)},
+                headers:Channel.getHeaders()
+               }
               );
 };
 

@@ -57,7 +57,9 @@ showList.loadXml = function(refresh)
                        break;
                    }
                },
-               {cbError:function(status, data) {loadFinished(status, refresh)}}
+               {cbError:function(status, data) {loadFinished(status, refresh)},
+                headers:Channel.getHeaders()
+               }
               );
 };
 

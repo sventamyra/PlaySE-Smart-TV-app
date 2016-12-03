@@ -52,15 +52,7 @@ Details.Geturl=function(detailsUrl){
     {
         name = url.match(/(ilink|name)=(.+)&history=/)[2]
     }
-    if (channel == "svt")
-        name = Svt.getDetailsUrl(name);
-    else if (channel == "viasat")
-        name = Viasat.getDetailsUrl(name);
-    else if (channel == "tv4")
-        name = Tv4.getDetailsUrl(name);
-    else if (channel == "dplay")
-        name = Dplay.getDetailsUrl(name);
-    return name;
+    return Channel.getDetailsUrl(name);
 };
 
 Details.Prepare = function(){
@@ -163,15 +155,7 @@ Details.CountDown = function()
 
 Details.GetPlayUrl = function() {
     // Unused function ?!?!?
-    if (channel == "svt") {
-        Svt.getPlayUrl(gurl, Details.isLive)
-    } else if (channel == "viasat") {
-        Viasat.getPlayUrl(gurl, Details.isLive);
-    } else if (channel == "tv4") {
-        Tv4.getPlayUrl(gurl,Details.isLive);
-    } else if (channel == "dplay") {
-        Dplay.getPlayUrl(gurl,Details.isLive);
-    }
+    Channel.getPlayUrl(gurl, Details.isLive);
 };
 
 Details.loadXml = function(isBackground) {
@@ -201,10 +185,11 @@ Details.loadXml = function(isBackground) {
                    };
                    Details.toHtml(programData);
                },
-               {cbError:function(textStatus, errorThrown) {
+               {cbError:function(textStatus, data, errorThrown) {
                    if (!isBackground) {
                        loadingStop();
-                   }}
+                   }},
+                headers:Channel.getHeaders()
                }
               )
 };
@@ -217,7 +202,7 @@ Details.toHtml = function (programData) {
 	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
         } else if (!programData.category) {
             // Ignore extra if inside show
-            if (getPriorLocation().indexOf("showList.html") ==-1 &&
+            if (getOldLocation() && !getOldLocation().match(/showList\.html/) &&
                 programData.parent_show) {
                 extra = {loc: makeShowLink(programData.parent_show.name,
                                            programData.parent_show.url
@@ -261,7 +246,7 @@ Details.toHtml = function (programData) {
         html+='</div>';
 	html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
         // Add "header" elements last to determine max-height
-        var max_height = (extra) ? "280px" : "315px";
+        var max_height = (extra) ? "277px" : "310px";
         html='<div class="project-meta-frame" style="max-height:' +max_height+';overflow:hidden">'+html;
 	html = '<div class="project-name">' + html;
         html = '<div class="project-text">' + html;
@@ -282,20 +267,14 @@ Details.fetchData = function(detailsUrl, refresh) {
                      function(data) 
                      {
                          Details.fetchedDetails = Details.getData(detailsUrl,{responseText:data});
-                     }
+                     },
+                     {headers:Channel.getHeaders()}
                     );
 };
 
 Details.getData = function(url, data) {
 
-    if (channel == "svt") 
-        data = Svt.getDetailsData(url, data);
-    else if (channel == "viasat") 
-        data = Viasat.getDetailsData(url,data)
-    else if (channel == "tv4") 
-        data = Tv4.getDetailsData(url,data)
-    else if (channel == "dplay") 
-        data = Dplay.getDetailsData(url,data)
+    data = Channel.getDetailsData(url,data)
 
     if (data.description && data.description.length > 0)
         data.description = data.description.replace(/\\\"/g, "\"")

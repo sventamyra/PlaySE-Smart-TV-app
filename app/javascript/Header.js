@@ -7,14 +7,8 @@ var Header =
 Header.addPrefix = function(location) {
     if (!location.match(/.+\/$/))
         location = location + '/';
-    if (channel == "svt")
-        return "SVT/" + location;
-    else if (channel == "viasat")
-        return Viasat.getHeaderPrefix() + '/' + location;
-    else if (channel == "tv4")
-        return Tv4.getHeaderPrefix() + '/' + location;
-    else if (channel == "dplay")
-        return Dplay.getHeaderPrefix() + '/' + location;
+
+    return Channel.getHeaderPrefix() + '/' + location;
 }
 
 Header.urldecode = function(str) {

@@ -627,55 +627,11 @@ Buttons.handleMenuKeys = function(keyCode){
     switch(keyCode)
     {
     case tvKey.KEY_RED: 
-        if (channel == "svt") {
-            Svt.setNextSection();
-        } else if (channel == "viasat") {
-	    if ($("#a-button").text().indexOf("Pop") != -1) {
-	        setLocation('index.html');
-            } else if ($("#a-button").text().indexOf("lip") != -1) {
-	        setLocation('LatestClips.html');
-            } else {
-	        setLocation('Latest.html');
-            }
-        } else if (channel == "tv4") {
-	    if ($("#a-button").text().match(/Pop.*lip/)) {
-	        setLocation('PopularClips.html');
-            } else if ($("#a-button").text().match(/lip/)) {
-	        setLocation('LatestClips.html');
-            } else if ($("#a-button").text().match(/Pop/)) {
-	        setLocation('index.html');
-            } else {
-	        setLocation('Latest.html');
-            }
-        } else if (channel == "dplay") {
-	    if ($("#a-button").text().indexOf("Re") != -1) {
-	        setLocation('index.html');
-	    } else if ($("#a-button").text().indexOf("Pop") != -1) {
-	        setLocation('Popular.html');
-            } else {
-	        setLocation('Latest.html');
-            }
-        }
+        Channel.keyRed();
 
 	break;
     case tvKey.KEY_GREEN: 
-        if (Language.isBButtonChanged())
-        {
-            if (channel == "svt") {
-                if (getIndexLocation().match("categories.html"))
-                    Categories.setNextLocation();
-                else
-	            categoryDetail.setNextLocation();
-            }
-            else if (channel == "viasat")
-                Categories.setNextLocation();
-            else if (channel == "tv4")
-	        setLocation('categories.html');
-            else if (channel == "dplay")
-                Categories.setNextLocation();
-        } else {
-	    setLocation('categories.html');
-        }
+        Channel.keyGreen();
 	break;
     case tvKey.KEY_YELLOW:
 	setLocation('live.html');

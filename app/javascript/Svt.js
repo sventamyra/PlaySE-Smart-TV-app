@@ -7,6 +7,37 @@ var Svt =
     thumbs_index:null
 };
 
+Svt.getHeaderPrefix = function() {
+    return "SVT";
+}
+
+Svt.keyRed = function() {
+    Svt.setNextSection();
+}
+
+Svt.keyGreen = function() {
+    if (myLocation.match(/categoryDetail\.html/))
+	setLocation(Svt.getNextCategoryDetail());
+    else if (myLocation.match(/categories\.html/))
+        setLocation(Svt.getNextCategory());
+    else
+        setLocation("categories.html")
+};
+
+Svt.getAButtonText = function(language) {
+    return Svt.getNextSectionText();
+}
+
+Svt.getBButtonText = function(language, catLoaded) {
+    var loc = getIndexLocation();
+    var text = null;
+    if (loc.match(/categoryDetail\.html/)) {
+        text = Svt.getNextCategoryDetailText(language)
+    } else if (loc.match(/categories\.html/))
+        text = Svt.getNextCategoryText()
+    return text;
+};
+
 Svt.fixLink = function (Link, Publication) 
 {
     if (Link) {
@@ -69,6 +100,8 @@ Svt.getThumb = function(data, size) {
         Thumb = data.imageMedium;
     else if (data.image)
         Thumb = data.image;
+    else if (data.poster)
+        Thumb = data.poster;
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
     if (!size || size == "small")
         return Thumb.replace(/\/(medium|(extra)?large)\//, "/small/")
@@ -85,19 +118,23 @@ Svt.redirectUrl = function(url) {
     if (Svt.isPlayable(url))
         // No need to check re-direct for an already playable url.
         return url;
+    var new_url = url;
     var result = syncHttpRequest(url)
     if (result.location) {
-        return result.location
+        new_url = result.location;
     } else if (result.success) {
         try {
-            url = Svt.decodeJson({responseText:result.data}).metaData.canonical;
+            new_url = Svt.decodeJson({responseText:result.data}).metaData.canonical;
         } catch(err) {
+            Log("Svt.redirectUrl exception:" + err.message);
             result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
             if (result && result.length > 0)
-                return result[1]
+                new_url = result[1]
         }
     }
-    return url
+    if (new_url != url)
+        Log("URL redirected:" + new_url)
+    return new_url
 };
 
 Svt.addSections = function(data) {
@@ -232,7 +269,8 @@ Svt.getDetailsData = function(url, data) {
                 } else {
                     Name = data.programTitle + " - " + data.title;
                 }
-                Description = data.description.trim();
+                if (data.description)
+                    Description = data.description.trim();
                 Title = Name;
                 ImgLink = Svt.getThumb(data, "large");
                 if (data.broadcastDate)
@@ -341,6 +379,103 @@ Svt.getShowData = function(url, data) {
             genre         : Genre,
             thumb         : ImgLink
            }
+};
+
+
+Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl) 
+{
+    // url = Svt.fixLink(url);
+    // Log("url:" + url);
+    var video_url, stream_url, url_param = '?output=json';
+    if (url.indexOf('?') != -1)
+        url_param = '&output=json'; 
+    var stream_url = url;
+    if (url.indexOf("/kanaler/") == -1)
+        stream_url = (altUrl) ? altUrl : url+url_param;
+
+    requestUrl(stream_url,
+               function(status, data)
+               {
+                   if (Player.checkPlayUrlStillValid(url)) {
+                       var videoReferences, subtitleReferences = [], srtUrl = null;
+                       if (url.indexOf("/kanaler/") != -1) {
+                           data = Svt.decodeJson(data);
+	                   for (var i = 0; i < data.channelsPage.schedule.length; i++) {
+                               if (data.channelsPage.schedule[i].name == data.metaData.title) {
+                                   data = data.channelsPage.schedule[i];
+                                   // No subtitles
+                                   data.disabled = true;
+                                   data.subtitleReferences = []
+                                   break;
+                               }
+                           }
+                       } else {
+                           try {
+                               data = Svt.decodeJson(data).context.dispatcher.stores.VideoTitlePageStore.data;
+                           } catch (err) {
+                               data = JSON.parse(data.responseText);
+                           }
+                       }
+                       
+                       if (data.video)
+                           videoReferences = data.video.videoReferences
+                       else
+                           videoReferences = data.videoReferences;
+
+		       for (var i = 0; i < videoReferences.length; i++) {
+		           Log("videoReferences:" + videoReferences[i].url);
+		           video_url = videoReferences[i].url;
+                           if (video_url.indexOf('.m3u8') >= 0) {
+			       break;
+		           }
+		       }
+                       if (data.video && data.video.subtitleReferences)
+                           subtitleReferences = data.video.subtitleReferences
+                       else if (data.video && data.video.subtitles)
+                           subtitleReferences = data.video.subtitles
+                       else if (data.subtitleReferences)
+                           subtitleReferences = data.subtitleReferences;
+
+                       for (var i = 0; i < subtitleReferences.length; i++) {
+		           Log("subtitleReferences:" + subtitleReferences[i].url);
+                           if (subtitleReferences[i].url.indexOf(".m3u8") != -1)
+                               continue
+		           srtUrl = subtitleReferences[i].url;
+                           if (srtUrl.length > 0){
+			       break;
+		           }
+		       }
+                       if (!altUrl && !srtUrl && !data.disabled) {
+                           var programVersionId = null;
+                           if (data.video && data.video.programVersionId)
+                               programVersionId = data.video.programVersionId;
+                           else if (data.context)
+                               programVersionId  = data.context.programVersionId
+                           if (programVersionId) {
+                               // Try alternative url
+                               altUrl = SVT_ALT_API_URL + programVersionId;
+                               return Svt.getPlayUrl(url, isLive, altUrl, video_url);
+                           }
+                       } 
+
+		       if (video_url.match(/\.m3u8/)) {
+		           Resolution.getCorrectStream(video_url, srtUrl, {isLive:isLive});
+		       }
+		       else{
+		           Player.setVideoURL(video_url, video_url, srtUrl);
+		           Player.playVideo();
+		       }
+	           }
+               },
+               {cbError:function(status, data) {
+                   if (altVideoUrl) {
+                       loadingStart();
+                       Resolution.getCorrectStream(altVideoUrl, null, {isLive:isLive});
+                   };
+               },
+                dont_show_errors:altVideoUrl
+               }
+              );
 };
 
 Svt.decodeJson = function(data) {
@@ -493,6 +628,8 @@ Svt.updateCategoryTitle = function() {
 Svt.getNextCategoryDetail = function() {
     var nextLocation    = getNextIndexLocation(Svt.category_detail_max_index);
     var category_detail = Svt.getCategoryDetailIndex()
+    if (category_detail.next == 0)
+        return "categories.html";
     var old_detail     = Svt.category_details[category_detail.current].section
     var new_detail     = Svt.category_details[category_detail.next].section
     nextLocation =  nextLocation.replace(new RegExp(old_detail+"/$"), "")
@@ -503,42 +640,43 @@ Svt.getCategoryDetailIndex = function () {
     return getIndex(Svt.category_detail_max_index);
 };
 
-Svt.toggleBButton = function() {
-
-    if (getIndexLocation().indexOf("categoryDetail.html") == -1)
-        Svt.toggleBButtonForCategories()
-    else
-        Svt.toggleBButtonForCategoryDetail()
-}
-
-Svt.toggleBButtonForCategories = function() {
+Svt.getNextCategoryText = function() {
     var language = Language.checkLanguage();
 
     switch (Svt.getCategoryIndex().next) {
     case 0:
-        Language.fixBButton();
-        break;
+        // Use default
+        return null;
     case 1:
         if (language == "Swedish")
-            $("#b-button").text("Alla Kategorier");
+            return "Alla Kategorier";
         else
-            $("#b-button").text("All Categories");
+            return "All Categories";
         break;
     case 2:
         if (language == "Swedish")
-            $("#b-button").text("Alla Program");
+            return "Alla Program";
         else
-            $("#b-button").text("All Shows");
+            return"All Shows";
         break;
     }
 };
 
-Svt.toggleBButtonForCategoryDetail = function() {
-    if(Svt.getCategoryDetailIndex().next == 0)
-        Language.fixBButton();
-    else
-        $("#b-button").text(Svt.category_details[Svt.getCategoryDetailIndex().next].name);
-};
+Svt.getNextCategoryDetailText = function() {
+    if (Svt.category_details.length) {
+        var text = Svt.category_details[Svt.getCategoryDetailIndex().next].name
+        var category = decodeURIComponent(getIndexLocation().match(/catName=([^&]+)/)[1])
+        if (text.match(new RegExp("^" + category + "( - .+|$)"))) {
+            if(Svt.getCategoryDetailIndex().next == 0)
+                // We're at the end - start over with default
+                return null
+            else
+                return text
+        }
+    }
+    // Wrong category - keep unchanged
+    return 0;
+}
 
 Svt.decode_category = function (data) {
     data = Svt.decodeJson(data);
@@ -558,16 +696,16 @@ Svt.decode_category = function (data) {
         }
     };
 
-    if (data.clusterTabs) {
-        for (var k=0; k < data.clusterTabs.length; k++) {
-            if (data.clusterTabs[k].name.match(/^Popul/)) {
+    if (data.clusterPage.tabs) {
+        for (var k=0; k < data.clusterPage.tabs.length; k++) {
+            if (data.clusterPage.tabs[k].name.match(/^Popul/)) {
                 // Popular is special and merged with recommended
-                popular.name = main_name + " - " + data.clusterTabs[k].name.trim();
-                popular.section = data.clusterTabs[k].name.trim();
+                popular.name = main_name + " - " + data.clusterPage.tabs[k].name.trim();
+                popular.section = data.clusterPage.tabs[k].name.trim();
                 popular.tab_index = k;
             } else {
-                Svt.category_details.push({name:      main_name + " - " + data.clusterTabs[k].name.trim(),
-                                           section: data.clusterTabs[k].name.trim(),
+                Svt.category_details.push({name:      main_name + " - " + data.clusterPage.tabs[k].name.trim(),
+                                           section: data.clusterPage.tabs[k].name.trim(),
                                            tab_index: k
                                           });
             }
@@ -594,8 +732,8 @@ Svt.decode_category = function (data) {
             alert("CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!")
             Svt.decode(data.clusterPage.content.contents)
         }
-        if (data.clusterPage.content.titles)
-            Svt.decode(data.clusterPage.content.titles)
+        if (data.clusterPage.titlesAndEpisodes)
+            Svt.decode(data.clusterPage.titlesAndEpisodes)
         if (Svt.category_detail_max_index == 0 && data.clusterPage.content.clips)
             Svt.decode(data.clusterPage.content.clips)
     } else if (current.recommended) {
@@ -607,9 +745,9 @@ Svt.decode_category = function (data) {
     }
         
     if (current.tab_index >= 0)
-        Svt.decode(data.clusterTabs[current.tab_index].content, recommendedLinks);
+        Svt.decode(data.clusterPage.tabs[current.tab_index].content, recommendedLinks);
 
-    Svt.toggleBButton();
+    Language.fixBButton();
 }
 
 Svt.decode_show = function (data, url, is_clips, requested_season) {
@@ -692,13 +830,26 @@ Svt.search = function(query, completeFun, url) {
 };
 
 Svt.decode_section = function (data, filter) {
-    Svt.decode(Svt.decodeJson(data).gridPage.content, filter);
+    data = Svt.decodeJson(data);
+    if (data.gridPage && data.gridPage.content && data.gridPage.content.length > 0) {
+        data = data.gridPage.content
+    } else if (data.clusterPage) {
+        // Nyheter - why is there a category in start page?
+        data  = data.clusterPage.tabs
+        for (var i=0; i < data.length; i++) {
+            if (data[i].name.match(/senast/i)) {
+                data = data[i].content
+                break
+            }
+        }
+    }
+    Svt.decode(data, filter);
 }
 
 Svt.decode_search = function (data) {
     try {
         var keys = [];
-        data = Svt.decodeJson(data).searchResult;
+        data = Svt.decodeJson(data).searchPage;
         for (var key in data){
             if (!data[key][0] || (!data[key][0].contentType && !data[key][0].name))
                 continue;
@@ -867,7 +1018,9 @@ Svt.decode = function(data, filter, stripShow) {
             ImgLink = Svt.getThumb(data[k]);
             IsLive = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
-            starttime = data[k].broadcastStartTime;
+            starttime = data[k].broadcastDate;
+            if (!starttime)
+                starttime = data[k].broadcastStartTime;
             starttime = (IsLive && starttime) ? timeToDate(starttime) : null;
             LinkPrefix = '<a href="showList.html?name=';
             if (Svt.isPlayable(Link)) {
