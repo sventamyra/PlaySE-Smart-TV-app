@@ -119,7 +119,7 @@ Svt.redirectUrl = function(url) {
         // No need to check re-direct for an already playable url.
         return url;
     var new_url = url;
-    var result = syncHttpRequest(url)
+    var result = httpRequest(url,{sync:true})
     if (result.location) {
         new_url = result.location;
     } else if (result.success) {
@@ -381,6 +381,20 @@ Svt.getShowData = function(url, data) {
            }
 };
 
+Svt.getUrl = function(name) 
+{
+    switch (name.replace(/\.html.+/,".html"))
+    {
+    case "main":
+    case "Popular.html":
+    case "Latest.html":
+    case "categories":
+    case "channels.html":
+    default:
+        alert("Default:" + name)
+        return name;
+    };
+};
 
 Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl) 
 {
@@ -555,33 +569,40 @@ Svt.decodeCategories = function (data) {
         data = Svt.decodeJson(data)
 
         switch (Svt.getCategoryIndex().current) {
+        // case 0:
+        //     data = data.programsPage.content;
+        //     data.mainClusters.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
+        //     Svt.decode(data.mainClusters)
+        //     break;
         case 0:
-            data = data.programsPage.content;
-            data.mainClusters.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
-            Svt.decode(data.mainClusters)
-            break;
         case 1:
-            data = data.programsPage.content;
+        case 2:
+            data = data.clusters.alphabetical;
             var keys = [];
-            for (var key in data.allClusters)
-                keys.push(key)
-            keys.sort();
-            for (var c in keys) {
-                for (var k=0; k < data.allClusters[keys[c]].length; k++) {
-                    for (var i=0; i < data.allClusters[keys[c]][k].length; i++) {
-                        Name    = data.allClusters[keys[c]][k][i].name.trim();
-                        ImgLink = null;
-                        Link    = data.allClusters[keys[c]][k][i].uri.replace(/^tag.+:([^:]+)$/,"/genre/$1");
-                        Link    = Svt.fixLink(Link);
-                        if (data.allClusters[keys[c]][k][i].metaData)
-                            ImgLink = Svt.getThumb(data.allClusters[keys[c]][k][i].metaData);
-                        toHtml({name:        Name,
-                                link:        Link,
-                                link_prefix: '<a href="categoryDetail.html?category=',
-                                thumb:       ImgLink,
-                                largeThumb:  (ImgLink) ? ImgLink.replace("small", "large") : null
-                               });
-                    };
+            for (var key in data) {
+                keys.push({letter:data[key].letter,
+                           idx:key
+                          })
+            }
+            keys.sort(function(a, b) {
+                if (b.letter > a.letter) 
+                    return -1
+                return 1
+            })
+            for (var k=0; k<keys.length; k++) {
+                for (var i=0; i < data[keys[k].idx].clusters.length; i++) {
+                    Name    = data[keys[k].idx].clusters[i].name.trim();
+                    ImgLink = null;
+                    Link    = data[keys[k].idx].clusters[i].contentUrl.replace(/^tag.+:([^:]+)$/,"/genre/$1");
+                    Link    = Svt.fixLink(Link);
+                    if (data[keys[k].idx].clusters[i].metaData)
+                        ImgLink = Svt.getThumb(data[keys[k].idx].clusters[i].metaData);
+                    toHtml({name:        Name,
+                            link:        Link,
+                            link_prefix: '<a href="categoryDetail.html?category=',
+                            thumb:       ImgLink,
+                            largeThumb:  (ImgLink) ? ImgLink.replace("small", "large") : null
+                           });
                 };
             };            
             break;

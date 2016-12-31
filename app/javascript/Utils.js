@@ -354,82 +354,93 @@ getCurrentDate = function() {
 }
 
 setOffsets = function() {
-    var months = [/^jan/i, /^feb/i, /^mar/i, /^apr/i, /^ma[^r]/i, /^jun/i, /^jul/i, /^aug/i, /^sep/i, /^o/i, /^nov/i, /^dec/i];
     // Retry once a minute in case of failure
     window.clearTimeout(setClockOffsetTimer);
     setClockOffsetTimer = window.setTimeout(setOffsets, 60*1000);
-    asyncHttpRequest("http://www.timeanddate.com/worldclock/sweden/stockholm", 
-                     function(data) {
-                         var actualTime = data.match(/class=h1>([0-9]+:[0-9]+:[0-9]+)</)[1]
-                         var actualDay = +data.match(/id=ctdat>[^0-9]+([0-9]+)/)[1];
-                         var actualYear = data.match(/id=ctdat>[^<]+ ([0-9]+)[ 	]*</)[1];
-                         var actualMonth = data.match(/id=ctdat>[^0-9]+[0-9 	]+([^0-9	 ]+)/)[1];
-                         for (var i=0; i< months.length; i++) {
-                             new RegExp( + "[\\-. 	]*","i");
-                             if (actualMonth.match(months[i])) {
-                                 actualMonth = i+1;
-                                 break;
-                             }
-                         }
-                         var oldClockOffset = clockOffset;
-                         clockOffset = 0;
-                         var now = getCurrentDate();
-                         // Log("original date:" + now);
-                         // Log("actual :" + (actualYear+" "+actualMonth+" "+actualDay+" "+actualTime) + " meaning:" + makeDate(actualYear, actualMonth, actualDay, actualTime));
-
-                         var newClockOffset = makeDate(actualYear, actualMonth, actualDay, actualTime) - now;
-                         // Only care about minutes
-                         newClockOffset = Math.round(newClockOffset/60/1000)*60*1000;
-                         if (newClockOffset != oldClockOffset && checkOffsetCounter != 5) {
-                             Log("Clock Offset was changed!!!");
-                             checkOffsetCounter = 0;
-                         }
-                         clockOffset = newClockOffset;
-                         checkOffsetCounter = checkOffsetCounter - 1;
-                         if (checkOffsetCounter >= 0) {
-                             window.setTimeout(setOffsets, 10*1000);
-                         } else {
-                             Log("Clock Offset (hours):" + clockOffset/3600/1000);
-                             // Log("new date:" + getCurrentDate());
-                         }
-	                 window.clearTimeout(setClockOffsetTimer);
-                     },
-                    {no_log:true}
-                    );
+    httpRequest("http://www.frokenur.com/",
+                {cb:function(data) {
+                    // Get the Date
+                    var actualDate = data.match(/>[ \t]*[^0-9<]+([0-9]+[^0-9<]+[0-9]+)[ \t]*</)[1];
+                    // Time is generated from other url - continue
+                    var clockUrl = data.split(/iframe src="/).pop().match(/([^"]+)"/)[1];
+                    httpRequest(clockUrl,
+                                {cb:function(data) {setClockOffset(actualDate, data)},
+                                 no_log:true, 
+                                 not_random:true
+                                });
+                },
+                 no_log:true
+                });
     setDateOffset();
 };
+
+setClockOffset = function (actualDate, clockData) {
+    var months = [/^jan/i, /^feb/i, /^mar/i, /^apr/i, /^ma[^r]/i, /^jun/i, /^jul/i, /^aug/i, /^sep/i, /^o/i, /^nov/i, /^dec/i];
+    var actualTime = clockData.match(/>([0-9]+:[0-9]+:[0-9]+)</)[1];
+    var actualDay = +actualDate.match(/^([0-9]+)[^0-9<]/)[1];
+    var actualYear = actualDate.match(/[^0-9<]+([0-9]+)$/)[1];
+    var actualMonth = actualDate.match(/[0-9]+([^0-9<]+)[0-9]/)[1];
+    for (var i=0; i< months.length; i++) {
+        new RegExp( + "[\\-. 	]*","i");
+        if (actualMonth.match(months[i])) {
+            actualMonth = i+1;
+            break;
+        }
+    }
+    var oldClockOffset = clockOffset;
+    clockOffset = 0;
+    var now = getCurrentDate();
+    // Log("original date:" + now);
+    // Log("actual :" + (actualYear+" "+actualMonth+" "+actualDay+" "+actualTime) + " meaning:" + makeDate(actualYear, actualMonth, actualDay, actualTime));
+
+    var newClockOffset = makeDate(actualYear, actualMonth, actualDay, actualTime) - now;
+    // Only care about minutes
+    newClockOffset = Math.round(newClockOffset/60/1000)*60*1000;
+    if (newClockOffset != oldClockOffset && checkOffsetCounter != 5) {
+        Log("Clock Offset was changed!!!");
+        checkOffsetCounter = 0;
+    }
+    clockOffset = newClockOffset;
+    checkOffsetCounter = checkOffsetCounter - 1;
+    if (checkOffsetCounter >= 0) {
+        window.setTimeout(setOffsets, 10*1000);
+    } else {
+        Log("Clock Offset (hours):" + clockOffset/3600/1000);
+        // Log("new date:" + getCurrentDate());
+    }
+    window.clearTimeout(setClockOffsetTimer)
+}
 
 setDateOffset = function () {
     // Retry once a minute in case of failure
     window.clearTimeout(setDateOffsetTimer);
     setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
-    asyncHttpRequest("http://www.svtplay.se/kanaler",
-                     function(data)
-                     {
-                         dateOffset = 0;
-                         data = Svt.decodeJson({responseText:data}).channelsPage.schedule[0];
-                         data = data.schedule[0].broadcastStartTime;
-                         var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
-                         var actualSeconds = actualData[2]*3600 + actualData[3]*60;
-                         var actualDateString = actualData[1].replace(/-/g, "")
-                         var tsDate = timeToDate(data)
-                         var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
-                         var tsDateString = dateToString(tsDate);
-                         if (actualDateString > tsDateString) {
-                             // Add 24 hours to actual
-                             actualSeconds = actualSeconds + 24*3600;
-                         } else if (tsDateString > actualDateString) {
-                             // Add 24 hours to ts
-                             tsSeconds = tsSeconds + 24*3600
-                         }
-                         dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
-                         if (checkOffsetCounter == -1) {
-                             Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " data:" + data + " starttime:" + actualData[0]);
-                         }
-	                 window.clearTimeout(setDateOffsetTimer);
-                     },
-                     {no_log:true}
-                    )
+    httpRequest("http://www.svtplay.se/kanaler",
+                {cb:function(data) {
+                    dateOffset = 0;
+                    data = Svt.decodeJson({responseText:data}).channelsPage.schedule[0];
+                    data = data.schedule[0].broadcastStartTime;
+                    var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
+                    var actualSeconds = actualData[2]*3600 + actualData[3]*60;
+                    var actualDateString = actualData[1].replace(/-/g, "")
+                    var tsDate = timeToDate(data)
+                    var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
+                    var tsDateString = dateToString(tsDate);
+                    if (actualDateString > tsDateString) {
+                        // Add 24 hours to actual
+                        actualSeconds = actualSeconds + 24*3600;
+                    } else if (tsDateString > actualDateString) {
+                        // Add 24 hours to ts
+                        tsSeconds = tsSeconds + 24*3600
+                    }
+                    dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
+                    if (checkOffsetCounter == -1) {
+                        Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " data:" + data + " starttime:" + actualData[0]);
+                    }
+	            window.clearTimeout(setDateOffsetTimer);
+                },
+                 no_log:true
+                })
 };
 
 makeDate = function (year, month, day, time) {
@@ -510,10 +521,12 @@ msToClock = function (ts)
 };
 
 requestUrl = function(url, cbSucces, extra) {
+    // Log("requesting url:" + url);
     if (!extra) extra = {};
         
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
     addToMyUrls(url, extra);
+    var retrying = false;
     if (extra.cookie) {
         
         extra.cookie = addCookiePath(extra.cookie, url);
@@ -544,6 +557,7 @@ requestUrl = function(url, cbSucces, extra) {
             success: function(data, status, xhr)
             {
                 Log('Success:' + this.url);
+                retrying = false;
                 data = null;
                 callUrlCallBack(requestedLocation, cbSucces, status, xhr)
                 xhr.destroy();
@@ -553,12 +567,14 @@ requestUrl = function(url, cbSucces, extra) {
             },
             error: function(xhr, textStatus, errorThrown)
             {
+                retrying = false;
                 if (isRequestStillValid(requestedLocation)) {
         	    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown + " Headers:" + xhr.getAllResponseHeaders() + ' ' + xhr.responseText);
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
                         this.tryCount <= this.retryLimit) {
                         //try again
+                        retrying = true;
                         return $.ajax(this);
                     } else {
                         if (!extra.dont_show_errors)
@@ -571,6 +587,8 @@ requestUrl = function(url, cbSucces, extra) {
             },
             complete: function(xhr, status)
             {
+                if (retrying)
+                    return;
                 callUrlCallBack(requestedLocation, extra.cbComplete, status, xhr);
                 if (extra.callLoadFinished && isRequestStillValid(requestedLocation))
                     loadFinished(status, extra.refresh);
@@ -590,80 +608,99 @@ isRequestStillValid = function (request) {
     return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==channel);
 }
 
-syncHttpRequest = function(url) {
-    addToMyUrls(url);
-    var xhr = new XMLHttpRequest();
-    var success, status, data, location = null;
-    xhr.open("GET", url, false);
-    xhr.send();
-    success = (xhr.status === 200)
-    status = xhr.status;
-    if (success) {
-        Log('Success:' + url);
-        data = xhr.responseText;
-    } else if (status === 302) {
-        location = xhr.getResponseHeader('location');
-    } else {
-        Log('Failure:' + url + " status:" + status);
-    }
-
-    xhr.destroy();
-    xhr = null;
-    return {data:data, success:success, status:status, location:location}
-};
-
-asyncHttpRequest = function(url, callback, extra) {
+httpRequest = function(url, extra) {
     if (!extra) extra = {};
-    addToMyUrls(url);
+    addToMyUrls(url, extra);
     var xhr = new XMLHttpRequest();
-    var timer = null;
+    var location = null, timer = null;
+    if (extra.timeout || extra.timeout === 0) {
+        timer = window.setTimeout(function() {
+            xhr.abort();
+            xhr.destroy();
+            handleHttpResult(url, timer, extra, {status:"timeout"});
+            timer=-1;
+        }, extra.timeout);
+    }
     xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-            window.clearTimeout(timer);
-            // if (xhr.status === 200)
-            if (!extra.no_log) {
-                if (xhr.status === 200)
-                    Log('Success:' + url);
-                else
-                    Log('asyncHttpRequest:' + url + " status:" + xhr.status);
-            }
-            if (callback) {
-                callback(xhr.responseText, xhr.status);
-            }
+        // Log("xhr.readyState: "+ xhr.readyState);
+        if (!extra.sync && xhr.readyState == 4) {
+            handleHttpResult(url, timer, extra, 
+                             {data:     xhr.responseText,
+                              status:   xhr.status,
+                              location: xhr.getResponseHeader('location')
+                             });
             xhr.destroy();
             xhr = null;
         }
     }
-    xhr.open("GET", url);
+    if (extra.params) {
+        alert("POST Request params: "+ extra.params)
+        xhr.open("POST", url, !extra.sync);
+        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    } else
+        xhr.open("GET", url, !extra.sync);
     if (extra.headers) {
         for (var i=0;i<extra.headers.length;i++)
             xhr.setRequestHeader(extra.headers[i].key, extra.headers[i].value);
     }
-    if (extra.timeout) {
-        timer = window.setTimeout(function() {
-            xhr.abort();
-            Log('Timeout:' + url);
-            if (callback)
-                callback(null, "timeout");
-        }, extra.timeout);
+    xhr.send(extra.params);
+    if (extra.sync) {
+        var result = {data:     xhr.responseText,
+                      status:   xhr.status,
+                      location: xhr.getResponseHeader('location')
+                     };
+        xhr.destroy();
+        xhr = null;
+        return handleHttpResult(url, timer, extra, result);
     }
-    xhr.send();
 };
 
-asyncHttpLoop = function(urls, urlCallback, cbComplete) {
-    runAsyncHttpLoop(urls, urlCallback, cbComplete, "")
+handleHttpResult = function(url, timer, extra, result) {
+
+    if (timer == -1) {
+        if (!extra.logging)
+            Log('httpRequest:' + url + " aborted by timeout")
+        else
+            alert('httpRequest:' + url + " aborted by timeout")
+        return
+    }
+    window.clearTimeout(timer);
+
+    if (extra.params)
+        alert(xhr.getAllResponseHeaders())
+    if (result.status == 200) {
+        if (!extra.no_log)
+            Log('Success:' + url);
+    } else {
+        if (!extra.logging)
+            Log('Failure:' + url + " status:" + result.status);
+        else
+            alert('Failure:' + url + " status:" + result.status);
+    }
+    if (extra.sync) {
+        result.success = (result.status == 200);
+        if (result.status != 302)
+            result.location = null;
+        return result
+    } else if (extra.cb) {
+        extra.cb(result.data, result.status)
+    }
+}
+
+httpLoop = function(urls, urlCallback, cbComplete) {
+    runHttpLoop(urls, urlCallback, cbComplete, "")
 };
 
-runAsyncHttpLoop = function(urls, urlCallback, cbComplete, totalData) {
-    asyncHttpRequest(urls[0],
-                     function(data, status) {
-                         totalData = totalData + urlCallback(urls[0], data, status)
-                         if (urls.length > 1)
-                             runAsyncHttpLoop(urls.slice(1), urlCallback, cbComplete, totalData)
-                         else {
-                             cbComplete(totalData)
-                         }
-                     });
+runHttpLoop = function(urls, urlCallback, cbComplete, totalData) {
+    httpRequest(urls[0],
+                {cb:function(data, status) {
+                    totalData = totalData + urlCallback(urls[0], data, status)
+                    if (urls.length > 1)
+                        runHttpLoop(urls.slice(1), urlCallback, cbComplete, totalData)
+                    else {
+                        cbComplete(totalData)
+                    }
+                }});
 }
 
 getHistory = function(Name) {
@@ -827,7 +864,12 @@ slideToggle = function(id, timer, callback) {
 
 addToMyUrls = function(url, extra) {
     if (!extra) extra = {};
-    if (!extra.not_random && myUrls.indexOf(url) == -1) {
+    if (!extra.not_random) {
+        for (var i=0; i<myUrls.length; i++) {
+            if (myUrls[i].url == url) {
+                return;
+            }
+        }
         myUrls.push({url:url, extra:extra});
         myUrls = myUrls.slice(0,10);
     }
@@ -835,6 +877,6 @@ addToMyUrls = function(url, extra) {
 
 Log = function (msg) 
 {
-    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, not_random:true});
+    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, not_random:true, logging:true});
     // alert(msg);
 };

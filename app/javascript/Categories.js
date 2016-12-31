@@ -5,13 +5,8 @@ var Categories =
 
 Categories.onLoad = function(refresh)
 {
-    document.title = "Kategorier";
-    if (channel == "svt")
-        Svt.updateCategoryTitle();
-    else if (channel == "viasat")
-        Viasat.updateCategoryTitle();
-    else if (channel == "dplay")
-        Dplay.updateCategoryTitle();
+    
+    Channel.updateCategoryTitle();
 
     if (!refresh) {
 	Header.display(document.title);
@@ -44,7 +39,8 @@ Categories.loadXml = function(refresh) {
 };
 
 Categories.loadSvt = function(refresh) {
-    requestUrl('http://www.svtplay.se/program',
+    // Svt.toggleBButton();
+    requestUrl('http://www.svtplay.se/genre',
                function(status, data)
                {
                    Svt.decodeCategories(data);

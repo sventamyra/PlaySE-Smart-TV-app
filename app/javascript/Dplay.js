@@ -230,6 +230,10 @@ Dplay.keyGreen = function() {
         setLocation(Dplay.getNextCategory())
 }
 
+Dplay.getMainTitle = function () {
+    return "Rekommenderat"
+}
+
 Dplay.getAButtonText = function(language) {
     var loc = getIndexLocation();
     if (loc.match(/index\.html/)) {
@@ -559,7 +563,7 @@ Dplay.decode_season = function(targetUrl, data, completeFun) {
                 else
                     return 1
         });
-        ImgLink = JSON.parse(syncHttpRequest(Dplay.makeApiUrl("/shows/" + showId)).data).data;
+        ImgLink = JSON.parse(httpRequest(Dplay.makeApiUrl("/shows/" + showId),{sync:true}).data).data;
         ImgLink = Dplay.fixThumb(ImgLink.poster_image);
         for (var k=0; k < seasons.length; k++) {
             seasonToHtml(seasons[k].name, ImgLink, seasons[k].link);
@@ -723,7 +727,7 @@ Dplay.getDetailsUrl = function(streamUrl) {
 Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
     Dplay.play_args = {stream_url:streamUrl, is_live:isLive};
     var videoUrl = "https://secure.dplay.se/secure/api/v2/user/authorization/stream/" + streamUrl.match(/\/videos\/([0-9]+)/)[1] + "?stream_type=hls";
-    var countryCode = JSON.parse(syncHttpRequest("http://geo.dplay.se/geo.js").data).countryCode;
+    var countryCode = JSON.parse(httpRequest("http://geo.dplay.se/geo.js",{sync:true}).data).countryCode;
     var cookie = '{"countryCode":"' + countryCode + '","expiry":' + (getCurrentDate().getTime() + 3600*1000) + '}';
     cookie = 'dsc-geo='+encodeURIComponent(cookie);
 
@@ -733,7 +737,7 @@ Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        var srtUrl = null;
                        try {
-                           srtUrl = JSON.parse(syncHttpRequest(streamUrl).data).data.subtitles.sv.srt; 
+                           srtUrl = JSON.parse(httpRequest(streamUrl,{sync:true}).data).data.subtitles.sv.srt; 
                        } catch(err) {
                            srtUrl = null;
                        }

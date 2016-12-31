@@ -77,7 +77,7 @@ Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
                            target = streams[currentId].bandwidth
                            if (!streams[currentId].url.match(/^http/))
                                streams[currentId].url = prefix + streams[currentId].url;
-                           // Log("Target url data:" + syncHttpRequest(streams[currentId].url).data.slice(0,600));
+                           // Log("Target url data:" + httpRequest(streams[currentId].url,{sync:true}).data.slice(0,600));
                            if (extra.useBitrates || !is_hls) {
                                videoUrl = videoUrl + "|STARTBITRATE=" + target +"|BITRATES=" + target + ":" + target
                            } else {

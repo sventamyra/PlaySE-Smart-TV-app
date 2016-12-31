@@ -25,37 +25,39 @@ Tv4.refreshdUnavailableShows = function() {
         // Already updating
         return;
     Tv4.updatingUnavailableShows = true;
-    asyncHttpRequest(Tv4.getUrl("allShows"),
-                     function(data) {
-                         Tv4.unavailableShows = [];
-                         data = JSON.parse(data);
-                         var i = 0;
-                         return Tv4.checkShows(i, data.results);
-                     },
-                     {no_log:true}
-                    );
+    httpRequest(Tv4.getUrl("allShows"),
+                {cb:function(data) {
+                    Tv4.unavailableShows = [];
+                    data = JSON.parse(data);
+                    var i = 0;
+                    return Tv4.checkShows(i, data.results);
+                },
+                 no_log:true, 
+                 not_random:true
+                });
 };
 
 Tv4.checkShows = function(i, data) {
     if (i < data.length)
     {
-        asyncHttpRequest(Tv4.getUrl("episodes") + data[i].nid,
-                         function(episode) {
-                             episode = JSON.parse(episode).results;
-                             var anyViewable = false;
-                             for (var k=0; k < episode.length; k++) {
-                                 if (Tv4.isViewable(episode[k])) {
-                                     anyViewable = true
-                                     break;
-                                 }
-                             }
-                             if (!anyViewable) {
-                                 Tv4.unavailableShows.push(data[i].nid)
-                             }
-                             return Tv4.checkShows(i+1, data);
-                         },
-                         {no_log:true}
-                        );
+        httpRequest(Tv4.getUrl("episodes") + data[i].nid,
+                    {cb:function(episode) {
+                        episode = JSON.parse(episode).results;
+                        var anyViewable = false;
+                        for (var k=0; k < episode.length; k++) {
+                            if (Tv4.isViewable(episode[k])) {
+                                anyViewable = true
+                                break;
+                            }
+                        }
+                        if (!anyViewable) {
+                            Tv4.unavailableShows.push(data[i].nid)
+                        }
+                        return Tv4.checkShows(i+1, data);
+                    },
+                     no_log:true, 
+                     not_random:true
+                    });
     }
     else {
         Log("Saving unavailable shows, length:" + Tv4.unavailableShows.length);
@@ -314,7 +316,7 @@ Tv4.decode = function(data, stripShow, isClip, completeFun) {
                 clips_url = getLocation().replace(/.+(http.+)&history.+/, "$1")
                 clips_url = clips_url.replace("episode", "clips")
             }
-            var data = JSON.parse(syncHttpRequest(clips_url+"&per_page=1").data);
+            var data = JSON.parse(httpRequest(clips_url+"&per_page=1", {sync:true}).data);
             if (data.total_hits > 0) {
                 clipToHtml(Tv4.fixThumb(data.results[0].program.program_image),
                            clips_url

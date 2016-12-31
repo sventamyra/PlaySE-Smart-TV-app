@@ -19,9 +19,8 @@ Main.onLoad = function(refresh)
 {
     Config.init();
     Language.fixAButton();
-    document.title = "Populärt";
-    if (channel == "dplay")
-        document.title = 'Rekommenderat';
+    // Should this only been done in case of non-refresh?
+    document.title = Channel.getMainTitle();
     if (!refresh)
 	Header.display(document.title);
     if (!this.loaded) {
@@ -34,7 +33,8 @@ Main.onLoad = function(refresh)
         Log("Model:" + model +  " DeviceYear:" + deviceYear + " IsEmulator:" + isEmulator + " curWidget:" + curWidget.name + " Cookies:" + document.cookie);
         loadingStart();
         Main.setClock();
-        Main.startKeepAlive();
+        // if (deviceYear == 2013)
+        //     Main.startKeepAlive();
         checkDateFormat();
         this.loaded = true;
 	Audio.init();
@@ -67,8 +67,16 @@ Main.setClock = function() {
 }
 
 Main.startKeepAlive = function() {
-    if (deviceYear == 2013) {
-        Main.requestRandomUrl();
+    Main.requestRandomUrl();
+}
+
+Main.toggleKeepAlive = function() {
+    Log("Player.toggleKeepAlive()")
+    if (Main.keepAliveTimer) {
+        window.clearTimeout(Main.keepAliveTimer);
+        Main.keepAliveTimer = null;
+    } else {
+        Main.startKeepAlive()
     }
 }
 
@@ -77,7 +85,8 @@ Main.requestRandomUrl = function() {
     if (myUrls.length > 0) {
         // Log("Main.requestRandomUrl")
         var item = myUrls[Math.floor(Math.random()*myUrls.length)]
-        asyncHttpRequest(item.url, null, true);
+        item.extra.not_random = true;
+        httpRequest(item.url, item.extra);
     }
     Main.keepAliveTimer = window.setTimeout(Main.requestRandomUrl, 30*1000);
 };

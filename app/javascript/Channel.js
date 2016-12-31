@@ -70,6 +70,13 @@ Channel.keyGreen = function() {
         setLocation('categories.html');
 }
 
+Channel.getMainTitle = function() {
+    if (this.impl.getMainTitle)
+        return this.impl.getMainTitle();
+    else
+        return "Populärt";
+}
+
 Channel.getAButtonText = function(language) {
     var text = null;
 
@@ -101,6 +108,14 @@ Channel.getBButtonText = function(language)
         // keep text
         return $("#b-button").text()
     return text;
+};
+
+Channel.updateCategoryTitle = function()
+{
+    if (this.impl.updateCategoryTitle)
+        this.impl.updateCategoryTitle();
+    else
+        document.title = "Kategorier";
 };
 
 Channel.getCButtonText = function(language) {

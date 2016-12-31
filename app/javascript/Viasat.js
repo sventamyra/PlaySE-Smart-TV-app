@@ -315,11 +315,11 @@ Viasat.decode = function(data, url, stripShow, completeFun, isClip, isNext) {
             }
 	}
         if (clipsUrl) {
-            data = JSON.parse(syncHttpRequest(clipsUrl).data);
+            data = JSON.parse(httpRequest(clipsUrl,{sync:true}).data);
             var clipsThumb = null;
             if (data.count.total_items > 0) {
                 if (seasonUrl) {
-                    data = JSON.parse(syncHttpRequest(seasonUrl).data);
+                    data = JSON.parse(httpRequest(seasonUrl,{sync:true}).data);
                     if (data._links && data._links.image)
                         clipsThumb = Viasat.fixThumb(data._links.image.href); 
                 }
@@ -435,7 +435,7 @@ Viasat.decodeCategories = function(data, url, completeFun) {
 	        Link = data[k]._links.self.href
             }
             if (Viasat.anySubChannel()) {
-                if (JSON.parse(syncHttpRequest(Viasat.addChannel(Link)).data).count.total_items == 0)
+                if (JSON.parse(httpRequest(Viasat.addChannel(Link),{sync:true}).data).count.total_items == 0)
                     continue;
             }
 	    ImgLink  = Viasat.fixThumb(data[k]._links.image.href);
@@ -506,7 +506,7 @@ Viasat.decode_shows = function(data, url, allShows, skipHtml, completeFun, isNex
                     ImgLink = null;
                 }
                 if (checkSeasons) {
-                    if (JSON.parse(syncHttpRequest(Link).data).count.total_items == 0)
+                    if (JSON.parse(httpRequest(Link,{sync:true}).data).count.total_items == 0)
                         continue;
                     LinkPrefix = '<a href="showList.html?season=1' + encodeURIComponent(Name) + '&name=';
                 }
@@ -691,7 +691,7 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
                            stream = data.streams.high;
                        else
                            stream = data.streams.medium;
-                       data = JSON.parse(syncHttpRequest(Viasat.getDetailsUrl(streamUrl)).data)
+                       data = JSON.parse(httpRequest(Viasat.getDetailsUrl(streamUrl),{sync:true}).data)
                        var srtUrls=[];
                        if (data.sami_path) srtUrls.push(data.sami_path); 
                        if (data.subtitles_for_hearing_impaired) srtUrls.push(data.subtitles_for_hearing_impaired);
@@ -718,24 +718,24 @@ Viasat.fetchSubtitles = function (subUrls, hlsSubs) {
         return Player.fetchSubtitles(subUrls, hlsSubs)
     }
     var anyFailed = false
-    asyncHttpLoop(subUrls.list,
-                  function(url, data, status) {
-                      if (status != 200) {
-                          Log("Viasat.fetchSubtitles sub failed: " + status);
-                          data = ""
-                          anyFailed = true;
-                          return ""
-                      } else {
-                          return data
-                      }
-                  },
-                  function(data) {
-                      if (data.length > 0)
-                          Viasat.parseSubtitles(data);
-                      if (anyFailed && hlsSubs)
-                          Player.fetchHlsSubtitles(hlsSubs)
-                  }
-                 );
+    httpLoop(subUrls.list,
+             function(url, data, status) {
+                 if (status != 200) {
+                     Log("Viasat.fetchSubtitles sub failed: " + status);
+                     data = ""
+                     anyFailed = true;
+                     return ""
+                 } else {
+                     return data
+                 }
+             },
+             function(data) {
+                 if (data.length > 0)
+                     Viasat.parseSubtitles(data);
+                 if (anyFailed && hlsSubs)
+                     Player.fetchHlsSubtitles(hlsSubs)
+             }
+            );
 };
 
 Viasat.parseSubtitles = function (data) {

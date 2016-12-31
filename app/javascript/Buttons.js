@@ -628,7 +628,6 @@ Buttons.handleMenuKeys = function(keyCode){
     {
     case tvKey.KEY_RED: 
         Channel.keyRed();
-
 	break;
     case tvKey.KEY_GREEN: 
         Channel.keyGreen();

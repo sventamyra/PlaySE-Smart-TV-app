@@ -263,13 +263,12 @@ Details.fetchData = function(detailsUrl, refresh) {
     if (!refresh)
         Details.fetchedDetails = null;
     detailsUrl = this.Geturl(detailsUrl);
-    asyncHttpRequest(detailsUrl,
-                     function(data) 
-                     {
-                         Details.fetchedDetails = Details.getData(detailsUrl,{responseText:data});
-                     },
-                     {headers:Channel.getHeaders()}
-                    );
+    httpRequest(detailsUrl,
+                {cb: function(data) {
+                    Details.fetchedDetails = Details.getData(detailsUrl,{responseText:data});
+                },
+                 headers:Channel.getHeaders()
+                });
 };
 
 Details.getData = function(url, data) {

@@ -28,6 +28,7 @@ var subtitleStatusPrinted = false;
 var retries = 0;
 var SEPARATOR = "&nbsp;&nbsp;&nbsp;&nbsp;"
 var SVT_ALT_API_URL= "http://www.svt.se/videoplayer-api/video/"
+var useSef=true;
 
 var Player =
 {
@@ -71,6 +72,13 @@ var Player =
     FRONT_DISPLAY_PAUSE: 102
 };
 
+Player.togglePlayer = function() {
+    Log("Player.togglePlayer()")
+    Player.deinit();
+    Player.plugin = null;
+    useSef = !useSef;
+}
+
 Player.init = function()
 {
     if (this.plugin)
@@ -78,9 +86,48 @@ Player.init = function()
     var success = true;
     
     this.state = this.STOPPED;
-    this.plugin = document.getElementById("pluginSef");
-    Log("Player Open:" + this.plugin.Open('Player', '1.010', 'Player'));
-    this.plugin.OnEvent = Player.OnEvent;
+    if (deviceYear > 2010 && useSef) {
+        Log("Using sef");
+        this.plugin = document.getElementById("pluginSef");
+        Log("Player Open:" + this.plugin.Open('Player', '1.112', 'Player'));
+        this.plugin.OnEvent = Player.OnEvent;
+    } else {
+        Log("Not using sef");
+        this.plugin = document.getElementById("pluginPlayer");
+        this.plugin.Execute = function(Name){
+            var args=[];
+            if (Name == "StartPlayback") {
+                Name == "ResumePlay";
+                args.push(videoUrl)
+            }
+            Name = "Player.plugin." + Name
+            if (eval(Name)) {
+                for (var i=1; i < arguments.length; i++) {
+                    if (typeof(arguments[i]) === 'string') {
+                        args.push('"' + arguments[i]+'"');
+                    } else
+                        args.push(arguments[i])
+                };
+                args.join(",")
+                Name = Name  + "(" + args + ");";
+                // alert(Name);
+                return eval(Name)
+            } else 
+                alert("ignoring: " + Name)
+            
+        };
+        this.plugin.OnCurrentPlayTime = 'Player.SetCurTime';
+        this.plugin.OnStreamInfoReady = 'Player.OnStreamInfoReady';
+        this.plugin.OnBufferingStart = 'Player.OnBufferingStart';
+        this.plugin.OnBufferingProgress = 'Player.OnBufferingProgress';
+        this.plugin.OnBufferingComplete = 'Player.OnBufferingComplete';           
+        this.plugin.OnRenderingComplete  = 'Player.OnRenderingComplete'; 
+        this.plugin.OnNetworkDisconnected = 'Player.OnNetworkDisconnected';
+        this.plugin.OnConnectionFailed = 'Player.OnConnectionFailed';
+        this.plugin.OnStreamNotFound   = 'Player.OnStreamNotFound';
+        this.plugin.OnRenderError      = 'Player.OnRenderError';
+        this.plugin.OnAuthenticationFailed = 'Player.OnAuthenticationFailed';
+    }
     fpPlugin = document.getElementById("pluginFrontPanel");
     
     if (!this.plugin)
@@ -127,10 +174,10 @@ Player.OnEvent = function(EventType, param1, param2) {
         Player.OnRenderError(param1);
         break;
     case 7: //OnRenderingStart();
-        evt = Player.OnRenderingStart();
+        Player.OnRenderingStart();
         break;
     case 8: //OnRenderingComplete();
-        evt = Player.OnRenderingComplete();
+        Player.OnRenderingComplete();
         break;
     case 9: //OnStreamInfoReady();
         Player.OnStreamInfoReady();
@@ -296,23 +343,23 @@ Player.GetDigits = function(type, data)
 Player.getHlsVersion = function(url, callback) 
 {
     var prefix = url.replace(/[^\/]+(\?.+)?$/,"");
-    asyncHttpRequest(url, 
-                     function(data, status) {
-                         var hls_version = data.match(/^#.*EXT-X-VERSION:\s*([0-9]+)/m)
-                         if (hls_version)
-                             hls_version = +hls_version[1]
-                         else if (data.match(/^([^#].+\.m3u8.*$)/m)) {
-                             url = data.match(/^([^#].+\.m3u8.*$)/m)[1]
-                             if (!url.match(/^http/))
-                                 url = prefix + url;
-                             return Player.getHlsVersion(url, callback)
-                         }
-                         else 
-                             hls_version = null
-                         callback(hls_version)
-                     },
-                     {timeout:2000}
-                    )
+    httpRequest(url, 
+                {cb:function(data, status) {
+                    var hls_version = data.match(/^#.*EXT-X-VERSION:\s*([0-9]+)/m)
+                    if (hls_version)
+                        hls_version = +hls_version[1]
+                    else if (data.match(/^([^#].+\.m3u8.*$)/m)) {
+                        url = data.match(/^([^#].+\.m3u8.*$)/m)[1]
+                        if (!url.match(/^http/))
+                            url = prefix + url;
+                        return Player.getHlsVersion(url, callback)
+                    }
+                    else 
+                        hls_version = null
+                    callback(hls_version)
+                },
+                 timeout:2000
+                })
 };
 
 Player.playVideo = function()
@@ -470,6 +517,7 @@ Player.skipInVideo = function()
     else if(timediff < 0){
     	timediff = 0 - timediff;
     	Player.plugin.Execute("JumpBackward", timediff);
+    	Log("backward jump: " + timediff);
     }
     skipTimeInProgress = skipTime;
     Player.refreshOsdTimer(5000);
@@ -589,6 +637,8 @@ Player.OnBufferingComplete = function()
         this.skipState = -1; 
         skipTime = 0;
     }
+    if (!useSef)
+        Player.OnRenderingStart();
 //	this.setWindow();
    //$('.loader').css("display", "none");
 };
@@ -966,7 +1016,6 @@ Player.retryVideo = function (text, max) {
 	        {
 		    Log('Failure:' + this.url);
                     Player.PlaybackFailed(text);
-                    
 	        }
 	       });
     } else {
@@ -1389,45 +1438,45 @@ Player.fetchSubtitles = function (srtUrls, hlsSubs) {
         srtUrls = srtUrls.list
     else if (srtUrls)
         srtUrls = [srtUrls]
-    asyncHttpLoop(srtUrls,
-                  function(url, data, status) {
-                      if (status != 200)
-                          anyFailed = true;
-                      else if (data) {
-                          if (url.match(/\.(web)?vtt/)) {
-                              data = data.slice(data.search(/^[0-9]/m));
-                              data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
-                              data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
-                          }
-                          return data + "\n\n"
-                      }
-                      return ""
-                  },
-                  function(srtData) {
-                      if (srtData != "")
-                          Player.parseSubtitle(srtData);
-                      if (anyFailed && hlsSubs)
-                          Player.fetchHlsSubtitles(hlsSubs)
-                  }
-                 );
+    httpLoop(srtUrls,
+             function(url, data, status) {
+                 if (status != 200)
+                     anyFailed = true;
+                 else if (data) {
+                     if (url.match(/\.(web)?vtt/)) {
+                         data = data.slice(data.search(/^[0-9]/m));
+                         data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
+                         data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
+                     }
+                     return data + "\n\n"
+                 }
+                 return ""
+             },
+             function(srtData) {
+                 if (srtData != "")
+                     Player.parseSubtitle(srtData);
+                 if (anyFailed && hlsSubs)
+                     Player.fetchHlsSubtitles(hlsSubs)
+             }
+            );
 };
 
 Player.fetchHlsSubtitles = function (hlsSubs) {
-    asyncHttpLoop(hlsSubs,
-                  function(url, data) {
-                      var urls = data.match(/^([^#].+)$/mg)
-                      var prefix  = url.replace(/[^\/]+(\?.+)?$/,"");
-                      for (var i=0; i < urls.length; i++) {
-                          if (!urls[i].match(/http[s]?:/))
-                              urls[i] = prefix + urls[i]
-                      }
-                      return urls.join(" ") + " "
-                  },
-                  function (urls) {
-                      urls = urls.trim().split(" ");
-                      Player.fetchSubtitles({list:urls})
-                  }
-                 );
+    httpLoop(hlsSubs,
+             function(url, data) {
+                 var urls = data.match(/^([^#].+)$/mg)
+                 var prefix  = url.replace(/[^\/]+(\?.+)?$/,"");
+                 for (var i=0; i < urls.length; i++) {
+                     if (!urls[i].match(/http[s]?:/))
+                         urls[i] = prefix + urls[i]
+                 }
+                 return urls.join(" ") + " "
+             },
+             function (urls) {
+                 urls = urls.trim().split(" ");
+                 Player.fetchSubtitles({list:urls})
+             }
+            );
 };
 
 Player.parseSubtitle = function (data) {
