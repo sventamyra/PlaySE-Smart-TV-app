@@ -246,7 +246,7 @@ Details.toHtml = function (programData) {
         html+='</div>';
 	html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
         // Add "header" elements last to determine max-height
-        var max_height = (extra) ? "277px" : "310px";
+        var max_height = (extra) ? "276px" : "308px";
         html='<div class="project-meta-frame" style="max-height:' +max_height+';overflow:hidden">'+html;
 	html = '<div class="project-name">' + html;
         html = '<div class="project-text">' + html;

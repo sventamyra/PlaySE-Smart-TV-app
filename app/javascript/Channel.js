@@ -92,12 +92,12 @@ Channel.getBButtonText = function(language)
     if (this.impl.getBButtonText)
         text = this.impl.getBButtonText(language)
 
-    if (text == null) {
+    if (text === null) {
         if(language == 'English')
             return 'Categories';
         else
             return 'Kategorier';
-    } else if (text == 0)
+    } else if (text === 0)
         // keep text
         return $("#b-button").text()
     return text;

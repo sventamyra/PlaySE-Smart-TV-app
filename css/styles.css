@@ -76,7 +76,6 @@ body {
     padding: 6px 10px 3px;
     color: #e0e7ea;
     background-color:Green;
-    z-index:inherit;
 }
 
 .topmenu a:hover, .topmenu a.active, .scroll-item-name a:hover, a.link-view, .column h2, a.link-button.selected, 
@@ -1086,16 +1085,16 @@ small {
 .topoverlayred         { position: absolute; top: 86px; left: 0; color: #e0e7ea; font: bold 12px/24px Helvetica, Sans-Serif; letter-spacing: -1px; background: rgba(255, 0, 0, 0.7); margin-left:6px; padding: 0 10px; }
 .bottomoverlayred      { position: absolute; top: 110px; left: 0; color: #e0e7ea; font: bold 12px/24px Helvetica, Sans-Serif; letter-spacing: -1px; background: rgba(255, 0, 0, 0.7);  margin-left:6px;  padding: 0 10px; }
 					  
-.topoverlayresolution { position: absolute; top: 40px; left: 2px; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; width: auto; height: auto; display: none; vertical-align: middle; padding: 0 4px; z-index:inherit;border-radius:5px;}
+.topoverlayresolution { position: absolute; top: 40px; left: 2px; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; width: auto; height: auto; display: none; vertical-align: middle; padding: 0 4px; border-radius:5px;}
 
-.topoverlayclock { position: absolute; top: 40px; right: 2px; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; width: auto; height: auto; display: inline-block; vertical-align: middle; overflow: hidden; padding:0 4px; z-index:inherit;border-radius:5px;}
+.topoverlayclock { position: absolute; top: 40px; right: 2px; color: #e0e7ea; font: bold 16px/18px Helvetica, Sans-Serif; width: auto; height: auto; display: inline-block; vertical-align: middle; overflow: hidden; padding:0 4px; border-radius:5px;}
 
-.detailstitle         { position: absolute; top: 80px; left:115px; color: #e0e7ea; font: bold 25px/50px Helvetica, Sans-Serif; width:75%; height:50px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle; text-align:center; padding: 0 10px; z-index:inherit; border-radius:15px 15px 0 0;}
+.detailstitle         { position: absolute; top: 80px; left:115px; color: #e0e7ea; font: bold 25px/50px Helvetica, Sans-Serif; width:75%; height:50px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle; text-align:center; padding: 0 10px; border-radius:15px 15px 0 0;}
 
-.detailsdescription    { position: absolute; top: 130px; left:115px;  color: #e0e7ea; font: normal 20px/22px Helvetica, Sans-Serif; width:70%; height:auto; max-height: 250px; overflow:hidden; display:inline-block; padding: 0 34px 15px 34px; z-index:inherit;border-radius:0 0 15px 15px;}
+.detailsdescription    { position: absolute; top: 130px; left:115px;  color: #e0e7ea; font: normal 20px/22px Helvetica, Sans-Serif; width:70%; height:auto; max-height: 250px; overflow:hidden; display:inline-block; padding: 0 34px 15px 34px; border-radius:0 0 15px 15px;}
 
-.topoverlaybig         { position: absolute; top: 340px; left:0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; width:inherit; height:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle; padding: 0 10px; z-index:inherit;}
-.bottomoverlaybig         { position: absolute; top: 400px; left:0;  color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; width:inherit; height:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display: inline-block; vertical-align: middle; padding: 0 10px; z-index:inherit;}
+.topoverlaybig         { position: absolute; top: 340px; left:0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; width:inherit; height:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:inline-block; vertical-align:middle; padding: 0 10px}
+.bottomoverlaybig         { position: absolute; top: 400px; left:0;  color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; width:inherit; height:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display: inline-block; vertical-align: middle; padding: 0 10px;}
 .muteoverlay      	{display:none; position: absolute; top: 0; left: 0; color: #e0e7ea; font: bold 30px/60px Helvetica, Sans-Serif; padding: 0 10px; }
 #pluginPlayer{
 	position: absolute; 
