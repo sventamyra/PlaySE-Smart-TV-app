@@ -379,7 +379,7 @@ setClockOffset = function (actualDate, clockData) {
     var actualTime = clockData.match(/>([0-9]+:[0-9]+:[0-9]+)</)[1];
     var actualDay = +actualDate.match(/^([0-9]+)[^0-9<]/)[1];
     var actualYear = actualDate.match(/[^0-9<]+([0-9]+)$/)[1];
-    var actualMonth = actualDate.match(/[0-9]+([^0-9<]+)[0-9]/)[1];
+    var actualMonth = actualDate.match(/[0-9 \t]+([^0-9<]+)[0-9]/)[1];
     for (var i=0; i< months.length; i++) {
         new RegExp( + "[\\-. 	]*","i");
         if (actualMonth.match(months[i])) {
