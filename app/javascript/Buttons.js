@@ -876,7 +876,7 @@ Buttons.runNextItem = function(direction, play) {
 };
 
 Buttons.playNextItem = function(direction) {
-    this.runNextItem(direction, true);
+    return this.runNextItem(direction, true);
 };
 
 Buttons.showNextItem = function(direction) {

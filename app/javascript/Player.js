@@ -656,14 +656,21 @@ Player.OnRenderingComplete = function()
 {
     Log("OnRenderingComplete");
     Player.storeResumeInfo();
-    Player.stopVideo(Player.repeat != Player.REPEAT_OFF);
+    var keepPlaying = false;
     if (Player.repeat == Player.REPEAT_ONE) {
-        Buttons.playItem();
+        keepPlaying = true;
+        Player.stopVideo(keepPlaying);
+        keepPlaying = (Buttons.playItem() != -1);
     } else if (Player.repeat == Player.REPEAT_ALL) {
-        Buttons.playNextItem(1);
+        // playNextItem will stop video if there's a next
+        keepPlaying = (Buttons.playNextItem(1) != -1);
     } else if (Player.repeat == Player.REPEAT_BACK) {
-        Buttons.playNextItem(-1);
+        // playNextItem will stop video if there's a next
+        keepPlaying = (Buttons.playNextItem(-1) != -1);
     }
+    // Check if we need to stop. E.g. no repeat or repeat reached the end.
+    if (!keepPlaying)
+        Player.stopVideo(keepPlaying);
 };
 
 Player.getResumeList = function() {
