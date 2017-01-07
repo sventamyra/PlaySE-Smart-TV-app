@@ -577,6 +577,10 @@ Buttons.keyHandleForPlayer = function(){
         }
 	break;
 
+    case tvKey.KEY_0:
+        Player.toggleFullScreen();
+	break;
+
     case tvKey.KEY_2:
     case tvKey.KEY_8:
 	Player.sizeSubtitles(keyCode == tvKey.KEY_2);

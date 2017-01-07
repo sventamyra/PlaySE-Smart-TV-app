@@ -462,8 +462,7 @@ ul.dropdown .root-item {
 }
 
 .content-holder {
-	min-width:18000px;
-	width: 99999px;  /*width for 30 scroll items*/
+	width:5000%; /*width for approx 50 pages*/
 	height: 205px;
 	position:relative;
 }

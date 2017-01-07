@@ -149,16 +149,17 @@ Resolution.getIsmStreams = function (videoUrl, data) {
             break;
         }
     }
-    
-    data = data[1];
-    var bandwidths = data.match(/Bitrate="([0-9]+)"/gm)
+
     var streams    = [];
+    var bandwidths = data[1].match(/Bitrate="([0-9]+)"/gm)
+
     for (var i = 0; i < bandwidths.length; i++) {
         streams.push({bandwidth: +bandwidths[i].match(/([0-9]+)/)[1],
                       url:videoUrl
                      }
                     );
     }
+
     return {streams:streams, audio_idx:swe_audio_idx}
 }
 

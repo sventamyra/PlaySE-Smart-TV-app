@@ -255,12 +255,13 @@ Player.deinit = function()
 Player.setWindow = function()
 {
 	//Player.plugin.Execute("SetDisplayArea", 0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
-    Player.plugin.Execute("SetDisplayArea", 0, 0, 1, 1);
+    Log("SetDisplayArea:" + Player.plugin.Execute("SetDisplayArea", 0, 0, 1, 1) + " 1x1");
+    
 };
 
 Player.setFullscreen = function()
 {
-    Player.plugin.Execute("SetDisplayArea", 0, 0, GetMaxVideoWidth(), GetMaxVideoHeight());
+    Log("SetDisplayArea:" + Player.plugin.Execute("SetDisplayArea", 0, 0, GetMaxVideoWidth(), GetMaxVideoHeight()) + " " + GetMaxVideoWidth() + "x" +  GetMaxVideoHeight());
 };
 
 Player.setVideoURL = function(master, url, srtUrl, extra)
@@ -1740,14 +1741,16 @@ Player.disableScreenSaver = function() {
 };
 
 GetMaxVideoWidth = function() {
-    if (deviceYear > 2011) 
-        return MAX_WIDTH;
+    // Seems 1280x720 doesn't really work for HD variants either...
+    // if (deviceYear > 2011) 
+    //     return MAX_WIDTH;
     return 960;
 };
 
 GetMaxVideoHeight = function() {
-    if (deviceYear > 2011) 
-        return MAX_HEIGHT;
+    // Seems 1280x720 doesn't really work for HD variants either...
+    // if (deviceYear > 2011) 
+    //     return MAX_HEIGHT;
     return 540;
 };
 
