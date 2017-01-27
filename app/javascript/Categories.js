@@ -1,14 +1,9 @@
-var Categories =
-{
-
-};
+var Categories = {};
 
 Categories.onLoad = function(refresh)
 {
-    
-    Channel.updateCategoryTitle();
-
     if (!refresh) {
+        document.title = Channel.getCategoryTitle();
 	Header.display(document.title);
     }
     if (!detailsOnTop)
@@ -22,65 +17,20 @@ Categories.onUnload = function()
 
 Categories.loadXml = function(refresh) {
     $("#content-scroll").hide();
-    switch (channel) {
-    case "svt":
-        Categories.loadSvt(refresh);
-        break;
-    case "viasat":
-        Categories.loadViasat(refresh);
-        break;
-    case "tv4":
-        Categories.loadTv4(refresh);
-        break;
-    case "dplay":
-        Categories.loadDplay(refresh);
-        break;
-    }
-};
-
-Categories.loadSvt = function(refresh) {
-    // Svt.toggleBButton();
-    requestUrl('http://www.svtplay.se/genre',
-               function(status, data)
-               {
-                   Svt.decodeCategories(data);
-                   data = null;
-               },
-               {callLoadFinished:true,
-                refresh:refresh
-               }
-              );
-};
-
-Categories.loadViasat = function(refresh) {
-    url = Viasat.getUrl("categories")
+    var url = Channel.getUrl("categories", {refresh:refresh});
+    var cbComplete = function(status){loadFinished(status, refresh)};
     requestUrl(url,
                function(status, data)
                {
-                   Viasat.decodeCategories(data.responseText, url, function(){loadFinished(status, refresh)});
+                   Channel.decodeCategories(data, 
+                                            {url:url, 
+                                             refresh:refresh,
+                                             cbComplete:function(){cbComplete(status)}
+                                            });
                    data = null;
                },
-               {cbError: function(status, data) {loadFinished(status, refresh)}}
-              );
-};
-
-Categories.loadTv4 = function(refresh) {
-    requestUrl(Tv4.getUrl("categories"),
-               function(status, data)
-               {
-                   Tv4.decodeCategories(data.responseText);
-                   data = null;
-               },
-               {callLoadFinished:true,
-                refresh:refresh
-               }
-              );
-};
-
-Categories.loadDplay = function(refresh) {
-    url = Dplay.getUrl("categories")
-    Dplay.categories(url, refresh);
+               {cbError:function(status){cbComplete(status)},
+                headers:Channel.getHeaders()
+               });
 };
 //window.location = 'categoryDetail.html?category=' + ilink + '&history=Kategorier/' + iname +'/';
-
-

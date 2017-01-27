@@ -1,23 +1,40 @@
 var Channel =
 {
-    impl:Svt
+    impl:null
+};
+
+Channel.init = function() {
+    if (!Channel.impl)
+        Channel.impl = Svt;
 };
 
 Channel.set = function(newChannel) {
-    if (newChannel == "svt") {
-        newChannel = Svt
-    } else if (newChannel == "viasat") {
-        newChannel = Viasat
-    } else if (newChannel == "tv4") {
-        newChannel = Tv4
-    } else if (newChannel == "dplay") {
-        newChannel = Dplay
+    if (this.impl != newChannel || Channel.isSubChannelSet()) {
+        this.impl = newChannel;
+        Channel.resetSubChannel()
+        return true;
+    } else {
+        return false;
     }
-    this.impl = newChannel
 }
 
-Channel.getHeaderPrefix = function() {
-    return this.impl.getHeaderPrefix()
+Channel.isSubChannelSet = function() {
+    if (this.impl.isSubChannelSet)
+        return this.impl.isSubChannelSet()
+    return false
+}
+
+Channel.resetSubChannel = function() {
+    if (this.impl.resetSubChannel)
+        this.impl.resetSubChannel()
+}
+
+Channel.getName = function() {
+    return this.getHeaderPrefix(true).toLowerCase()
+}
+
+Channel.getHeaderPrefix = function(MainName) {
+    return this.impl.getHeaderPrefix(MainName)
 }
 
 Channel.getHeaders = function() {
@@ -25,6 +42,45 @@ Channel.getHeaders = function() {
         return this.impl.getHeaders()
     else
         return null
+}
+
+Channel.getUrl = function(tag, extra) {
+    return this.impl.getUrl(tag, extra);
+}
+
+Channel.login = function(callback) {
+    if (this.impl.login)
+        this.impl.login(callback);
+    else
+        callback()
+}
+
+Channel.decodeMain = function(data, extra) {
+    this.impl.decodeMain(data, extra);
+}
+
+Channel.decodeSection = function(data, extra) {
+    this.impl.decodeSection(data, extra);
+}
+
+Channel.decodeCategories = function(data, extra) {
+    this.impl.decodeCategories(data, extra);
+}
+
+Channel.decodeCategoryDetail = function(data, extra) {
+    this.impl.decodeCategoryDetail(data, extra);
+}
+
+Channel.decodeLive = function(data, extra) {
+    this.impl.decodeLive(data, extra);
+}
+
+Channel.decodeShowList = function(data, extra) {
+    this.impl.decodeShowList(data, extra);
+}
+
+Channel.decodeSearchList = function(data, extra) {
+    this.impl.decodeSearchList(data, extra);
 }
 
 Channel.getDetailsUrl = function(name) {
@@ -77,6 +133,29 @@ Channel.getMainTitle = function() {
         return "Populärt";
 }
 
+Channel.getSectionTitle = function(location) {
+    if (this.impl.getSectionTitle)
+        return this.impl.getSectionTitle(location);
+    else
+        return document.title;
+}
+
+Channel.getCategoryTitle = function()
+{
+    if (this.impl.getCategoryTitle)
+        return this.impl.getCategoryTitle();
+    else
+        return "Kategorier";
+};
+
+// TODO  - is very similar to button text - re-use?
+Channel.getLiveTitle = function() {
+    if (this.impl.getLiveTitle)
+        return this.impl.getLiveTitle();
+    else
+        return 'Kanaler & livesändningar';
+}
+
 Channel.getAButtonText = function(language) {
     var text = null;
 
@@ -108,14 +187,6 @@ Channel.getBButtonText = function(language)
         // keep text
         return $("#b-button").text()
     return text;
-};
-
-Channel.updateCategoryTitle = function()
-{
-    if (this.impl.updateCategoryTitle)
-        this.impl.updateCategoryTitle();
-    else
-        document.title = "Kategorier";
 };
 
 Channel.getCButtonText = function(language) {

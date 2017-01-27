@@ -345,7 +345,7 @@ Player.getHlsVersion = function(url, callback)
 {
     var prefix = url.replace(/[^\/]+(\?.+)?$/,"");
     httpRequest(url, 
-                {cb:function(data, status) {
+                {cb:function(status, data) {
                     var hls_version = data.match(/^#.*EXT-X-VERSION:\s*([0-9]+)/m)
                     if (hls_version)
                         hls_version = +hls_version[1]
@@ -632,7 +632,8 @@ Player.OnBufferingComplete = function()
     loadingStop();
     retries = 0;
     this.hideControls();
-    this.setFullscreen();
+    if (startup)
+        this.setFullscreen();
     // Only reset in case no additional skip is in progess
     if (skipTime == skipTimeInProgress) {
         this.skipState = -1; 
@@ -694,7 +695,7 @@ Player.removeResumeInfo = function(url) {
 
 Player.storeResumeInfo = function() {
     if (videoUrl && resumeTime > 20 && !Player.isLive) {
-        // Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " videoUrl:" + videoUrl + "!Player.isLive:" + !Player.isLive);
+        Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " videoUrl:" + videoUrl + "!Player.isLive:" + !Player.isLive);
 
         var streamKey  = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
         var masterKey  = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");

@@ -37,7 +37,7 @@ Details.refresh = function (isBackground) {
     this.loadXml(isBackground);
 }
 
-Details.Geturl=function(detailsUrl){
+Details.getUrl=function(detailsUrl){
     var url;
     if (!detailsUrl)
         url = myLocation;
@@ -55,114 +55,11 @@ Details.Geturl=function(detailsUrl){
     return Channel.getDetailsUrl(name);
 };
 
-Details.Prepare = function(){
-
-    this.GetPlayUrl();
-
-    // if(Details.isLive){
-    //     var url= "http://188.40.102.5/CurrentTime.ashx";
-    //     Log(url);
-    //     $.support.cors = true;
-    //     $.ajax(
-    //         {
-    //     	type: 'GET',
-    //     	url: url,
-    //     	timeout: 15000,
-    //     	tryCount : 0,
-    //     	retryLimit : 3,
-    //     	success: function(data)
-    //     	{
-    //     	    Log('Success prepare');
-    //     	    currentTime = +($(data).find('CurrentTime').text());
-    //     	    Log("currentTime=" + currentTime);
-    //     	    if(airTime > currentTime){
-    //     		countd = airTime - currentTime + 60;
-    //     		Log("countd = " + countd);
-    //     		downCounter = setInterval(Details.CountDown, 1000); 
-    //     	    }
-    //     	    else{
-    //     		Details.GetPlayUrl();
-    //     	    }
-    //     	}
-    //     	, 
-    //             error: function(XMLHttpRequest, textStatus, errorThrown)
-    //             {
-    //                 if (textStatus == 'timeout') {
-    //                     this.tryCount++;
-    //                     if (this.tryCount <= this.retryLimit) {
-    //                         //try again
-    //                         $.ajax(this);
-    //                         return;
-    //                     }            
-    //                     return;
-    //                 }
-    //                 else{
-    //             	Log('Failure');
-    //             	ConnectionError.show();
-    //                 }
-	            
-    //             }
-    //         });	
-	
-    // }
-    // else{
-    //     this.GetPlayUrl();
-    // }
-
-};
-
-Details.CountDown = function()
-{
-	  countd = countd - 1;
-	  if (countd <= 0)
-	  {
-	     clearInterval(downCounter);
-	     Details.GetPlayUrl();
-	     return;
-	  }
-	  var secs = Math.floor(countd % 60);
-	  var mins = Math.floor(countd / 60);
-	  var hrs = Math.floor(mins / 60);
-	  mins = Math.floor(mins % 60);
-	  var smins;
-	  var ssecs;
-	  var shrs;
-	  if(hrs < 10){
-			shrs = '0' + hrs;
-		}
-		else{
-			shrs = hrs;
-		}
-		if(mins < 10){
-			smins = '0' + mins;
-		}
-		else{
-			smins = mins;
-		}
-		if(secs < 10){
-			ssecs = '0' + secs;
-		}
-		else{
-			ssecs = secs;
-		}
-		if(Language.getisSwedish()){
-			 $('.bottomoverlaybig').html("Live - börjar om: " + shrs + ":" + smins + ":" + ssecs);
-		}
-		else{
-			$('.bottomoverlaybig').html("Live - starts in: " + shrs + ":" + smins + ":" + ssecs);
-		}
-};
-
-Details.GetPlayUrl = function() {
-    // Unused function ?!?!?
-    Channel.getPlayUrl(gurl, Details.isLive);
-};
-
 Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
     if (myLocation.match(/categoryDetail\.html/)) {
         Details.toHtml({category    : true,
-                        link        : this.Geturl(),
+                        link        : this.getUrl(),
                         description : "",
                         name        : decodeURIComponent(myLocation.match(/catName=([^&]+)/)[1]),
                         thumb       : decodeURIComponent(myLocation.match(/catThumb=([^&]+)/)[1]),
@@ -171,7 +68,7 @@ Details.loadXml = function(isBackground) {
         window.setTimeout(loadingStop, 0);
         return;
     }
-    var url = this.Geturl();
+    var url = this.getUrl();
     requestUrl(url,
                function(status, data)
                {
@@ -262,9 +159,9 @@ Details.fetchData = function(detailsUrl, refresh) {
     Details.init();
     if (!refresh)
         Details.fetchedDetails = null;
-    detailsUrl = this.Geturl(detailsUrl);
+    detailsUrl = this.getUrl(detailsUrl);
     httpRequest(detailsUrl,
-                {cb: function(data) {
+                {cb: function(status, data) {
                     Details.fetchedDetails = Details.getData(detailsUrl,{responseText:data});
                 },
                  headers:Channel.getHeaders()
@@ -290,8 +187,7 @@ Details.startPlayer = function()
 {
     Player.setDuration(Details.duration);
     // Log("isLive:" + isLive + " startTime:" + Details.startTime);
-    Player.startPlayer(this.Geturl(), Details.isLive, this.startTime);
-    
+    Player.startPlayer(this.getUrl(), Details.isLive, this.startTime);
 };
 
 function dataLengthToVideoLength($video, duration)

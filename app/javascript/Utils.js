@@ -1,4 +1,3 @@
-var channel = "svt";
 var seqNo = 0;
 var clockOffset = 0;
 var setClockOffsetTimer = null;
@@ -18,16 +17,7 @@ var detailsOnTop = false;
 var dateFormat = 0;
 
 setChannel = function(newChannel) {
-    if (channel != newChannel || 
-        ((channel == 'viasat' && Viasat.anySubChannel()) ||
-         (channel == 'dplay' && Dplay.anySubChannel())
-        )
-       )
-    {
-        channel = newChannel;
-        Channel.set(newChannel)
-        Viasat.resetSubChannel();
-        Dplay.resetSubChannel();
+    if (Channel.set(newChannel)) {
         myLocation = null;
         setLocation('index.html', undefined);
         myHistory = []; 
@@ -213,7 +203,7 @@ dispatch = function(NewLocation, Refresh) {
         break;
 
     case "categoryDetail":
-        categoryDetail.onLoad(Refresh);
+        categoryDetail.onLoad(NewLocation, Refresh);
         break;
 
     case "showList":
@@ -358,13 +348,13 @@ setOffsets = function() {
     window.clearTimeout(setClockOffsetTimer);
     setClockOffsetTimer = window.setTimeout(setOffsets, 60*1000);
     httpRequest("http://www.frokenur.com/",
-                {cb:function(data) {
+                {cb:function(status, data) {
                     // Get the Date
                     var actualDate = data.match(/>[ \t]*[^0-9<]+([0-9]+[^0-9<]+[0-9]+)[ \t]*</)[1];
                     // Time is generated from other url - continue
                     var clockUrl = data.split(/iframe src="/).pop().match(/([^"]+)"/)[1];
                     httpRequest(clockUrl,
-                                {cb:function(data) {setClockOffset(actualDate, data)},
+                                {cb:function(status,data) {setClockOffset(actualDate, data)},
                                  no_log:true, 
                                  not_random:true
                                 });
@@ -416,7 +406,7 @@ setDateOffset = function () {
     window.clearTimeout(setDateOffsetTimer);
     setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
     httpRequest("http://www.svtplay.se/kanaler",
-                {cb:function(data) {
+                {cb:function(status,data) {
                     dateOffset = 0;
                     data = Svt.decodeJson({responseText:data}).channelsPage.schedule[0];
                     data = data.schedule[0].broadcastStartTime;
@@ -523,8 +513,11 @@ msToClock = function (ts)
 requestUrl = function(url, cbSucces, extra) {
     // Log("requesting url:" + url);
     if (!extra) extra = {};
+
+    if (url.cached)
+        return callUrlCallBack(url, cbSucces, "success")
         
-    var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:channel};
+    var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:Channel.getName()};
     addToMyUrls(url, extra);
     var retrying = false;
     if (extra.cookie) {
@@ -598,14 +591,14 @@ requestUrl = function(url, cbSucces, extra) {
 };
 
 callUrlCallBack = function(requestedLocation,cb,status,xhr, errorThrown) {
-    if (cb && isRequestStillValid(requestedLocation)) {
+    if (cb && (requestedLocation.cached || isRequestStillValid(requestedLocation))) {
         cb(status, xhr, errorThrown);
     } else if (cb)
         Log("Url skipped: " + requestedLocation.url + " Skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " New:" + myLocation + " " +  myRefreshLocation);
 };
 
 isRequestStillValid = function (request) {
-    return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==channel);
+    return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==Channel.getName());
 }
 
 httpRequest = function(url, extra) {
@@ -660,8 +653,8 @@ handleHttpResult = function(url, timer, extra, result) {
     if (timer == -1) {
         if (!extra.logging)
             Log('httpRequest:' + url + " aborted by timeout")
-        else
-            alert('httpRequest:' + url + " aborted by timeout")
+        // else
+        //     alert('httpRequest:' + url + " aborted by timeout")
         return
     }
     window.clearTimeout(timer);
@@ -674,8 +667,8 @@ handleHttpResult = function(url, timer, extra, result) {
     } else {
         if (!extra.logging)
             Log('Failure:' + url + " status:" + result.status);
-        else
-            alert('Failure:' + url + " status:" + result.status);
+        // else
+        //     alert('Failure:' + url + " status:" + result.status);
     }
     if (extra.sync) {
         result.success = (result.status == 200);
@@ -683,7 +676,7 @@ handleHttpResult = function(url, timer, extra, result) {
             result.location = null;
         return result
     } else if (extra.cb) {
-        extra.cb(result.data, result.status)
+        extra.cb(result.status, result.data)
     }
 }
 
@@ -693,7 +686,7 @@ httpLoop = function(urls, urlCallback, cbComplete) {
 
 runHttpLoop = function(urls, urlCallback, cbComplete, totalData) {
     httpRequest(urls[0],
-                {cb:function(data, status) {
+                {cb:function(status,data) {
                     totalData = totalData + urlCallback(urls[0], data, status)
                     if (urls.length > 1)
                         runHttpLoop(urls.slice(1), urlCallback, cbComplete, totalData)

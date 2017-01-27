@@ -440,7 +440,7 @@ Buttons.keyHandleForSettings = function()
                 break;
             case 3:
                 Language.hide();
-                setChannel($(button[selected]).attr("id"));
+                setChannel(eval($(button[selected]).text()));
                 break;
             }
         }
@@ -577,10 +577,6 @@ Buttons.keyHandleForPlayer = function(){
         }
 	break;
 
-    case tvKey.KEY_0:
-        Player.toggleFullScreen();
-	break;
-
     case tvKey.KEY_2:
     case tvKey.KEY_8:
 	Player.sizeSubtitles(keyCode == tvKey.KEY_2);
@@ -681,33 +677,34 @@ Buttons.handleMenuKeys = function(keyCode){
 	break;
     case tvKey.KEY_1:
     case tvKey.KEY_2:
-        Buttons.changeChannel("svt");
+        Buttons.changeChannel(Svt);
         break;
     case tvKey.KEY_3:
     case tvKey.KEY_6:
     case tvKey.KEY_8:
-        Buttons.changeChannel("viasat");
+        Buttons.changeChannel(Viasat);
         break;
     case tvKey.KEY_4:
-        Buttons.changeChannel("tv4");
+        Buttons.changeChannel(Tv4);
         break;
     case tvKey.KEY_5:
     case tvKey.KEY_9:
-        Buttons.changeChannel("dplay");
+        Buttons.changeChannel(Dplay);
         break;
     }
 };
 
 Buttons.changeChannel = function (channel) {
+    setChannel(channel);
+    var name = Channel.getName();
     for(var i=0, anySelected=false; i < channelButton.length; i++) {
-        if ($(channelButton[i]).attr("id") == channel) {
+        if ($(channelButton[i]).attr("id") == name) {
             $(channelButton[i]).addClass('checked');
         } else {
             $(channelButton[i]).removeClass('checked');
         }
     }
     Language.hide();
-    setChannel(channel)
 };
 
 Buttons.playItem = function() {

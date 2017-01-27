@@ -18,11 +18,13 @@ var Main =
 Main.onLoad = function(refresh)
 {
     Config.init();
+    Channel.init();
     Language.fixAButton();
-    // Should this only been done in case of non-refresh?
-    document.title = Channel.getMainTitle();
-    if (!refresh)
+    
+    if (!refresh) {
+        document.title = Channel.getMainTitle();
 	Header.display(document.title);
+    }
     if (!this.loaded) {
         $("#page-cover").hide();
         var model = document.getElementById("pluginObjectDEVICE").GetRealModel();
@@ -80,6 +82,7 @@ Main.toggleKeepAlive = function() {
     }
 }
 
+
 Main.requestRandomUrl = function() {
     window.clearTimeout(Main.keepAliveTimer);
     if (myUrls.length > 0) {
@@ -94,85 +97,23 @@ Main.requestRandomUrl = function() {
 
 Main.loadXml = function(refresh){
     $("#content-scroll").hide();
-    switch (channel) {
-    case "svt":
-        Main.loadSvt(refresh);
-        break;
-    case "viasat":
-        Main.loadViasat(refresh);
-        break;
-    case "tv4":
-        Main.loadTv4(refresh);
-        break;
-    case "dplay":
-        Main.loadDplay(refresh);
-        break;
-    }
-};
-
-Main.loadSvt = function(refresh) {
-    requestUrl('http://www.svtplay.se',
-               function(status, data)
-               {
-                   recommendedLinks = Svt.decode_recommended(data, {addSections:true});
-               },
-               {cbComplete:function(xhr, status){Main.loadSvtPopular(refresh)}}
-              );
-};
-
-Main.loadSvtPopular = function(refresh){
-    requestUrl(Svt.sections[0].url,
-               function(status, data)
-               {
-                   Svt.decode_section(data, recommendedLinks);
-               },
-               {callLoadFinished:true,
-                refresh:refresh
-               }
-              );
-};
-
-Main.loadViasat = function(refresh) {
-    var newChannel = getLocation(refresh).match(/viasat_channel=([0-9]+|reset)/);
-    newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
-    if (newChannel && !refresh)
-        myHistory = [];
-    requestUrl(Viasat.getUrl("main", newChannel),
-               function(status, data)
-               {
-                   Viasat.decode(data.responseText);
-               },
-               {callLoadFinished:true,
-                refresh:refresh
-               }
-              );
-};
-
-Main.loadTv4 = function(refresh) {
-    requestUrl(Tv4.getUrl("main"),
-               function(status, data)
-               {
-                   Tv4.decode(data.responseText);
-               },
-               {callLoadFinished:true,
-                refresh:refresh
-               }
-              );
-};
-
-Main.loadDplay = function(refresh) {
-    var newChannel = getLocation(refresh).match(/dplay_channel=([0-9]+|reset)/);
-    newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
-    if (newChannel && !refresh)
-        myHistory = [];
-    var url = Dplay.getUrl("main", newChannel);
-    requestUrl(url,
-               function(status, data)
-               {
-                   Dplay.decode(data.responseText, {tag:"main",url:url}, false);
-               },
-               {callLoadFinished:true,
-                refresh:refresh
-               }
-              );
+    Channel.login(
+        function() {
+            var url = Channel.getUrl("main", {refresh:refresh});
+            var cbComplete = function(status){loadFinished(status, refresh)};
+            requestUrl(url,
+                       function(status, data)
+                       {
+                           Channel.decodeMain(data, 
+                                              {url:url, 
+                                               refresh:refresh,
+                                               cbComplete:function(){cbComplete(status)}
+                                              });
+                           data = null;
+                       },
+                       {cbError:function(status){cbComplete(status)},
+                        headers:Channel.getHeaders()
+                       });
+        }
+    )
 };
