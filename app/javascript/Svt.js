@@ -224,7 +224,7 @@ Svt.getDetailsData = function(url, data) {
     var isLive = false;
     try {
         if (url.indexOf("oppetarkiv") > -1) {
-            data = data.split("<aside class=\"svtoa-related svt-position-relative")[0];
+            data = data.responseText.split("<aside class=\"svtoa-related svt-position-relative")[0];
             Name = $($(data).find('span.svt-heading-s')[0]).text();
             Title = Name;
 	    ImgLink = Svt.fixLink($($(data).find('video')).attr('poster'));
@@ -1079,8 +1079,9 @@ Svt.decode = function(data, extra) {
                         Description = Name;
                         Name = data[k].programTitle.trim();
                     }
-                } else if (data[k].programTitle && Name.indexOf(data[k].programTitle.trim()) == -1) {
-                    Name = data[k].programTitle.trim() + " - " + Name;
+                } else if (data[k].programTitle) {
+                    if (!Name.match(new RegExp(data[k].programTitle.trim(), 'i')))
+                        Name = data[k].programTitle.trim() + " - " + Name;
                 }
             }
             Description = (Description) ? Description.trim() : "";
