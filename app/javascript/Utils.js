@@ -514,8 +514,10 @@ requestUrl = function(url, cbSucces, extra) {
     // Log("requesting url:" + url);
     if (!extra) extra = {};
 
-    if (url.cached)
-        return callUrlCallBack(url, cbSucces, "success")
+    if (url.cached) {
+        window.setTimeout(function(){callUrlCallBack(url, cbSucces, "success")},50)
+        return
+    }
         
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:Channel.getName()};
     addToMyUrls(url, extra);

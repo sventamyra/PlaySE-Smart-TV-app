@@ -404,15 +404,13 @@ Dplay.getAButtonText = function(language) {
         } else {
 	    return 'Populärt';
         }
-    } else if (loc.match(/Popular\.html/)) {
+    // } else if (loc.match(/Popular\.html/)) {
+    } else {
         if(language == 'English'){
 	    return 'Recommended';
         } else {
-	    return 'Rekommenderat';
+	    return Dplay.getMainTitle();
         }
-    } else {
-        // Use Default
-        return null
     }
 };
 

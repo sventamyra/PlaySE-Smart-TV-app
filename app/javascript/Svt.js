@@ -441,7 +441,7 @@ Svt.decodeMain = function(data, extra) {
     requestUrl(Svt.sections[0].url,
                function(status, data)
                {
-                   extra.filter = recommendedLinks
+                   extra.recommended_links = recommendedLinks
                    extra.cbComplete = null;
                    Svt.decodeSection(data, extra);
                },
@@ -466,10 +466,10 @@ Svt.decodeSection = function(data, extra) {
         }
     }
     Svt.decode(data, extra);
-    // Svt.decode(Svt.decodeJson(data).gridPage.content, extra.filter);
+    // Svt.decode(Svt.decodeJson(data).gridPage.content, extra.recommended_links);
     // data = Svt.decodeJson(data);
     // if (data.gridPage)
-    //     Svt.decode(data.gridPage.content, extra.filter);
+    //     Svt.decode(data.gridPage.content, extra);
     // else
     //     Svt.decode(data.VideoTitlePageStore.data.videosInSameCategory.videoItems);
 
@@ -611,7 +611,7 @@ Svt.decodeCategoryDetail = function (data, extra) {
     }
         
     if (current.tab_index >= 0)
-        Svt.decode(data.clusterPage.tabs[current.tab_index].content, recommendedLinks);
+        Svt.decode(data.clusterPage.tabs[current.tab_index].content, {recommended_links:recommendedLinks});
 
     Language.fixBButton();
     if (extra.cbComplete)
@@ -1097,10 +1097,10 @@ Svt.decode = function(data, extra) {
             else if (data[k].slug)
                 Link = Svt.fixLink("/genre/" + data[k].slug)
 
-            if (extra.filter) {
-                if (extra.filter.indexOf(Link.replace(/.+\/(video|klipp)\/([0-9]+).*/, "$2")) != -1)
+            if (extra.recommended_links) {
+                if (extra.recommended_links.indexOf(Link.replace(/.+\/(video|klipp)\/([0-9]+).*/, "$2")) != -1)
                     continue;
-                else if (extra.filter.indexOf(Link.replace(/.+\/(video|klipp)\/[0-9]+\/([^\/]+)\/.+$/, "$2")) != -1)
+                else if (extra.recommended_links.indexOf(Link.replace(/.+\/(video|klipp)\/[0-9]+\/([^\/]+)\/.+$/, "$2")) != -1)
                     continue;
             }
 
