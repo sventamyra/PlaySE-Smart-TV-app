@@ -889,9 +889,13 @@ Dplay.isAvailable = function(Name, data) {
             // Future/Ended live show
             return false;
         }
+    } else if (data.rights && data.rights.advod) {
+        if (timeToDate(data.rights.advod.start) > getCurrentDate()) {
+            // Premium/Future episode
+            return false;
+        }
     }
     return true;
-
 };
 
 Dplay.isItemOk = function(Name, data, genre) {
