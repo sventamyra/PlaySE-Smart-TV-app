@@ -368,7 +368,7 @@ Tv4.decode = function(data, extra) {
                        });
             }
 	}
-        if (extra.strip_show && !extra.is_clip) {
+        if (extra.strip_show && !extra.is_clips) {
             var clips_url;
             if (data.length > 0) {
                 clips_url = Tv4.getUrl("clips") + data[0].program.nid;

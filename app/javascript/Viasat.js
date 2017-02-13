@@ -224,7 +224,7 @@ Viasat.decodeSearchList = function(data, extra) {
         var orgCbComplete = extra.cbComplete
         var newCbComplete = function() {
             extra.cbComplete  = orgCbComplete;
-            extra.is_clip     = true;
+            extra.is_clips    = true;
             Viasat.decode(data,extra)
         };
         extra.cbComplete = function() {
@@ -363,7 +363,7 @@ Viasat.decode = function(data, extra) {
         else 
             next = null;
 
-        if (extra.strip_show && !extra.is_clip && data._links && data._links.self) {
+        if (extra.strip_show && !extra.is_clips && data._links && data._links.self) {
             clipsUrl = data._links.self.href.replace("type=program", "type=clip").replace(/&page=[^&]+/,"");
         }
 
@@ -371,9 +371,9 @@ Viasat.decode = function(data, extra) {
             data = data._embedded.sections[0]._embedded.videos;
         else if (data._embedded.videos)
             data = data._embedded.videos;
-        else if (!extra.is_clip && data._embedded.episodes)
+        else if (!extra.is_clips && data._embedded.episodes)
             data = data._embedded.episodes;
-        else if (extra.is_clip && data._embedded.clips)
+        else if (extra.is_clips && data._embedded.clips)
             data = data._embedded.clips;
         else
             data = data._embedded.items;
