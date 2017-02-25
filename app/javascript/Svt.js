@@ -117,6 +117,8 @@ Svt.getThumb = function(data, size) {
         Thumb = data.image;
     else if (data.poster)
         Thumb = data.poster;
+    else if (data.backgroundImage)
+        Thumb = data.backgroundImage;
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
     if (!size || size == "small")
         return Thumb.replace(/\/(medium|(extra)?large)\//, "/small/")
@@ -408,7 +410,7 @@ Svt.getUrl = function(tag, extra) {
         return Svt.getSectionUrl(extra.location);
 
     case "categories":
-        return 'http://www.svtplay.se/genre';
+        return Svt.getCategoryUrl();
 
     case "categoryDetail":
         return extra.location;
@@ -433,6 +435,15 @@ Svt.getSectionUrl = function(location) {
 
     var index = location.match(/tab_index=([0-9]+)/)[1];
     return Svt.sections[index].url;
+};
+
+Svt.getCategoryUrl = function() {
+    switch (Svt.getCategoryIndex().current) {
+    case 1:
+        return 'http://www.svtplay.se/genre';
+    default:
+        return 'http://www.svtplay.se/program'
+    }
 };
 
 Svt.decodeMain = function(data, extra) {
@@ -484,17 +495,41 @@ Svt.decodeCategories = function (data, extra) {
         var Link;
         var ImgLink;
 
-        data = Svt.decodeJson(data)
-
         switch (Svt.getCategoryIndex().current) {
-        // case 0:
+        case 0:
+            var Categories = [];
+            data = data.responseText.split("<section class=\"play_alphabetic-group")[0];
+            
+            $(data).find('a').filter(function() {
+                return $(this).hasClass('play_promotion-item__link');
+            }).each(function(){
+                var $video = $(this); 
+                var Name = $($video.find('span')[0]).text().trim();
+                if (Name.match(/Alla /))
+                    return
+		var Link = Svt.fixLink($video.attr('href'));
+	        var ImgLink  = $video.find('img').attr('data-imagename');
+                if (!ImgLink) ImgLink = $video.find('img').attr('src');
+                ImgLink = Svt.fixLink(ImgLink);
+                Categories.push({name:Name, 
+                                 link:Link, 
+                                 link_prefix: '<a href="categoryDetail.html?category=',
+                                 thumb:ImgLink,
+                                 largeThumb:  (ImgLink) ? ImgLink.replace("small", "large") : null
+                                });
+	        $tmpData = $video = null;
+            });
+            data = null;
+            Categories.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
+            for (var i=0; i<Categories.length; i++)
+                toHtml(Categories[i]);
+            break;
         //     data = data.programsPage.content;
         //     data.mainClusters.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
         //     Svt.decode(data.mainClusters)
         //     break;
-        case 0:
         case 1:
-        case 2:
+            data = Svt.decodeJson(data)
             data = data.clusters.alphabetical;
             var keys = [];
             for (var key in data) {
@@ -510,11 +545,11 @@ Svt.decodeCategories = function (data, extra) {
             for (var k=0; k<keys.length; k++) {
                 for (var i=0; i < data[keys[k].idx].clusters.length; i++) {
                     Name    = data[keys[k].idx].clusters[i].name.trim();
-                    ImgLink = null;
+                    ImgLink = Svt.getThumb(data[keys[k].idx].clusters[i]);
                     Link    = data[keys[k].idx].clusters[i].contentUrl.replace(/^tag.+:([^:]+)$/,"/genre/$1");
                     Link    = Svt.fixLink(Link);
-                    if (data[keys[k].idx].clusters[i].metaData)
-                        ImgLink = Svt.getThumb(data[keys[k].idx].clusters[i].metaData);
+                    // if (data[keys[k].idx].clusters[i].metaData)
+                    //     ImgLink = Svt.getThumb(data[keys[k].idx].clusters[i].metaData);
                     toHtml({name:        Name,
                             link:        Link,
                             link_prefix: '<a href="categoryDetail.html?category=',
@@ -524,17 +559,17 @@ Svt.decodeCategories = function (data, extra) {
                 };
             };            
             break;
-        case 2:
-            data = data.alphabeticList.content;
-            ImgLink = null;
-            for (var key in data) {
-                for (var k=0; k < data[key].titles.length; k++) {
-                    Name    = data[key].titles[k].title.trim();
-                    Link    = data[key].titles[k].urlFriendlyTitle;
-                    showToHtml(Name, ImgLink, Svt.fixLink(Link));
-                };
-            };
-            break;
+        // case 2:
+        //     data = data.alphabeticList.content;
+        //     ImgLink = null;
+        //     for (var key in data) {
+        //         for (var k=0; k < data[key].titles.length; k++) {
+        //             Name    = data[key].titles[k].title.trim();
+        //             Link    = data[key].titles[k].urlFriendlyTitle;
+        //             showToHtml(Name, ImgLink, Svt.fixLink(Link));
+        //         };
+        //     };
+        //     break;
         };
         data = null;
     } catch(err) {
@@ -904,11 +939,13 @@ Svt.decodeRecommended = function (data, extra) {
 };
 
 Svt.getNextCategory = function() {
-    return getNextIndexLocation(2);
+    return getNextIndexLocation(1);
+    // return getNextIndexLocation(2);
 }
 
 Svt.getCategoryIndex = function () {
-    return getIndex(2);
+    return getIndex(1);
+    // return getIndex(2);
 };
 
 Svt.getNextCategoryDetail = function() {
