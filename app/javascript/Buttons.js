@@ -1,12 +1,12 @@
 var tvKey = new Common.API.TVKeyValue();
 
 var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, player2 = 5, settings = 6, imeSearch = 7, blocked = 8, connection error = 9
+var lastKey = 0;
 var keyHeld = false;
+var keyHeldCounter = 0;
+var keyTs;
 var keyTimer;
 var itemSelected;
-var lastKey = 0;
-var keyHeldCounter = 0;
-
 var shift = false;
 var capslock = false;
 var rowCount = 1;
@@ -29,41 +29,76 @@ var animateCallbacked = 0;
 var Buttons =
 {
 };
+
+Buttons.checkKey = function(limit) {
+
+    var newTs = new Date();
+    if (event.keyCode == lastKey) {
+        var keyDiff = (keyTs) ? (newTs-keyTs) : 6666;
+        // Log("keyDiff:" + keyDiff + " limit:" + limit);
+        if (limit && keyDiff < 600) {
+            // Log("ignoring, key repeat too quick.");
+            widgetAPI.blockNavigation(event)
+            return -1
+        }
+        if (keyHeld) {
+            keyHeldCounter++;
+        } else if (!limit || keyHeld === 0) {
+            // Log("enableKeyHeld");
+            keyHeld = true
+        } else {
+            // Log("first key repeat");
+            keyHeld = 0;
+        }
+    } 
+    keyTs = newTs; 
+
+    return 0
+};
+
 Buttons.keyDown = function()
 {
-        // Log("index:" + index + " exit:" + $('#exitBlock').is(':visible') + " error:" + $(".slider-error").is(':visible')); 
-	if(index == 2){
-	    this.keyHandleForPlayer();
-	}
-        else if($('#exitBlock').is(':visible')) {
-                this.keyHandleForExit();
-        }
-        else if ($(".slider-error").is(':visible') || index == 9) {
-		this.keyHandleForConnectionError();
-	} 
-        else if(index == 0){
-		this.keyHandleForList();
-	}
-	else if(index == 1)
-	{
-		this.keyHandleForDetails();
-	}
-	else if(index == 3){
-		this.keyHandleForKanaler();
-	}
-	else if(index == 5){
-		this.getCurrentChannelId();
-		this.keyHandleForPlayer2();
-	}
-	else if(index == 6){
-		this.keyHandleForSettings();
-	}
-	else if(index == 7){
-		this.keyHandleForImeSearch();
-	}
-	else if(index == 8){
-		this.keyHandleForGeofilter();
-	}
+    // Log("Key Down: " + event.keyCode + " index:" + index);
+
+    if (event.keyCode != lastKey)
+        Buttons.clearKey();
+
+    Buttons.restartKeyTimer()
+
+    // Log("index:" + index + " exit:" + $('#exitBlock').is(':visible') + " error:" + $(".slider-error").is(':visible')); 
+    if(index == 2){
+	this.keyHandleForPlayer();
+    }
+    else if($('#exitBlock').is(':visible')) {
+        this.keyHandleForExit();
+    }
+    else if ($(".slider-error").is(':visible') || index == 9) {
+	this.keyHandleForConnectionError();
+    } 
+    else if(index == 0){
+	this.keyHandleForList();
+    }
+    else if(index == 1)
+    {
+	this.keyHandleForDetails();
+    }
+    else if(index == 3){
+	this.keyHandleForKanaler();
+    }
+    else if(index == 5){
+	this.getCurrentChannelId();
+	this.keyHandleForPlayer2();
+    }
+    else if(index == 6){
+	this.keyHandleForSettings();
+    }
+    else if(index == 7){
+	this.keyHandleForImeSearch();
+    }
+    else if(index == 8){
+	this.keyHandleForGeofilter();
+    }
+    lastKey = event.keyCode;
 };
 
 Buttons.getCurrentChannelId = function(){
@@ -100,25 +135,38 @@ Buttons.clearKey = function()
     keyHeldCounter = 0;
 };
 
+Buttons.restartKeyTimer = function() {
+    window.clearTimeout(keyTimer);
+    keyTimer = window.setTimeout(this.clearKey, 400);
+};
+
 Buttons.sscroll = function(hide) 
 {
+    animateCallbacked = 0;
+    $('.content-holder').animate(
+        {marginLeft: Buttons.getMargin()},
+        {complete: function() {
+            animateCallbacked = animateCallbacked+1;
+            if (!hide && animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
+                $("#content-scroll").show();
+            }
+        }
+        }
+    );
+};
+
+Buttons.getMargin = function() {
     var xaxis = 0;
     if(columnCounter > 0){
 	xaxis = columnCounter - 1;
     }
-    xaxis = -xaxis * 260;
-    animateCallbacked = 0;
-    $('.content-holder').animate(
-        {marginLeft: xaxis},
-        {complete: function() 
-         {
-             animateCallbacked = animateCallbacked+1;
-             if (!hide && animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
-                 $("#content-scroll").show();
-             }
-         }
-        }
-    );
+    xaxis = (-xaxis * 260);
+    return xaxis;
+};
+
+Buttons.refresh = function(hide) 
+{
+    $('.content-holder').css({marginLeft: Buttons.getMargin()})    
 };
 
 Buttons.keyHandleForExit = function()
@@ -140,124 +188,162 @@ Buttons.keyHandleForExit = function()
 
 Buttons.keyHandleForList = function()
 {
-	var topItems = $('.topitem');
-	var bottomItems = $('.bottomitem');
-	var keyCode = event.keyCode;
+    if (Buttons.checkKey(true) == -1)
+        return
+    
+    var topItems = $('.topitem');
+    var bottomItems = $('.bottomitem');
+    var keyCode = event.keyCode;
 
-        if (keyCode != lastKey) {
-            window.clearTimeout(keyTimer);
-            keyHeld = false;
-        }
-
-        if (keyCode != lastKey || keyHeld) {
-                // Log("Key handled: " + keyCode + " lastKey=" + lastKey);
-                lastKey = keyCode;
-                window.clearTimeout(keyTimer);
-                if (keyHeld) {
-                    // Use longer to avoid end up in "first repeat is ignored" again.
-	            keyTimer = window.setTimeout(this.clearKey, 600);
-                }
-                else
-	            keyTimer = window.setTimeout(this.clearKey, 300);
-
-		if (!itemSelected) {
-			itemSelected = topItems.eq(0).addClass('selected');
-			columnCounter = 0;
-		}
-		switch(keyCode)
-		{
-			case tvKey.KEY_RIGHT:
-                            if (keyHeld) {
-                                itemSelected = nextInList(topItems, bottomItems, itemSelected, 4);
-                            }
-                            else {
-                                itemSelected = nextInList(topItems, bottomItems, itemSelected, 1);
-                            }
-	                    break;
-
-	                case tvKey.KEY_CH_UP:
-                        case tvKey.KEY_PANEL_CH_UP:         
-	                case tvKey.KEY_FF:
-                        case tvKey.KEY_FF_:
-                            itemSelected = nextInList(topItems, bottomItems, itemSelected, 4);
-	                    break;
-				
-			case tvKey.KEY_LEFT:
-                            if (keyHeld) {
-                                itemSelected = prevInList(topItems, bottomItems, itemSelected, 4);
-                            }
-                            else {
-                                itemSelected = prevInList(topItems, bottomItems, itemSelected, 1);
-                            }
-	                    break;
-
-            	        case tvKey.KEY_CH_DOWN:
-         	        case tvKey.KEY_PANEL_CH_DOWN:
-	                case tvKey.KEY_RW:
-                        case tvKey.KEY_REWIND_:
-                            itemSelected = prevInList(topItems, bottomItems, itemSelected, 4);
-	                    break;
-
-			case tvKey.KEY_DOWN:
-				if(isTopRowSelected && bottomItems.length > columnCounter){
-                                        isTopRowSelected = false;
-					itemSelected.removeClass('selected');
-					itemSelected = bottomItems.eq(columnCounter).addClass('selected');
-				}
-				break;
-
-			case tvKey.KEY_UP:				
-		               if (!isTopRowSelected) {
-                                   isTopRowSelected = true;
-		                   itemSelected.removeClass('selected');
-               		           itemSelected = topItems.eq(columnCounter).addClass('selected');				
-                                }
-				break;
-			case tvKey.KEY_INFO:
-			case tvKey.KEY_ENTER:
-			case tvKey.KEY_PANEL_ENTER:
-                        case tvKey.KEY_PLAY:
-				var ilink = itemSelected.find('.ilink').attr("href");
-				Log(ilink);
-                                if (ilink != undefined)
-                                {
-                                    if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
-                                        Buttons.playItem();
-                                        break;
-                                    }
-                                    else if (keyCode == tvKey.KEY_INFO && (ilink.match("showList.html\\?name=") || ilink.match("categoryDetail.html"))) {
-                                        // Info of show.
-                                        ilink = "details.html?" + ilink;
-                                    }
-                                    else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
-                                        // Info of non-episode/show, not relevant.
-                                        break;
-                                    }
-	                            setLocation(ilink);
-                                }
-                                else {
-	                            itemSelected.removeClass('selected');
-                                    itemSelected = false;
-                                }
-				break;
-                default:
-                    this.handleMenuKeys(keyCode);
-                    return;
-                    
-		}
-		this.sscroll();
+    // Log("Key handled: " + keyCode + " lastKey=" + lastKey);
+    if (!itemSelected) {
+	itemSelected = topItems.eq(0).addClass('selected');
+	columnCounter = 0;
+    }
+    switch(keyCode)
+    {
+    case tvKey.KEY_RIGHT:
+        if (keyHeld) {
+            
+            itemSelected = nextInList(topItems, bottomItems, itemSelected, 4-(columnCounter%4));
         }
         else {
-            Log("Key repeated, first time is ignored: " + keyCode + " KeyHeld:" + keyHeld);
-            widgetAPI.blockNavigation(event)
-            keyHeld = true;
-            window.clearTimeout(keyTimer);
-	    keyTimer = window.setTimeout(this.clearKey, 600);
+            itemSelected = nextInList(topItems, bottomItems, itemSelected, 1);
         }
+	break;
+
+    case tvKey.KEY_CH_UP:
+    case tvKey.KEY_PANEL_CH_UP:         
+    case tvKey.KEY_FF:
+    case tvKey.KEY_FF_:
+        itemSelected = nextInList(topItems, bottomItems, itemSelected, 4);
+	break;
+	
+    case tvKey.KEY_LEFT:
+        if (keyHeld) {
+            itemSelected = prevInList(topItems, bottomItems, itemSelected, 4-(columnCounter%4));
+        }
+        else {
+            itemSelected = prevInList(topItems, bottomItems, itemSelected, 1);
+        }
+	break;
+
+    case tvKey.KEY_CH_DOWN:
+    case tvKey.KEY_PANEL_CH_DOWN:
+    case tvKey.KEY_RW:
+    case tvKey.KEY_REWIND_:
+        itemSelected = prevInList(topItems, bottomItems, itemSelected, 4);
+	break;
+
+    case tvKey.KEY_DOWN:
+	if(isTopRowSelected && bottomItems.length > columnCounter){
+            isTopRowSelected = false;
+	    itemSelected.removeClass('selected');
+	    itemSelected = bottomItems.eq(columnCounter).addClass('selected');
+	}
+	break;
+
+    case tvKey.KEY_UP:				
+	if (!isTopRowSelected) {
+            isTopRowSelected = true;
+	    itemSelected.removeClass('selected');
+            itemSelected = topItems.eq(columnCounter).addClass('selected');				
+        }
+	break;
+    case tvKey.KEY_INFO:
+    case tvKey.KEY_ENTER:
+    case tvKey.KEY_PANEL_ENTER:
+    case tvKey.KEY_PLAY:
+	var ilink = itemSelected.find('.ilink').attr("href");
+	Log(ilink);
+        if (ilink != undefined)
+        {
+            if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
+                Buttons.playItem();
+                break;
+            }
+            else if (keyCode == tvKey.KEY_INFO && (ilink.match("showList.html\\?name=") || ilink.match("categoryDetail.html"))) {
+                // Info of show.
+                ilink = "details.html?" + ilink;
+            }
+            else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
+                // Info of non-episode/show, not relevant.
+                break;
+            }
+	    setLocation(ilink);
+        }
+        else {
+	    itemSelected.removeClass('selected');
+            itemSelected = false;
+        }
+	break;
+
+    default:
+        this.handleMenuKeys(keyCode);
+        return;
+        
+    }
+    this.sscroll();
 };
+
+
+checkLoadNextSection = function(column, steps) {
+    var selected = null;
+    if (htmlSection) {
+        if (htmlSection.load_next_column != 0) {
+            if ((column+steps) >= htmlSection.load_next_column) {
+                selected = loadNextSection();
+            }
+        } else if (column==0 && steps==0) {
+            selected = loadNextSection();
+        }
+    }
+
+    if (selected) {
+        if (detailsOnTop)
+            refreshSectionInHistory();
+        return {selected: selected,
+                top     : $('.topitem'),
+                bottom  : $('.bottomitem')
+               };
+    }
+
+    return null
+}
+
+checkLoadPriorSection = function(column, steps) {
+    var selected = null;
+
+    if (htmlSection) {
+        if (htmlSection.load_prior_column > -1) {
+            if ((column-steps) < htmlSection.load_prior_column) {
+                selected = loadPriorSection();
+            }
+        } else if (steps==0) {
+            selected = loadPriorSection();
+        }
+    }
+
+    if (selected) {
+        if (detailsOnTop)
+            refreshSectionInHistory();
+        return {selected: selected,
+                top     : $('.topitem'),
+                bottom  : $('.bottomitem')
+               };
+    }
+
+    return null
+}
 
 nextInList = function(topItems, bottomItems, itemSelected, steps)
 {
+    var nextLoaded = checkLoadNextSection(columnCounter, steps);
+    if (nextLoaded) {
+        itemSelected = nextLoaded.selected,
+        topItems     = nextLoaded.top;
+        bottomItems  = nextLoaded.bottom;
+    }
     itemSelected.removeClass('selected');
     next = itemSelected.next();
     while(--steps > 0 && next.length > 0){
@@ -282,11 +368,22 @@ nextInList = function(topItems, bottomItems, itemSelected, steps)
 	columnCounter = 0;
         isTopRowSelected = false;
     }
+    nextLoaded = checkLoadNextSection(columnCounter, 0);
+    if (nextLoaded)
+        return nextLoaded.selected
     return itemSelected;
 };
 
 prevInList = function(topItems, bottomItems, itemSelected, steps)
 {
+
+    var priorLoaded = checkLoadPriorSection(columnCounter, steps);
+    if (priorLoaded) {
+        itemSelected = priorLoaded.selected,
+        topItems     = priorLoaded.top;
+        bottomItems  = priorLoaded.bottom;
+    }
+
     itemSelected.removeClass('selected');
     prev = itemSelected.prev();
     while(--steps > 0 && prev.length > 0){
@@ -302,20 +399,32 @@ prevInList = function(topItems, bottomItems, itemSelected, steps)
     if (prev.length > 0) {
         columnCounter--;
 	itemSelected = prev.addClass('selected');
-    } else if (topItems.length > bottomItems.length || isTopRowSelected) {
-	itemSelected = topItems.last().addClass('selected');
-	columnCounter = topItems.length - 1;
-        isTopRowSelected = true;
     } else {
-	itemSelected = bottomItems.last().addClass('selected');
-	columnCounter = bottomItems.length - 1;
-        isTopRowSelected = false;
+        priorLoaded = checkLoadPriorSection(columnCounter, 0);
+        if (priorLoaded) {
+            itemSelected = priorLoaded.selected.removeClass('selected'),
+            topItems     = priorLoaded.top;
+            bottomItems  = priorLoaded.bottom;
+        }
+        if (topItems.length > bottomItems.length || isTopRowSelected) {
+	    itemSelected = topItems.last().addClass('selected');
+	    columnCounter = topItems.length - 1;
+            isTopRowSelected = true;
+        } else {
+	    itemSelected = bottomItems.last().addClass('selected');
+	    columnCounter = bottomItems.length - 1;
+            isTopRowSelected = false;
+        }
     }
     return itemSelected;
 };
 
 Buttons.keyHandleForDetails = function()
 {
+
+    if (Buttons.checkKey(true) == -1)
+        return
+
     var keyCode = event.keyCode;
     switch(keyCode)
     {
@@ -414,6 +523,14 @@ Buttons.keyHandleForSettings = function()
             $(menu[menuId].id).removeClass('stitle');
 	    menuId=newMenuId;
             $(menu[menuId].id).addClass('stitle');
+
+            if (selected != -1) {
+                button = menu[menuId].button;
+                if (selected < button.length)
+                    $(button[selected]).addClass('selected');
+                else
+                    $(button[button.length-1]).addClass('selected');
+            }
         }
 	break;
 
@@ -461,22 +578,11 @@ Buttons.keyHandleForKanaler = function()
 Buttons.keyHandleForPlayer2 = function(){
     Log("keyHandleForPlayer2!!!");
 };
-Buttons.keyHandleForPlayer = function(){
+Buttons.keyHandleForPlayer = function() {
+
+    Buttons.checkKey()
     var keyCode = event.keyCode;
-    keyHeld = (keyCode == lastKey);
-
-    if (keyCode != lastKey || keyHeld) {
-        lastKey = keyCode;
-        window.clearTimeout(keyTimer);
-        if (keyHeld) {
-            keyHeldCounter++;
-        }
-        else {
-            keyHeldCounter = 0
-        }
-	keyTimer = window.setTimeout(this.clearKey, 600);
-    }
-
+    
     var longMinutes = Math.floor(keyHeldCounter/10) + 1;
 
     switch(keyCode)
@@ -746,11 +852,13 @@ Buttons.findNextItem = function(play) {
     var tmpColumnCounter = columnCounter;
 
     while (true) {
+        if (checkLoadNextSection(tmpColumnCounter, 1))
+            return Buttons.findNextItem(play);
         // First go down if possible
         if(tmpTopSelected) {
             if (bottomItems.length > tmpColumnCounter) {
                 tmpTopSelected = false;
-	        tmpItem = bottomItems.eq(tmpColumnCounter);
+                tmpItem = bottomItems.eq(tmpColumnCounter);
             } else if (!play && tmpColumnCounter != 0) {
                 // Start from beginning unless playing
                 tmpItem = topItems.eq(0);
@@ -776,6 +884,11 @@ Buttons.findNextItem = function(play) {
                 tmpColumnCounter++;
             }
         }
+        if (tmpColumnCounter == 0 && checkLoadNextSection(tmpColumnCounter, 0)) {
+            topItems = $('.topitem');
+            bottomItems = $('.bottomitem');
+            tmpItem = topItems.eq(0); 
+        }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
             (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
              (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
@@ -794,14 +907,20 @@ Buttons.findPriorItem = function(play) {
     var tmpColumnCounter = columnCounter;
 
     while (true) {
+        if (checkLoadPriorSection(tmpColumnCounter, 1))
+            return Buttons.findPriorItem(play);
         // First go up
         if(!tmpTopSelected) {
             // Go Up
             tmpTopSelected = true;
             tmpItem = topItems.eq(tmpColumnCounter);
         } else if (tmpColumnCounter == 0) {
-            // At first Item - go to last item unless playing
+            // At first Item - go to last item unless playing (or the only item).
             if (!play && topItems.length > 1) {
+                if (checkLoadPriorSection(tmpColumnCounter, 0)) {
+                    topItems = $('.topitem');
+                    bottomItems = $('.bottomitem');
+                }
                 if (topItems.length > bottomItems.length) {
 	            tmpItem = topItems.last();
 	            tmpColumnCounter = topItems.length - 1;
@@ -845,16 +964,9 @@ Buttons.runNextItem = function(direction, play) {
         if (detailsOnTop) {
             // refresh History
             oldPos = myHistory.pop();
-            myHistory.push(
-                {
-                    loc: oldPos.loc,
-                    pos: 
-                    {
-                        col: tmpItem.col,
-                        top: tmpItem.top
-                    }
-                }
-            );
+            oldPos.pos.col=tmpItem.col;
+            oldPos.pos.top=tmpItem.top;
+            myHistory.push(oldPos);
         }
         if (myLocation.match(/details.html/)) {
             // refresh Details

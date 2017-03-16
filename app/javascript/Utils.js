@@ -7,6 +7,8 @@ var setDateOffsetTimer = null;
 var isTopRowSelected = true;
 var columnCounter = 0;
 var itemCounter = 0;
+var htmlSection = null;
+var items = [];
 var myLocation = "index.html";
 var myRefreshLocation = null;
 var myHistory = [];
@@ -15,6 +17,10 @@ var myPos = null;
 var loadingTimer = 0;
 var detailsOnTop = false;
 var dateFormat = 0;
+var MAX_PAGES = 3
+// reload on 3rd column on last "original page"
+var LOAD_NEXT_COLUMN  = Math.floor((8*(MAX_PAGES-1))/2)+2;
+var LOAD_PRIOR_COLUMN = 2;
 
 setChannel = function(newChannel) {
     if (Channel.set(newChannel)) {
@@ -135,8 +141,9 @@ setLocation = function(location, oldPos, skipHistory)
                     loc: myLocation,
                     pos: 
                     {
-                        col: columnCounter,
-                        top: isTopRowSelected
+                        col:     columnCounter,
+                        top:     isTopRowSelected,
+                        section: htmlSection
                     }
                 }
             );
@@ -230,6 +237,9 @@ resetHtml = function(oldPos, isDetails)
         $('#topRow').html("");
         $('#bottomRow').html("");
         $('.content-holder').css("marginLeft", "0");
+        items = [];
+        htmlSection = (oldPos) ? oldPos.section : null;
+        
     }
     $(".slider-body").show();
     if (oldPos)
@@ -245,6 +255,12 @@ goBack = function(location)
         setLocation(oldLocation.loc, oldLocation.pos);
     }
     // history.go(-1);
+};
+
+refreshSectionInHistory = function() {
+    oldLocation = myHistory.pop();
+    oldLocation.pos.section = htmlSection;
+    myHistory.push(oldLocation);
 };
 
 restorePosition = function() 
@@ -314,7 +330,7 @@ getNextIndexLocation = function(MaxIndex, IndexToSkip) {
 
 setPosition = function(pos)
 {
-    if (itemCounter == 0) {
+    if (getItemCounter() == 0) {
         Log("setPosition without items?");
         return;
     }
@@ -702,14 +718,24 @@ getHistory = function(Name) {
     var Prefix = document.title;
     if (myRefreshLocation && myRefreshLocation.match(/.+&history=/)) {
         Prefix = myRefreshLocation.replace(/.+&history=/, "");
+    } else if (htmlSection && detailsOnTop) {
+        Prefix = Prefix.replace(/\/[^\/]+\/$/, "")
     }
     return Prefix.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/';
 }
 
+getItemCounter = function() {
+    if (htmlSection)
+        return items.length;
+    else
+        return itemCounter;
+}
+
 loadFinished = function(status, refresh) {
     fixCss();
+    finaliseHtml();
     if (status == "success") {
-        Log("itemCounter:" + itemCounter);
+        Log("itemCounter:" + getItemCounter())
         if (!restorePosition() && !refresh)
             $("#content-scroll").show();
     } else {
@@ -778,12 +804,19 @@ makeLink = function(LinkPrefix, Name, Url) {
 }
 
 toHtml = function(Item) {
+    // Item.name = "" + (items.length+1)
+    items.push(Item)
+    if (items.length <= 8*MAX_PAGES)
+        itemToHtml(Item)
+};
 
+itemToHtml = function(Item, OnlyReturn) {
+    var IsTop
     var html;
     var IsLiveText;
 
     if(itemCounter % 2 == 0){
-	if(itemCounter > 0){
+	if(itemCounter > 0 || htmlSection){
 	    html = '<div class="scroll-content-item topitem">';
 	}
 	else{
@@ -827,16 +860,130 @@ toHtml = function(Item) {
     html += '>' + Item.description + '</span>';
     html += '</div>';
     html += '</div>';
-    
+ 
+    if (OnlyReturn)
+        return {top:itemCounter++ % 2 == 0, html:html}
+
     if(itemCounter % 2 == 0){
-	$('#topRow').append($(html));
+        $('#topRow').append($(html));
     }
     else{
-	$('#bottomRow').append($(html));
+        $('#bottomRow').append($(html));
     }
     html = null;
     itemCounter++;
 };
+
+finaliseHtml = function() {
+    if (htmlSection) {
+        loadSection();
+    } else {
+        if (items.length > 8*MAX_PAGES) {
+            if (items.length < 8*(MAX_PAGES+1)) {
+                for (var i=8*MAX_PAGES; i<items.length; i++)
+                    itemToHtml(items[i])
+            } else {
+                htmlSection = {index:0, load_next_column:LOAD_NEXT_COLUMN, load_prior_column:-1}
+                alert("loaded from:" + htmlSection.index + " to:" + itemCounter)
+                alert("Section itemCounter:" + itemCounter);
+                alert(JSON.stringify(htmlSection))
+            }
+        }
+    }
+    if (!htmlSection)
+        items = []
+};
+
+loadSection = function(maxIndex) {
+    if (!maxIndex) maxIndex = htmlSection.index+(8*MAX_PAGES);
+    if  (items.length-maxIndex < 8)
+        maxIndex = items.length;
+    itemCounter = 0
+    var topHtml="", bottomHtml="", result;
+    alert("loading from:" + htmlSection.index + " to:" + maxIndex)
+    for (var i=htmlSection.index; i<items.length && i<maxIndex; i++) {
+        result = itemToHtml(items[i], true);
+        if (result.top)
+            topHtml += result.html;
+        else
+            bottomHtml += result.html;
+    }
+    $('#topRow').html(topHtml);
+    $('#bottomRow').html(bottomHtml);
+    return maxIndex
+}
+
+loadNextSection = function() {
+    if (htmlSection.load_next_column > 0) {
+        // We need to keep 2 pages
+        htmlSection.index = htmlSection.index+(8*(MAX_PAGES-2));
+    } else {
+        htmlSection.index = 0;
+    }
+    var maxIndex = loadSection();
+    if (htmlSection.load_next_column > 0) {
+        // Check if we're gonna be on second or first page. Depends on which page we're on now.
+        if (columnCounter >= 4*(MAX_PAGES-1))
+            columnCounter = (columnCounter % 4) + 4
+        else
+            // We're on second page - we will be on first page now
+            columnCounter = (columnCounter % 4)
+        if (maxIndex >= items.length)
+            htmlSection.load_next_column = 0;
+        htmlSection.load_prior_column=LOAD_PRIOR_COLUMN;
+        Buttons.refresh();
+    } else {
+        columnCounter = 0;
+        htmlSection.load_next_column=LOAD_NEXT_COLUMN;
+        htmlSection.load_prior_column=-1;
+    }
+    alert("Section itemCounter:" + itemCounter);
+    alert(JSON.stringify(htmlSection))
+    if (isTopRowSelected)
+        return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
+    else
+        return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected')
+}
+
+loadPriorSection = function() {
+    var maxIndex = htmlSection.index+(8*MAX_PAGES)
+    if (htmlSection.load_prior_column > -1) {
+        // We need to keep 2 pages
+        htmlSection.index = htmlSection.index-(8*(MAX_PAGES-2));
+        maxIndex = htmlSection.index+(8*MAX_PAGES)
+    } else {
+        htmlSection.index = items.length-(8*MAX_PAGES);
+        htmlSection.index = htmlSection.index - (htmlSection.index % 8)
+        maxIndex = items.length
+    }
+    if (htmlSection.index < 0) {
+        htmlSection.index = 0;
+    }
+    loadSection(maxIndex)
+    if (htmlSection.load_prior_column > -1) {
+        // Check if we're gonna be on next last or last page. Depends on which page we're on now.
+        if (columnCounter >= 4)
+            columnCounter = (columnCounter % 4) + (4*(MAX_PAGES-1))
+        else
+            // We're on second page - we will be on next last page
+            columnCounter = (columnCounter % 4) + (4*(MAX_PAGES-2));
+        if (htmlSection.index == 0)
+            htmlSection.load_prior_column = -1;
+        htmlSection.load_next_column=LOAD_NEXT_COLUMN;
+        Buttons.refresh();
+    } else {
+        columnCounter = $('.topitem').length-1;
+        htmlSection.load_prior_column=LOAD_PRIOR_COLUMN;
+        htmlSection.load_next_column=0;
+    }
+    alert("Section itemCounter:" + itemCounter);
+    alert(JSON.stringify(htmlSection))
+    if (isTopRowSelected  || ((columnCounter+1) > $('.bottomitem').length)) {
+        isTopRowSelected = true;
+        return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
+    } else
+        return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected')
+}
 
 setClock = function(id, callback) {
     var time = getCurrentDate();

@@ -265,7 +265,7 @@ Svt.getDetailsData = function(url, data) {
                 NotAvailable = (startTime - getCurrentDate()) > 60*1000;
             } else {
                 data = data.videoTitlePage;
-                if (data.titlePage) {
+                if (data.titlePage && data.titlePage.programTitle) {
                     Show = {name : data.titlePage.programTitle.trim(),
                             url  : Svt.fixLink(data.titlePage.urlFriendlyTitle)
                            }
@@ -529,27 +529,18 @@ Svt.decodeCategories = function (data, extra) {
         //     Svt.decode(data.mainClusters)
         //     break;
         case 1:
-            data = Svt.decodeJson(data)
-            data = data.clusters.alphabetical;
-            var keys = [];
-            for (var key in data) {
-                keys.push({letter:data[key].letter,
-                           idx:key
-                          })
-            }
-            keys.sort(function(a, b) {
+            data = Svt.decodeJson(data).clusters.alphabetical;
+            data.sort(function(a, b) {
                 if (b.letter > a.letter) 
                     return -1
                 return 1
             })
-            for (var k=0; k<keys.length; k++) {
-                for (var i=0; i < data[keys[k].idx].clusters.length; i++) {
-                    Name    = data[keys[k].idx].clusters[i].name.trim();
-                    ImgLink = Svt.getThumb(data[keys[k].idx].clusters[i]);
-                    Link    = data[keys[k].idx].clusters[i].contentUrl.replace(/^tag.+:([^:]+)$/,"/genre/$1");
+            for (var key in data) {
+                for (var k=0; k < data[key].clusters.length; k++) {
+                    Name    = data[key].clusters[k].name.trim();
+                    ImgLink = Svt.getThumb(data[key].clusters[k]);
+                    Link    = data[key].clusters[k].contentUrl.replace(/^tag.+:([^:]+)$/,"/genre/$1");
                     Link    = Svt.fixLink(Link);
-                    // if (data[keys[k].idx].clusters[i].metaData)
-                    //     ImgLink = Svt.getThumb(data[keys[k].idx].clusters[i].metaData);
                     toHtml({name:        Name,
                             link:        Link,
                             link_prefix: '<a href="categoryDetail.html?category=',
@@ -559,17 +550,22 @@ Svt.decodeCategories = function (data, extra) {
                 };
             };            
             break;
-        // case 2:
-        //     data = data.alphabeticList.content;
-        //     ImgLink = null;
-        //     for (var key in data) {
-        //         for (var k=0; k < data[key].titles.length; k++) {
-        //             Name    = data[key].titles[k].title.trim();
-        //             Link    = data[key].titles[k].urlFriendlyTitle;
-        //             showToHtml(Name, ImgLink, Svt.fixLink(Link));
-        //         };
-        //     };
-        //     break;
+        case 2:
+            data = Svt.decodeJson(data).programsPage.alphabeticList;
+            data.sort(function(a, b) {
+                if (b.letter > a.letter) 
+                    return -1
+                return 1
+            })
+            ImgLink = null;
+            for (var key in data) {
+                for (var k=0; k < data[key].titles.length; k++) {
+                    Name    = data[key].titles[k].programTitle.trim();
+                    Link    = data[key].titles[k].contentUrl;
+                    showToHtml(Name, ImgLink, Svt.fixLink(Link));
+                };
+            };
+            break;
         };
         data = null;
     } catch(err) {
@@ -633,8 +629,18 @@ Svt.decodeCategoryDetail = function (data, extra) {
             alert("CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!")
             Svt.decode(data.clusterPage.content.contents)
         }
-        if (data.clusterPage.titlesAndEpisodes)
-            Svt.decode(data.clusterPage.titlesAndEpisodes)
+        if (data.clusterPage.titlesAndEpisodes) {
+            var shows = [];
+            for (var i=0; i<data.clusterPage.titlesAndEpisodes.length; i++) {
+                if (data.clusterPage.titlesAndEpisodes[i].episodic) {
+                    alert("Skipping:" + data.clusterPage.titlesAndEpisodes[i].programTitle)
+                    continue;
+                }
+                shows.push(data.clusterPage.titlesAndEpisodes[i])
+            };
+            Svt.decode(shows);
+            shows = [];
+        }
         if (Svt.category_detail_max_index == 0 && data.clusterPage.content.clips)
             Svt.decode(data.clusterPage.content.clips)
     } else if (current.recommended) {
@@ -939,13 +945,11 @@ Svt.decodeRecommended = function (data, extra) {
 };
 
 Svt.getNextCategory = function() {
-    return getNextIndexLocation(1);
-    // return getNextIndexLocation(2);
+    return getNextIndexLocation(2);
 }
 
 Svt.getCategoryIndex = function () {
-    return getIndex(1);
-    // return getIndex(2);
+    return getIndex(2);
 };
 
 Svt.getNextCategoryDetail = function() {

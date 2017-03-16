@@ -5,11 +5,11 @@ var SearchList =
 
 SearchList.onLoad = function(refresh)
 {
-    if (!detailsOnTop) {
+    if (!detailsOnTop || refresh) {
         this.setPath(this.getQuery(refresh), undefined, refresh);
 	this.loadXml(refresh);
     } else {
-        this.setPath(this.getQuery(refresh), itemCounter, refresh);
+        this.setPath(this.getQuery(refresh), getItemCounter(), refresh);
     }
 //	widgetAPI.sendReadyEvent();
 };
@@ -63,5 +63,5 @@ SearchList.loadXml = function(refresh) {
 
 SearchList.finish = function(query, status, refresh) {
     loadFinished(status, refresh);
-    SearchList.setPath(query, itemCounter, refresh);
+    SearchList.setPath(query, getItemCounter(), refresh);
 };

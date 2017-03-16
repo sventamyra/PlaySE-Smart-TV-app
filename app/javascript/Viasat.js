@@ -195,7 +195,7 @@ Viasat.decodeLive = function(data, extra) {
         
         for (var k=0; k < Viasat.channels.length; k++) {
             if (oldId != null) {
-                if (itemCounter == 0)
+                if (getItemCounter() == 0)
                     Viasat.channelToHtml("Viasat", "reset");
                 if (Viasat.channels[k].id == oldId) {
                     Viasat.channel_idx = k;

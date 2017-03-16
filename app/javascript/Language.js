@@ -148,13 +148,6 @@ Language.show = function()
 
 Language.hide = function()
 {
-    var button = menu[menuId].button;
-    for(var i = 0; i < button.length; i++){
-	if($(button[i]).hasClass('selected')){
-	    $(button[i]).addClass('unselected');
-	    $(button[i]).removeClass('selected');
-	}
-    }
     if(Buttons.getKeyHandleID() == 6){
 	Buttons.setKeyHandleID(oldKeyHandle);
         $(".slider-language").hide();
