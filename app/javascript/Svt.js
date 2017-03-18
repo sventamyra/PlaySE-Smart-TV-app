@@ -31,9 +31,9 @@ Svt.keyRed = function() {
 }
 
 Svt.keyGreen = function() {
-    if (myLocation.match(/categoryDetail\.html/))
+    if (getIndexLocation().match(/categoryDetail\.html/))
 	setLocation(Svt.getNextCategoryDetail());
-    else if (myLocation.match(/categories\.html/))
+    else if (getIndexLocation().match(/categories\.html/))
         setLocation(Svt.getNextCategory());
     else
         setLocation("categories.html")
