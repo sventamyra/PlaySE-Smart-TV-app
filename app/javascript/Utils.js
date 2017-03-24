@@ -831,7 +831,7 @@ itemToHtml = function(Item, OnlyReturn) {
     } else {
         IsLiveText = "";
     }
-    if (Item.link_prefix.match(/categoryDetail\.html/)) {
+    if (Item.link_prefix.match(/categoryDetail\.html/) && !Item.link.match(/&catThumb/)) {
         Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);
         Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
     }

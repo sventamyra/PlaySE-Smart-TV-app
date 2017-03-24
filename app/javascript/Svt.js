@@ -990,7 +990,7 @@ Svt.getNextCategoryText = function() {
 };
 
 Svt.getNextCategoryDetailText = function() {
-    if (Svt.category_details.length) {
+    if (Svt.category_details.length > Svt.getCategoryDetailIndex().next) {
         var text = Svt.category_details[Svt.getCategoryDetailIndex().next].name
         var category = decodeURIComponent(getIndexLocation().match(/catName=([^&]+)/)[1])
         if (text.match(new RegExp("^" + category + "( - .+|$)"))) {
