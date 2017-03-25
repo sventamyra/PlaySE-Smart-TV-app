@@ -463,10 +463,12 @@ checkDateFormat = function() {
 }
 
 timeToDate = function(timeString) {
-    if (dateFormat == 1)
-        timeString = timeString.replace(/-/g,"/").replace("T", " ").replace(/\+([0-9]+):([0-9]+)/,"+$1$2").replace("Z", "+0000")
-    else
-        timeString = timeString.replace(/-/g," ").replace("T", " ").replace(/\+/," +").replace("Z", " +00:00")
+    if (+timeString != timeString){
+        if (dateFormat == 1)
+            timeString = timeString.replace(/-/g,"/").replace("T", " ").replace(/\+([0-9]+):([0-9]+)/,"+$1$2").replace("Z", "+0000")
+        else
+            timeString = timeString.replace(/-/g," ").replace("T", " ").replace(/\+/," +").replace("Z", " +00:00")
+    }
     var date = new Date(timeString);
     return new Date(date.getTime() + dateOffset);
 }
