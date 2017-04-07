@@ -242,21 +242,18 @@ Svt.getDetailsData = function(url, data) {
         } else {
             data = Svt.decodeJson(data);
             if (url.indexOf("/kanaler/") > -1) {
-	        for (var i = 0; i < data.channelsPage.schedule.length; i++) {
-                    if (data.channelsPage.schedule[i].name == data.metaData.title) {
-                        data = data.channelsPage.schedule[i];
+                data = data.channelsPage
+	        for (var i in data.schedule) {
+                    if (data.schedule[i].channelName == data.activeChannelId) {
+                        data = data.schedule[i];
                         break;
                     }
                 }
-                Name = data.name.trim() + " - " + data.schedule[0].title.trim();
-	        Description = data.schedule[0].description.trim();
-                if (data.schedule[0].titlePage) {
-                    ImgLink = Svt.getThumb(data.schedule[0].titlePage, "large")
-                } else {
-	            ImgLink = Svt.GetChannelThumb(data.title);
-                }
-                startTime = timeToDate(data.schedule[0].broadcastStartTime);
-                endTime = timeToDate(data.schedule[0].broadcastEndTime);
+                Name = data.channelName.trim() + " - " + data.programmeTitle.trim();
+	        Description = data.description.trim();
+                ImgLink = Svt.getThumb(data, "large")
+                startTime = timeToDate(data.publishingTime);
+                endTime = timeToDate(data.publishingEndTime);
                 VideoLength = Math.round((endTime-startTime)/1000);
                 AirDate = dateToClock(startTime) + "-" + dateToClock(endTime);
                 Title = AirDate + " " + Name;
@@ -1022,16 +1019,19 @@ Svt.decodeChannels = function(data) {
         var BaseUrl = 'http://www.svtplay.se/kanaler';
 
         data = Svt.decodeJson(data).channelsPage.schedule;
-        for (var k=0; k < data.length; k++) {
-
-            Name = data[k].title.trim();
+        for (var k in data) {
+            Name = data[k].channelName.trim();
+            if (!data[k].publishingTime) {
+                alert(Name + " isn't broadcasting.")
+                continue
+            }
 	    Link = BaseUrl + '/' + Name;
             ImgLink = Svt.GetChannelThumb(Name);
-            starttime = timeToDate(data[k].schedule[0].broadcastStartTime);
-            endtime = timeToDate(data[k].schedule[0].broadcastEndTime);
+            starttime = timeToDate(data[k].publishingTime);
+            endtime = timeToDate(data[k].publishingEndTime);
             Duration  = Math.round((endtime-starttime)/1000);
             IsRunning = (getCurrentDate()-starttime) > -60*1000;
-            Name = dateToClock(starttime) + "-" + dateToClock(endtime) + " " + data[k].schedule[0].title.trim();
+            Name = dateToClock(starttime) + "-" + dateToClock(endtime) + " " + data[k].programmeTitle.trim();
             toHtml({name:Name,
                     duration:Duration,
                     is_live:false,

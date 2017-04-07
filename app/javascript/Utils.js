@@ -424,8 +424,13 @@ setDateOffset = function () {
     httpRequest("http://www.svtplay.se/kanaler",
                 {cb:function(status,data) {
                     dateOffset = 0;
-                    data = Svt.decodeJson({responseText:data}).channelsPage.schedule[0];
-                    data = data.schedule[0].broadcastStartTime;
+                    data = Svt.decodeJson({responseText:data}).channelsPage.schedule;
+                    for (var key in data) {
+                        if (data[key].publishingTime) {
+                            data = data[key].publishingTime;
+                            break;
+                        }
+                    }
                     var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
                     var actualSeconds = actualData[2]*3600 + actualData[3]*60;
                     var actualDateString = actualData[1].replace(/-/g, "")
@@ -464,6 +469,7 @@ checkDateFormat = function() {
 
 timeToDate = function(timeString) {
     if (+timeString != timeString){
+        timeString = timeString.replace(/(:[0-9]+)\.[0-9]+/,"$1")
         if (dateFormat == 1)
             timeString = timeString.replace(/-/g,"/").replace("T", " ").replace(/\+([0-9]+):([0-9]+)/,"+$1$2").replace("Z", "+0000")
         else
