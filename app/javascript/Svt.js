@@ -252,6 +252,8 @@ Svt.getDetailsData = function(url, data) {
                 Name = data.channelName.trim() + " - " + data.programmeTitle.trim();
 	        Description = data.description.trim();
                 ImgLink = Svt.getThumb(data, "large")
+                if (!ImgLink)
+	            ImgLink = Svt.GetChannelThumb(data.channel);
                 startTime = timeToDate(data.publishingTime);
                 endTime = timeToDate(data.publishingEndTime);
                 VideoLength = Math.round((endTime-startTime)/1000);
@@ -1004,7 +1006,7 @@ Svt.getNextCategoryDetailText = function() {
 
 Svt.GetChannelThumb  = function (Name)
 {
-    return Svt.fixLink("/assets/images/channels/posters/" + Name + ".png")
+    return Svt.fixLink("/assets/images/channels/posters/" + Name.toLowerCase() + ".png");
 };
 
 Svt.decodeChannels = function(data) {
