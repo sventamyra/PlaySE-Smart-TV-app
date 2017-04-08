@@ -73,7 +73,7 @@ Svt.fixLink = function (Link, Publication)
     } else if (Link && !Link.match("https*:")) {
         if (!Link.match(/^\//))
             Link = "/" + Link;
-        return "http://www.svtplay.se" + Link
+        return "https://www.svtplay.se" + Link
     } else {
         return Link
     }
