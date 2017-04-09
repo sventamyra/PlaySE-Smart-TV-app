@@ -723,9 +723,12 @@ runHttpLoop = function(urls, urlCallback, cbComplete, totalData) {
 }
 
 getHistory = function(Name) {
-    var Prefix = document.title;
-    if (myRefreshLocation && myRefreshLocation.match(/.+&history=/)) {
-        Prefix = myRefreshLocation.replace(/.+&history=/, "");
+    var Prefix = document.title ;
+    if (myRefreshLocation) {
+        if (myRefreshLocation.match(/.+&history=/))
+            Prefix = myRefreshLocation.replace(/.+&history=/, "");
+        else
+            Prefix = Prefix.replace(/\/[^\/]+\/$/, "");
     } else if (htmlSection && detailsOnTop) {
         Prefix = Prefix.replace(/\/[^\/]+\/$/, "")
     }
