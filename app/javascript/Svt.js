@@ -629,16 +629,17 @@ Svt.decodeCategoryDetail = function (data, extra) {
             Svt.decode(data.clusterPage.content.contents)
         }
         if (data.clusterPage.titlesAndEpisodes) {
-            var shows = [];
-            for (var i=0; i<data.clusterPage.titlesAndEpisodes.length; i++) {
-                if (data.clusterPage.titlesAndEpisodes[i].episodic) {
-                    alert("Skipping:" + data.clusterPage.titlesAndEpisodes[i].programTitle)
-                    continue;
-                }
-                shows.push(data.clusterPage.titlesAndEpisodes[i])
-            };
-            Svt.decode(shows);
-            shows = [];
+            Svt.decode(data.clusterPage.titlesAndEpisodes)
+            // var shows = [];
+            // for (var i=0; i<data.clusterPage.titlesAndEpisodes.length; i++) {
+                // if (data.clusterPage.titlesAndEpisodes[i].episodic) {
+                //     alert("Skipping:" + data.clusterPage.titlesAndEpisodes[i].programTitle)
+                //     continue;
+                // }
+            //     shows.push(data.clusterPage.titlesAndEpisodes[i])
+            // };
+            // Svt.decode(shows);
+            // shows = [];
         }
         if (Svt.category_detail_max_index == 0 && data.clusterPage.content.clips)
             Svt.decode(data.clusterPage.content.clips)
