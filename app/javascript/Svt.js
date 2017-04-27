@@ -7,6 +7,8 @@ var Svt =
     thumbs_index:null
 };
 
+var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
+
 Svt.getHeaderPrefix = function() {
     return "SVT";
 }
@@ -749,22 +751,18 @@ Svt.decodeSearchList = function (data, extra) {
         var keys = [];
         data = Svt.decodeJson(data).searchPage;
         for (var key in data){
-            if (!data[key][0] || (!data[key][0].contentType && !data[key][0].name))
+            if (!data[key].sort)
                 continue;
             keys.push(key)
         }
+        // Make sure Categories are first.
         keys.sort(function(a, b){
             // Category
-            if (data[a][0].name)
+            if (data[a][0].name && !data[b][0].name)
                 return -1
-            else if (data[b][0].name)
+            else if (data[b][0].name && !data[a][0].name)
                 return 1
-            // Show
-            else if (data[a][0].contentType == "titelsida")
-                return -1
-            else if (data[b][0].contentType == "titelsida")
-                return 1
-            // Episode/Live/Clip
+            // Others
             else if (keys.indexOf(a) < keys.indexOf(b))
                 return -1
             else 
@@ -772,10 +770,23 @@ Svt.decodeSearchList = function (data, extra) {
         });
         for (var key, i=0; i < keys.length; i++) {
             key = keys[i];
+            // Put shows first in list (they're mixed with Episodes and Clips...)
+            data[key].sort(function(a, b) {
+                // Show
+                if (!a.contentType && b.contentType)
+                    return -1
+                if (!b.contentType && a.contentType)
+                    return 1
+                // Other
+                else if (data[key].indexOf(a) < data[key].indexOf(b))
+                    return -1
+                else 
+                    return 1
+            });
             Svt.decode(data[key]);
         };
     } catch(err) {
-        Log("Svt.decode_search Exception:" + err.message + " data[key][" + k + "]:" + JSON.stringify(data[key][k]));
+        Log("Svt.decodeSearchList Exception:" + err.message + " data[" + key  + "]:" + JSON.stringify(data[key]));
     }
     if (extra.cbComplete)
         extra.cbComplete();
@@ -789,7 +800,9 @@ Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl)
     if (url.indexOf('?') != -1)
         url_param = '&output=json'; 
     var stream_url = url;
-    if (url.indexOf("/kanaler/") == -1)
+    if (url.indexOf("/kanaler/") != -1)
+        stream_url = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
+    else
         stream_url = (altUrl) ? altUrl : url+url_param;
 
     requestUrl(stream_url,
@@ -798,16 +811,10 @@ Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl)
                    if (Player.checkPlayUrlStillValid(url)) {
                        var videoReferences, subtitleReferences = [], srtUrl = null;
                        if (url.indexOf("/kanaler/") != -1) {
-                           data = Svt.decodeJson(data);
-	                   for (var i = 0; i < data.channelsPage.schedule.length; i++) {
-                               if (data.channelsPage.schedule[i].name == data.metaData.title) {
-                                   data = data.channelsPage.schedule[i];
-                                   // No subtitles
-                                   data.disabled = true;
-                                   data.subtitleReferences = []
-                                   break;
-                               }
-                           }
+                           data = JSON.parse(data.responseText);
+                           // No subtitles
+                           data.disabled = true;
+                           data.subtitleReferences = []
                        } else {
                            try {
                                data = Svt.decodeJson(data).context.dispatcher.stores.VideoTitlePageStore.data;
@@ -1154,6 +1161,8 @@ Svt.decode = function(data, extra) {
             starttime = data[k].broadcastDate;
             if (!starttime)
                 starttime = data[k].broadcastStartTime;
+            if (!starttime)
+                starttime = data[k].validFrom;
             starttime = (IsLive && starttime) ? timeToDate(starttime) : null;
             LinkPrefix = '<a href="showList.html?name=';
             if (Svt.isPlayable(Link)) {

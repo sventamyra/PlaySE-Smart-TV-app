@@ -27,7 +27,6 @@ var clrSubtitleTimer = 0;
 var subtitleStatusPrinted = false;
 var retries = 0;
 var SEPARATOR = "&nbsp;&nbsp;&nbsp;&nbsp;"
-var SVT_ALT_API_URL= "http://www.svt.se/videoplayer-api/video/"
 var useSef=true;
 
 var Player =
