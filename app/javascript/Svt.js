@@ -751,9 +751,9 @@ Svt.decodeSearchList = function (data, extra) {
         var keys = [];
         data = Svt.decodeJson(data).searchPage;
         for (var key in data){
-            if (!data[key].sort)
-                continue;
-            keys.push(key)
+            if (data[key].sort && data[key].length > 0) {
+                keys.push(key)
+            }
         }
         // Make sure Categories are first.
         keys.sort(function(a, b){
