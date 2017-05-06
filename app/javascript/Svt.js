@@ -265,7 +265,7 @@ Svt.getDetailsData = function(url, data) {
                 isLive = true;
                 NotAvailable = (startTime - getCurrentDate()) > 60*1000;
             } else {
-                data = data.videoTitlePage;
+                data = data.videoPage;
                 if (data.titlePage && data.titlePage.programTitle) {
                     Show = {name : data.titlePage.programTitle.trim(),
                             url  : Svt.fixLink(data.titlePage.urlFriendlyTitle)
@@ -366,8 +366,7 @@ Svt.getShowData = function(url, data) {
     var Description="";
 
     try {
-        data = Svt.decodeJson(data).videoTitlePage;
-        data = data.titlePage
+        data = Svt.decodeJson(data).titlePage.titlePage;
 
         Name  = data.programTitle.trim();
         ImgLink = Svt.getThumb(data, "large");
@@ -678,10 +677,12 @@ Svt.decodeLive = function(data, extra) {
 };
 
 Svt.decodeShowList = function(data, extra) {
-    data = Svt.decodeJson(data).videoTitlePage;
+    data = Svt.decodeJson(data);
+    var showThumb = Svt.getThumb(data.titlePage.titlePage);
     var seasons = []
     var has_clips = false
     var has_zero_season = false
+    data = data.relatedVideoContent;
     if (!extra.is_clips && !extra.season) {
         for (var i=0; i < data.relatedVideosTabs.length; i++) {
             if (data.relatedVideosTabs[i].season > 0) {
@@ -699,7 +700,7 @@ Svt.decodeShowList = function(data, extra) {
             seasons.sort(function(a, b){return b.season-a.season})
             for (var i=0; i < seasons.length; i++) {
                 seasonToHtml(seasons[i].name,
-                             Svt.getThumb(data.titlePage),
+                             showThumb,
                              extra.url,
                              seasons[i].season
                             )
@@ -740,7 +741,7 @@ Svt.decodeShowList = function(data, extra) {
     }
 
     if (has_clips)
-        clipToHtml(Svt.getThumb(data.titlePage), extra.url)
+        clipToHtml(showThumb, extra.url)
 
     if (extra.cbComplete)
         extra.cbComplete();
@@ -816,11 +817,7 @@ Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl)
                            data.disabled = true;
                            data.subtitleReferences = []
                        } else {
-                           try {
-                               data = Svt.decodeJson(data).context.dispatcher.stores.VideoTitlePageStore.data;
-                           } catch (err) {
-                               data = JSON.parse(data.responseText);
-                           }
+                           data = JSON.parse(data.responseText);
                        }
                        
                        if (data.video)
