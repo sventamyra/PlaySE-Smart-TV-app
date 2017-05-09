@@ -32,6 +32,8 @@ showList.loadXml = function(refresh)
     var url = this.getUrl(location);
     var season   = location.match("season=([0-9]+)");
     season = (season) ? +season[1] : null
+    var variant = location.match("variant=([^&]+)");
+    variant = (variant) ? variant[1] : null
     var cbComplete = function(status){loadFinished(status, refresh)};
     requestUrl(url,
                function(status, data)
@@ -42,6 +44,7 @@ showList.loadXml = function(refresh)
                                            strip_show:true,
                                            is_clips:(location.indexOf("clips=1") != -1),
                                            season:season,
+                                           variant:variant,
                                            cbComplete:function(){cbComplete(status)}
                                           });
                    data = null;

@@ -764,19 +764,22 @@ fixCss = function() {
     };
 };
 
-seasonToHtml = function(Name, Thumb, Link, Season) {
+seasonToHtml = function(Name, Thumb, Link, Season, Variant) {
     showToHtml(Name, 
                Thumb, 
                Link, 
-               makeSeasonLinkPrefix(Name, Season)
+               makeSeasonLinkPrefix(Name, Season, Variant)
               );
 };
 
-makeSeasonLinkPrefix = function(Name, Season) {
+makeSeasonLinkPrefix = function(Name, Season, Variant) {
     LinkPrefix = '<a href="showList.html?'
-    if (!Season)
+    if (!Season && Season != 0)
         Season="1";
-    return LinkPrefix + 'season=' + Season + "&title=" + encodeURIComponent(Name) + "&name="
+    LinkPrefix += 'season=' + Season + "&title=" + encodeURIComponent(Name)
+    if (Variant)
+        LinkPrefix += "&variant=" + Variant;
+    return LinkPrefix + "&name="
 }
 
 // Replace Current Location with the only Season existing

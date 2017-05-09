@@ -739,11 +739,10 @@ Buttons.handleMenuKeys = function(keyCode){
         Channel.keyGreen();
 	break;
     case tvKey.KEY_YELLOW:
-	setLocation('live.html');
+        Channel.keyYellow();
 	break;
     case tvKey.KEY_BLUE:
-	Language.hide();
-        Search.imeShow();
+	Channel.keyBlue();
 	break;
     case tvKey.KEY_RETURN:
 	widgetAPI.blockNavigation(event); 

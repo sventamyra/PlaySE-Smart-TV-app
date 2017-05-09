@@ -255,7 +255,7 @@ Svt.getDetailsData = function(url, data) {
 	        Description = data.description.trim();
                 ImgLink = Svt.getThumb(data, "large")
                 if (!ImgLink)
-	            ImgLink = Svt.GetChannelThumb(data.channel);
+	            ImgLink = Svt.getChannelThumb(data.channel);
                 startTime = timeToDate(data.publishingTime);
                 endTime = timeToDate(data.publishingEndTime);
                 VideoLength = Math.round((endTime-startTime)/1000);
@@ -293,12 +293,7 @@ Svt.getDetailsData = function(url, data) {
                     Description = data.description.trim();
                 Title = Name;
                 ImgLink = Svt.getThumb(data, "large");
-                if (data.broadcastDate)
-                    AirDate = timeToDate(data.broadcastDate);
-                else if (data.publishDate)
-                    AirDate = timeToDate(data.publishDate);
-                else
-                    AirDate = null
+                AirDate = Svt.getAirDate(data);
                 VideoLength = data.materialLength
                 startTime = AirDate;
                 if (data.broadcastEndTime)
@@ -683,7 +678,7 @@ Svt.decodeShowList = function(data, extra) {
     var has_clips = false
     var has_zero_season = false
     data = data.relatedVideoContent;
-    if (!extra.is_clips && !extra.season) {
+    if (!extra.is_clips && !extra.season && !extra.variant) {
         for (var i=0; i < data.relatedVideosTabs.length; i++) {
             if (data.relatedVideosTabs[i].season > 0) {
                 seasons.push({season:data.relatedVideosTabs[i].season,
@@ -737,6 +732,7 @@ Svt.decodeShowList = function(data, extra) {
 
     if (extra.season || extra.is_clips || seasons.length < 2) {
         extra.strip_show = true;
+        extra.show_thumb = showThumb;
         Svt.decode(videos, extra);
     }
 
@@ -1071,9 +1067,8 @@ Svt.decode = function(data, extra) {
         var IsRunning;
         var Season;
         var Episode;
-        var Variant;
+        var Variants = [];
         var SEASON_REGEXP = new RegExp("((s[^s]+song\\s*([0-9]+))\\s*-\\s*)?(.+)","i");
-        var VARIANT_REGEXP = new RegExp("\\s*-\\s*(textat|syntolkat|tecken(spr[^k]+ks?)?(tolkat)?|originalspr[^k]+k)","i");
         var Names = [];
         var Shows = [];
         var IgnoreEpisodes = false;
@@ -1085,9 +1080,6 @@ Svt.decode = function(data, extra) {
             var Episodes = [];
             for (var k=0; k < data.length; k++) {
                 if (data[k].episodeNumber >= 1) {
-                    if (data[k].title.match(VARIANT_REGEXP))
-                        // Ignore variants
-                        continue;
                     if (Episodes[data[k].episodeNumber]) {
                         Episodes[data[k].episodeNumber]++
                     } else {
@@ -1133,8 +1125,21 @@ Svt.decode = function(data, extra) {
                 }
             }
             Description = (Description) ? Description.trim() : "";
-            if (data[k].contentUrl)
-                Link = Svt.fixLink(data[k].contentUrl);
+            if (data[k].contentUrl) {
+                if (extra.variant) {
+                    Link = null;
+                    // Find correct variant
+                    for (var i=0; i < data[k].versions.length; i++) {
+                        if (data[k].versions[i].accessService == extra.variant) {
+                            Link = Svt.fixLink(data[k].versions[i].contentUrl);
+                            break;
+                        }
+                    }
+                    if (!Link) continue;
+                } else {
+                    Link = Svt.fixLink(data[k].contentUrl);
+                }
+            }
             else if (data[k].urlPart) {
                 Link = data[k].urlPart
                 if (!Link.match(/^\//))
@@ -1155,12 +1160,7 @@ Svt.decode = function(data, extra) {
             ImgLink = Svt.getThumb(data[k]);
             IsLive = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
-            starttime = data[k].broadcastDate;
-            if (!starttime)
-                starttime = data[k].broadcastStartTime;
-            if (!starttime)
-                starttime = data[k].validFrom;
-            starttime = (IsLive && starttime) ? timeToDate(starttime) : null;
+            starttime = (IsLive) ? Svt.getAirDate(data[k]) : null;
             LinkPrefix = '<a href="showList.html?name=';
             if (Svt.isPlayable(Link)) {
                 Duration = (Duration) ? Duration : 0;
@@ -1174,15 +1174,21 @@ Svt.decode = function(data, extra) {
             }
             Season  = data[k].season;
             Episode = data[k].episodeNumber; // || Name.match(/avsnitt\s*([0-9]+)/i) || Description.match(/[Dd]el\s([0-9]+)/i);
-            Variant = Name.match(VARIANT_REGEXP);
-            Variant = (Variant) ? Variant[1] : null;            
+            for (var i=0; !extra.variant && data[k].versions && i < data[k].versions.length; i++) {
+                if (data[k].versions[i].accessService &&
+                    data[k].versions[i].accessService != "none" &&
+                    Variants.indexOf(data[k].versions[i].accessService) == -1
+                   )
+                    Variants.push(data[k].versions[i].accessService);
+            }
+            if (data[k].versions && data[k].versions[0].accessService &&
+                Variants.indexOf(data[k].versions[0].accessService) != -1)
+                continue;
             
             if (!data[k].movie && extra.strip_show && !IgnoreEpisodes) {
                 if (!Name.match(/avsnitt\s*([0-9]+)/i) && Episode) {
                     Description = Name.replace(SEASON_REGEXP, "$4")
-                    Description = Description.replace(VARIANT_REGEXP, "")
                     Name = Name.replace(SEASON_REGEXP, "$1Avsnitt " + Episode);
-                    Name = (Variant) ? Name + " - " + Variant : Name;
                 } else {
                     Description = "";
                 }
@@ -1200,8 +1206,7 @@ Svt.decode = function(data, extra) {
                         thumb:ImgLink,
                         largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null,
                         season:Season,
-                        episode:Episode,
-                        variant:Svt.FixVariant(Variant)
+                        episode:Episode
                        })
             data[k] = "";
 	};
@@ -1210,18 +1215,46 @@ Svt.decode = function(data, extra) {
         for (var k=0; k < Shows.length; k++) {
             toHtml(Shows[k])
         };
+        
+        if (extra.strip_show) {
+            for (var i=0; i < Variants.length; i++) {
+                seasonToHtml(Svt.getVariantName(Variants[i]),
+                             extra.show_thumb,
+                             extra.url,
+                             extra.season || 0,
+                             Variants[i]
+                            );
+            }
+        }
     } catch(err) {
         Log("Svt.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
     }
 };
 
-Svt.FixVariant = function(variant) {
-    if (variant) {
-        variant = variant.toLowerCase();
-        variant = variant.replace(/tecken(spr[^k]+ks?)?(tolkat)?/, "teckentolkat")
-        // alert(variant)
+Svt.getVariantName = function(accessService) {
+    switch (accessService) {
+    case "signInterpretation":
+        return "Teckentolkat";
+    case "audioDescription":
+        return "Syntolkat";
+    case "liveCaptioning":
+        return "Textat";
+    default:
+        return accessService
     }
-    return variant;
+}
+
+Svt.getAirDate = function(data) {
+    if (data.broadcastStartTime)
+        return timeToDate(data.broadcastStartTime);
+    else if (data.broadcastDate)
+        return timeToDate(data.broadcastDate);
+    else if (data.publishDate)
+        return timeToDate(data.publishDate);
+    else if (data.validFrom)
+        return timeToDate(data.validFrom);
+    else
+        return null;
 };
 
 Svt.sortEpisodes = function(Episodes, Names, IgnoreEpisodes) {
@@ -1235,7 +1268,7 @@ Svt.sortEpisodes = function(Episodes, Names, IgnoreEpisodes) {
         } else if(Svt.IsClip(b)) {
             // Clips has lower prio
             return -1
-        } else if (a.variant == b.variant) {
+        } else {
             if (IgnoreEpisodes)
                 // Keep SVT sorting in case not all videos has an episod number.
                 return Names.indexOf(a.name) - Names.indexOf(b.name)
@@ -1243,10 +1276,6 @@ Svt.sortEpisodes = function(Episodes, Names, IgnoreEpisodes) {
                 return -1
             else
                 return 1
-        } else if (!a.variant || (b.variant && b.variant > a.variant)) {
-            return -1
-        } else {
-            return 1
         }
     });
 };

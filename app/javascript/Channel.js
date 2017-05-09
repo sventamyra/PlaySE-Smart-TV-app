@@ -55,6 +55,13 @@ Channel.login = function(callback) {
         callback()
 }
 
+Channel.isLoggedIn = function() {
+    if (this.impl.isLoggedIn)
+        return this.impl.isLoggedIn();
+    else
+        return true;
+}
+
 Channel.decodeMain = function(data, extra) {
     this.impl.decodeMain(data, extra);
 }
@@ -113,18 +120,42 @@ Channel.fetchSubtitles = function(srtUrl, hlsSubs) {
 }
 
 Channel.keyRed = function() {
-    if (this.impl.keyRed)
-        this.impl.keyRed()
-    else
-        setLocation('index.html');
+    if (Channel.isLoggedIn()) {
+        if (this.impl.keyRed)
+            this.impl.keyRed()
+        else
+            setLocation('index.html');
+    }
 }
 
 Channel.keyGreen = function() {
-    if (this.impl.keyGreen)
-        this.impl.keyGreen()
-    else
-        setLocation('categories.html');
+    if (Channel.isLoggedIn()) {
+        if (this.impl.keyGreen)
+            this.impl.keyGreen()
+        else
+            setLocation('categories.html');
+    }
+};
+
+Channel.keyYellow = function() {
+    if (Channel.isLoggedIn()) {
+        if (this.impl.keyYellow)
+            this.impl.keyYellow()
+        else
+            setLocation('live.html');
+    }
 }
+
+Channel.keyBlue = function() {
+    if (Channel.isLoggedIn()) {
+        if (this.impl.keyBlue)
+            this.impl.keyBlue()
+        else {
+            Language.hide();
+            Search.imeShow()
+        };
+    }
+};
 
 Channel.getMainTitle = function() {
     if (this.impl.getMainTitle)

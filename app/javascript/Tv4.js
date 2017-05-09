@@ -475,9 +475,9 @@ Tv4.getDetailsData = function(url, data) {
         AirDate = timeToDate(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
         isLive = data.is_live;
-        AvailDate = data.availability.human.match(/\(([^)]+ dag[^) ]+)/);
+        AvailDate = data.availability.human.match(/\(([^)]+ dag[^) ]*)/);
         AvailDate = (AvailDate) ? AvailDate[1] : data.availability.availability_group_free + ' dagar'
-        AvailDate = (AvailDate.match(/dagar$/)) ? AvailDate + " kvar" : AvailDate;
+        AvailDate = (AvailDate.match(/dag(ar)?$/)) ? AvailDate + " kvar" : AvailDate;
         if (data.expire_date_time)
             AvailDate = dateToString(timeToDate(data.expire_date_time),"-") + ' (' + AvailDate + ')';
         
