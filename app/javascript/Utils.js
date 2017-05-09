@@ -9,6 +9,7 @@ var columnCounter = 0;
 var itemCounter = 0;
 var htmlSection = null;
 var items = [];
+var thumbsLoaded = [];
 var myLocation = "index.html";
 var myRefreshLocation = null;
 var myHistory = [];
@@ -17,10 +18,12 @@ var myPos = null;
 var loadingTimer = 0;
 var detailsOnTop = false;
 var dateFormat = 0;
+var imgCounter = 0;
 var MAX_PAGES = 3
 // reload on 3rd column on last "original page"
 var LOAD_NEXT_COLUMN  = Math.floor((8*(MAX_PAGES-1))/2)+2;
 var LOAD_PRIOR_COLUMN = 2;
+var THUMBS_PER_PAGE   = 8;
 
 setChannel = function(newChannel) {
     if (Channel.set(newChannel)) {
@@ -238,14 +241,11 @@ resetHtml = function(oldPos, isDetails)
         $('#bottomRow').html("");
         $('.content-holder').css("marginLeft", "0");
         items = [];
+        thumbsLoaded = [];
         htmlSection = (oldPos) ? oldPos.section : null;
-        
     }
+    $("#content-scroll").hide();
     $(".slider-body").show();
-    if (oldPos)
-        $("#content-scroll").hide();
-    else
-        $("#content-scroll").show();
 };
 
 goBack = function(location)
@@ -748,11 +748,23 @@ loadFinished = function(status, refresh) {
     if (status == "success") {
         Log("itemCounter:" + getItemCounter())
         if (!restorePosition() && !refresh)
-            $("#content-scroll").show();
+            contentShow();
     } else {
         if (!refresh)
-            $("#content-scroll").show();
+            contentShow();
     }
+}
+
+contentShow = function() {
+    waitForImages(function() {$("#content-scroll").show()}, retries=20);
+}
+
+waitForImages = function(callback, retries) {
+    alert("imgCounter:" + imgCounter);
+    if (retries > 0 && imgCounter > 0)
+        window.setTimeout(function(){waitForImages(callback, retries--)}, 100)
+    else
+        callback();
 }
 
 fixCss = function() {
@@ -852,6 +864,17 @@ itemToHtml = function(Item, OnlyReturn) {
     html += '<div class="scroll-item-img">';
     html += makeLink(Item.link_prefix,Item.name,Item.link) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
 
+    var itemsIndex = items.indexOf(Item);
+    if (Item.thumb && itemCounter < THUMBS_PER_PAGE) {
+        imgCounter = (itemCounter == 0) ? 0 : imgCounter+1;
+        loadImage(Item.thumb,
+                  function(){if (imgCounter > 0) imgCounter--},
+                  2000
+                 );
+    } else {
+        loadImage(Item.thumb)
+    }
+    thumbsLoaded[itemsIndex] = 1;
     Item.starttime = dateToHuman(Item.starttime);
     if (Item.is_live && !Item.is_running) {
 	html += '<span class="topoverlay">LIVE</span>';
@@ -898,14 +921,17 @@ finaliseHtml = function() {
                     itemToHtml(items[i])
             } else {
                 htmlSection = {index:0, load_next_column:LOAD_NEXT_COLUMN, load_prior_column:-1}
+                preloadAdjacentSectionThumbs();
                 alert("loaded from:" + htmlSection.index + " to:" + itemCounter)
                 alert("Section itemCounter:" + itemCounter);
                 alert(JSON.stringify(htmlSection))
             }
         }
     }
-    if (!htmlSection)
-        items = []
+    if (!htmlSection) {
+        items = [];
+        thumbsLoaded = [];
+    }
 };
 
 loadSection = function(maxIndex) {
@@ -924,7 +950,42 @@ loadSection = function(maxIndex) {
     }
     $('#topRow').html(topHtml);
     $('#bottomRow').html(bottomHtml);
+    preloadAdjacentSectionThumbs();
     return maxIndex
+}
+
+preloadAdjacentSectionThumbs = function() {
+    // First load next section thumbs
+    var startIndex = htmlSection.index+(8*MAX_PAGES);
+    if (startIndex > items.length)
+        // We're at last page - load initial instead.
+        startIndex = 0;
+    var endIndex   = startIndex + (8*MAX_PAGES);
+    for (var i=startIndex; i < items.length && i < endIndex; i++) {
+        // alert("pre-loading 1 index:" + i);
+        if (!thumbsLoaded[i]) {
+            loadImage(items[i].thumb)
+            thumbsLoaded[i]=1
+        }
+    }
+
+    // Load prior section thumbs
+    endIndex = htmlSection.index-1;
+    if (endIndex < 0) {
+        // We're at initial page - load last section instead.
+        endIndex = items.length-1
+    }
+    startIndex = endIndex - (8*MAX_PAGES);
+    if (endIndex == (items.length-1))
+        startIndex = startIndex - (items.length % 8);
+    if (startIndex < 0) startIndex = 0;
+    for (var i=endIndex; i >= 0 && i >= startIndex; i--) {
+        // alert("pre-loading 2 index:" + i);
+        if (!thumbsLoaded[i]) {
+            loadImage(items[i].thumb)
+            thumbsLoaded[i]=1;
+        }
+    }
 }
 
 loadNextSection = function() {
@@ -953,6 +1014,7 @@ loadNextSection = function() {
     }
     alert("Section itemCounter:" + itemCounter);
     alert(JSON.stringify(htmlSection))
+    preloadAdjacentSectionThumbs()
     if (isTopRowSelected)
         return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
     else
@@ -992,6 +1054,7 @@ loadPriorSection = function() {
     }
     alert("Section itemCounter:" + itemCounter);
     alert(JSON.stringify(htmlSection))
+    preloadAdjacentSectionThumbs();
     if (isTopRowSelected  || ((columnCounter+1) > $('.bottomitem').length)) {
         isTopRowSelected = true;
         return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
@@ -1031,8 +1094,37 @@ addToMyUrls = function(url, extra) {
     }
 };
 
+loadImage = function (image, callback, timeout) {
+    var thisTimeout = null;
+    // if (alt)
+    //     return callback();
+    // alert("image:" + image + " noretry:" + noretry);
+    if (image) {
+        var img = document.createElement("img");
+        if (timeout) {
+            thisTimeout = window.setTimeout(function () {
+                img.onload=img.onerror=img.onabort = null;
+                if (isEmulator)
+                    alert("IMG TIMEOUT")
+                else
+                    Log("IMG TIMEOUT")
+                callback()
+            }, timeout);
+        }
+        if (callback) {
+            img.onload = img.onerror = img.onabort = function() {
+                window.clearTimeout(thisTimeout);
+                // alert("READY")
+                callback()
+            }
+        }
+        img.src = image;
+    } else if (callback)
+        callback();
+};
+
 Log = function (msg) 
 {
-    // asyncHttpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, not_random:true, logging:true});
+    // httpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, not_random:true, logging:true});
     // alert(msg);
 };

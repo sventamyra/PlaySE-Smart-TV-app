@@ -142,13 +142,14 @@ Buttons.restartKeyTimer = function() {
 
 Buttons.sscroll = function(hide) 
 {
+    // alert("Buttons.sscroll:" + itemCounter + " margin:" + Buttons.getMargin()); 
     animateCallbacked = 0;
     $('.content-holder').animate(
         {marginLeft: Buttons.getMargin()},
         {complete: function() {
             animateCallbacked = animateCallbacked+1;
-            if (!hide && animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
-                $("#content-scroll").show();
+            if (itemCounter && !hide && animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
+                contentShow();
             }
         }
         }

@@ -92,7 +92,7 @@ Details.loadXml = function(isBackground) {
 };
 
 Details.toHtml = function (programData) {
-    loadThumb(programData.thumb, function() {
+    loadImage(programData.thumb, function() {
         var extra = null;
 	html = '<h1>'+programData.name+'</h1>';
         if (programData.show) {
@@ -212,13 +212,6 @@ function dataLengthToVideoLength($video, duration)
     var seconds = Math.round(duration - (hours*3600) - (minutes*60));
     if (seconds > 0) {
         VideoLength = VideoLength + seconds + " sek"
-    }                      
+    }
     return VideoLength;
 }
-
-loadThumb = function (thumb, callback) {
-    var img = document.createElement("img");
-    img.onload = callback;
-    img.onerror = callback;
-    img.src = thumb;
-};
