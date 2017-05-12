@@ -255,7 +255,7 @@ Svt.getDetailsData = function(url, data) {
 	        Description = data.description.trim();
                 ImgLink = Svt.getThumb(data, "large")
                 if (!ImgLink)
-	            ImgLink = Svt.getChannelThumb(data.channel);
+	            ImgLink = Svt.GetChannelThumb(data.channel);
                 startTime = timeToDate(data.publishingTime);
                 endTime = timeToDate(data.publishingEndTime);
                 VideoLength = Math.round((endTime-startTime)/1000);
@@ -1005,7 +1005,7 @@ Svt.getNextCategoryDetailText = function() {
     return 0;
 }
 
-Svt.GetChannelThumb  = function (Name)
+Svt.GetChannelThumb = function (Name)
 {
     return Svt.fixLink("/assets/images/channels/posters/" + Name.toLowerCase() + ".png");
 };
@@ -1181,8 +1181,11 @@ Svt.decode = function(data, extra) {
                    )
                     Variants.push(data[k].versions[i].accessService);
             }
-            if (data[k].versions && data[k].versions[0].accessService &&
-                Variants.indexOf(data[k].versions[0].accessService) != -1)
+            if (data[k].versions &&
+                data[k].versions.length &&
+                data[k].versions[0].accessService &&
+                Variants.indexOf(data[k].versions[0].accessService) != -1
+               )
                 continue;
             
             if (!data[k].movie && extra.strip_show && !IgnoreEpisodes) {
