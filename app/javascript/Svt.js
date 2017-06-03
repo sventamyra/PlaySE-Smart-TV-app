@@ -575,7 +575,7 @@ Svt.decodeCategoryDetail = function (data, extra) {
     Svt.category_details = [];
     Svt.category_detail_max_index = 0;
 
-    var main_name = data.clusterPage.content.clusterName.trim()
+    var main_name = data.clusterPage.meta.name.trim()
     var popular   = {};
     var current;
 
@@ -603,7 +603,7 @@ Svt.decodeCategoryDetail = function (data, extra) {
             }
         }
     };
-    if (data.clusterPage.content.relatedClusters.length > 0) {
+    if (data.clusterPage.relatedClusters.length > 0) {
         Svt.category_details.push({name   : main_name + " - Relaterat",
                                    section: "Relaterat",
                                    related: true
@@ -644,9 +644,9 @@ Svt.decodeCategoryDetail = function (data, extra) {
             recommendedLinks = recommendedLinks.concat(Svt.decodeRecommended(data.displayWindow[key], {json:true}));
         }
     } else if (current.related) {
-        Svt.decode(data.clusterPage.content.relatedClusters);
+        Svt.decode(data.clusterPage.relatedClusters);
     }
-        
+
     if (current.tab_index >= 0)
         Svt.decode(data.clusterPage.tabs[current.tab_index].content, {recommended_links:recommendedLinks});
 
@@ -789,20 +789,19 @@ Svt.decodeSearchList = function (data, extra) {
         extra.cbComplete();
 };
 
-Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl) 
+Svt.getPlayUrl = function(url, isLive, streamUrl)
 {
     // url = Svt.fixLink(url);
     // Log("url:" + url);
-    var video_url, stream_url, url_param = '?output=json';
-    if (url.indexOf('?') != -1)
-        url_param = '&output=json'; 
-    var stream_url = url;
-    if (url.indexOf("/kanaler/") != -1)
-        stream_url = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
-    else
-        stream_url = (altUrl) ? altUrl : url+url_param;
+    var video_url;
 
-    requestUrl(stream_url,
+    if (url.indexOf("/kanaler/") != -1)
+        streamUrl = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
+    else if(!streamUrl) {
+        streamUrl = url;
+    }
+
+    requestUrl(streamUrl,
                function(status, data)
                {
                    if (Player.checkPlayUrlStillValid(url)) {
@@ -812,10 +811,13 @@ Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl)
                            // No subtitles
                            data.disabled = true;
                            data.subtitleReferences = []
+                       } else if (streamUrl == url){
+                           streamUrl = SVT_ALT_API_URL + Svt.decodeJson(data).videoPage.video.id;
+                           return Svt.getPlayUrl(url, isLive, streamUrl);
                        } else {
                            data = JSON.parse(data.responseText);
                        }
-                       
+
                        if (data.video)
                            videoReferences = data.video.videoReferences
                        else
@@ -843,19 +845,7 @@ Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl)
                            if (srtUrl.length > 0){
 			       break;
 		           }
-		       }
-                       if (!altUrl && !srtUrl && !data.disabled) {
-                           var programVersionId = null;
-                           if (data.video && data.video.programVersionId)
-                               programVersionId = data.video.programVersionId;
-                           else if (data.context)
-                               programVersionId  = data.context.programVersionId
-                           if (programVersionId) {
-                               // Try alternative url
-                               altUrl = SVT_ALT_API_URL + programVersionId;
-                               return Svt.getPlayUrl(url, isLive, altUrl, video_url);
-                           }
-                       } 
+		       } 
 
 		       if (video_url.match(/\.m3u8/)) {
 		           Resolution.getCorrectStream(video_url, srtUrl, {isLive:isLive});
@@ -865,14 +855,6 @@ Svt.getPlayUrl = function(url, isLive, altUrl, altVideoUrl)
 		           Player.playVideo();
 		       }
 	           }
-               },
-               {cbError:function(status, data) {
-                   if (altVideoUrl) {
-                       loadingStart();
-                       Resolution.getCorrectStream(altVideoUrl, null, {isLive:isLive});
-                   };
-               },
-                dont_show_errors:altVideoUrl
                }
               );
 };
