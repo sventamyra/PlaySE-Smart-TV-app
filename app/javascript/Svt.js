@@ -797,7 +797,9 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
 
     if (url.indexOf("/kanaler/") != -1)
         streamUrl = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
-    else if(!streamUrl) {
+    else if (url.indexOf("oppetarkiv") != -1) {
+        streamUrl = url + (((url.indexOf('?') == -1) ) ? '?' : '&') + "output=json";
+    } else if(!streamUrl) {
         streamUrl = url;
     }
 
@@ -811,7 +813,7 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
                            // No subtitles
                            data.disabled = true;
                            data.subtitleReferences = []
-                       } else if (streamUrl == url){
+                       } else if (streamUrl == url) {
                            streamUrl = SVT_ALT_API_URL + Svt.decodeJson(data).videoPage.video.id;
                            return Svt.getPlayUrl(url, isLive, streamUrl);
                        } else {
