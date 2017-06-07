@@ -762,7 +762,7 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
                        if (data.sami_path) srtUrls.push(data.sami_path); 
                        if (data.subtitles_for_hearing_impaired) srtUrls.push(data.subtitles_for_hearing_impaired);
                        if (data.subtitles_webvtt) srtUrls.push(data.subtitles_webvtt);
-                       Resolution.getCorrectStream(stream, {list:srtUrls});
+                       Resolution.getCorrectStream(stream, {list:srtUrls}, {useBitrates:true});
                    }
                });
 }
