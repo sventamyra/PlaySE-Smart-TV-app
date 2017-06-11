@@ -793,7 +793,7 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
 {
     // url = Svt.fixLink(url);
     // Log("url:" + url);
-    var video_url;
+    var video_url, extra = {isLive:isLive};
 
     if (url.indexOf("/kanaler/") != -1)
         streamUrl = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
@@ -827,10 +827,13 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
 
 		       for (var i = 0; i < videoReferences.length; i++) {
 		           Log("videoReferences:" + videoReferences[i].url);
-		           video_url = videoReferences[i].url;
-                           if (video_url.indexOf('.m3u8') >= 0) {
-			       break;
-		           }
+                           if (!video_url || video_url.indexOf(".m3u8") == -1)
+		               video_url = videoReferences[i].url;
+                           if (videoReferences[i].format &&
+                               videoReferences[i].format.indexOf("vtt") > -1) {
+		               video_url = videoReferences[i].url;
+                               break
+                           }
 		       }
                        if (data.video && data.video.subtitleReferences)
                            subtitleReferences = data.video.subtitleReferences
@@ -842,18 +845,17 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
                        for (var i = 0; i < subtitleReferences.length; i++) {
 		           Log("subtitleReferences:" + subtitleReferences[i].url);
                            if (subtitleReferences[i].url.indexOf(".m3u8") != -1)
-                               continue
-		           srtUrl = subtitleReferences[i].url;
-                           if (srtUrl.length > 0){
-			       break;
-		           }
-		       } 
-
+                               continue;
+                           else if (subtitleReferences[i].url.length > 0) {
+		               srtUrl = subtitleReferences[i].url;
+                               break;
+                           }
+		       }
 		       if (video_url.match(/\.m3u8/)) {
-		           Resolution.getCorrectStream(video_url, srtUrl, {isLive:isLive});
+		           Resolution.getCorrectStream(video_url, srtUrl, extra);
 		       }
 		       else{
-		           Player.setVideoURL(video_url, video_url, srtUrl);
+		           Player.setVideoURL(video_url, video_url, srtUrl, extra);
 		           Player.playVideo();
 		       }
 	           }
