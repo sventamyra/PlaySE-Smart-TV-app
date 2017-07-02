@@ -18,6 +18,16 @@ Channel.set = function(newChannel) {
     }
 }
 
+Channel.setCheckedChannelText = function(button) {
+    if (this.impl.getCheckedChannelText)
+        button.find("a").text(this.impl.getCheckedChannelText());
+}
+
+Channel.setUnCheckedChannelText = function(button) {
+    if (this.impl.getCheckedChannelText)
+        button.find("a").text(this.impl.getUnCheckedChannelText());
+}
+
 Channel.isSubChannelSet = function() {
     if (this.impl.isSubChannelSet)
         return this.impl.isSubChannelSet()

@@ -17,7 +17,7 @@ var channelId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5", "#res6"];
 var reslButton = ["#reslauto", "#resl1", "#resl2", "#resl3", "#resl4", "#resl5", "#resl6"];
 var langButton = ["#english", "#swedish"];
-var channelButton = ["#svt", "#viasat", "#tv4", "#dplay"];
+var channelButton = ["#svt", "#oa", "#viasat", "#tv4", "#dplay"];
 var menuId = 0;
 var menu = [{id:'.language-content .title', button:langButton},
             {id:'.res-content .title', button:resButton}, 
@@ -558,14 +558,16 @@ Buttons.keyHandleForSettings = function()
                 break;
             case 3:
                 Language.hide();
-                setChannel(eval($(button[selected]).text()));
+                Channel.setUnCheckedChannelText($(button[checked]))
+                setChannel(eval($(button[selected]).attr("channel")));
+                Channel.setCheckedChannelText($(button[selected]))
                 break;
             }
         }
 	break;
 
     }
-    this.handleMenuKeys(keyCode);	
+    this.handleMenuKeys(keyCode);
 };
 
 Buttons.keyHandleForImeSearch = function()
@@ -749,7 +751,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	widgetAPI.blockNavigation(event); 
 	var urlpath = myLocation;
 	// var ifound = urlpath.indexOf('index.html');
-	if(index == 6){
+	if(index == 6 || $(".slider-language").is(':visible')){
 	    Language.hide();
 	}
 	else if(index == 9 || $(".slider-error").is(':visible')) {
@@ -782,8 +784,10 @@ Buttons.handleMenuKeys = function(keyCode){
 	break;
 	break;
     case tvKey.KEY_1:
-    case tvKey.KEY_2:
         Buttons.changeChannel(Svt);
+        break;
+    case tvKey.KEY_2:
+        Buttons.changeChannel(Oa);
         break;
     case tvKey.KEY_3:
     case tvKey.KEY_6:
@@ -801,16 +805,20 @@ Buttons.handleMenuKeys = function(keyCode){
 };
 
 Buttons.changeChannel = function (channel) {
-    setChannel(channel);
-    var name = Channel.getName();
-    for(var i=0, anySelected=false; i < channelButton.length; i++) {
-        if ($(channelButton[i]).attr("id") == name) {
-            $(channelButton[i]).addClass('checked');
-        } else {
-            $(channelButton[i]).removeClass('checked');
+    var olduBtton, newButton;
+    for(var i=0; i < channelButton.length; i++) {
+        if ($(channelButton[i]).hasClass("checked")) {
+            oldButton = $(channelButton[i]);
+        } else if (eval($(channelButton[i]).attr("channel")) == channel) {
+            newButton = $(channelButton[i]);
         }
     }
     Language.hide();
+    oldButton.removeClass('checked');
+    Channel.setUnCheckedChannelText(oldButton);
+    setChannel(channel);
+    Channel.setCheckedChannelText(newButton);
+    newButton.addClass('checked');
 };
 
 Buttons.playItem = function() {
