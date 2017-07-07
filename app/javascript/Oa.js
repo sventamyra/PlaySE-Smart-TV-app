@@ -237,12 +237,13 @@ Oa.decodeMain = function(data, extra) {
             alert("Skipping Category: " + Name);
             continue
         };
-        toHtml({name:Name,
-                link:Oa.getUrl("main", extra),
-                link_prefix: '<a href="categoryDetail.html?category=',
-                thumb:data[i].teaserlist[0].thumbnailSmall,
-                largeThumb:data[i].teaserlist[0].thumbnailLarge
-               });
+        if (data[i].teaserlist.length)
+            toHtml({name:Name,
+                    link:Oa.getUrl("main", extra),
+                    link_prefix: '<a href="categoryDetail.html?category=',
+                    thumb:data[i].teaserlist[0].thumbnailSmall,
+                    largeThumb:data[i].teaserlist[0].thumbnailLarge
+                   });
     };
     if (extra.cbComplete)
         extra.cbComplete();
