@@ -134,7 +134,7 @@ Oa.getDetailsData = function(url, data) {
             break;
 
         default:
-            alert(data.contentType)
+            alert("Unknown data.contentType:" + data.contentType)
         }
     } catch(err) {
         Log("Oa.getDetails Exception:" + err.message);
@@ -524,8 +524,7 @@ Oa.decode = function(data, extra, FilterShows) {
                 break;
 
             case "video":
-                Show = data[k].programTitle
-                if (Show) Show = Show.trim();
+                Show = Oa.makeShowName(data[k])
                 FilterName = data[k].tagList[0].term.trim()
                 if (Show &&
                     ((extra.query && Show.match(new RegExp(extra.query, 'i'))) ||
@@ -582,7 +581,7 @@ Oa.decode = function(data, extra, FilterShows) {
                 break;
 
             default:
-                alert(data[k].contentType)
+                alert("Unknown data.contentType:" + data[k].contentType)
                 break;
             }
         }
@@ -603,4 +602,13 @@ Oa.makeVideoLink = function(data) {
 
 Oa.makeShowLink = function(Term) {
     return "https://origin-www.svt.se/oppet-arkiv-api/search/tags/?count=1000&titleFacet=" + Term;
+}
+
+Oa.makeShowName = function(data) {
+    if (data.tagList && data.tagList[0].facet=="titleFacet" && data.tagList[0].name)
+        return data.tagList[0].name.trim();
+    else if (data.programTitle)
+        return data.programTitle.trim()
+    else
+        return null
 }
