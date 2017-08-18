@@ -852,10 +852,10 @@ itemToHtml = function(Item, OnlyReturn) {
     else{
 	html = '<div class="scroll-content-item bottomitem">';
     }
-    if (Item.is_live || Item.is_channel) {
-        IsLiveText = (Item.is_running) ? " is-live" : " not-yet-available";
+    if ((Item.is_live && Item.is_running) || Item.is_channel) {
+        IsLiveText = " is-live";
     } else {
-        IsLiveText = "";
+        IsLiveText = (Item.is_live) ? " not-yet-available" : "";
     }
     if (Item.link_prefix.match(/categoryDetail\.html/) && !Item.link.match(/&catThumb/)) {
         Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);

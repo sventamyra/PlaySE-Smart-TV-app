@@ -67,6 +67,10 @@ Tv4.checkShows = function(i, data) {
     }
 }
 
+Tv4.getMainTitle = function () {
+    return "Rekommenderat"
+}
+
 Tv4.getSectionTitle = function(location) {
     if (location.match(/Latest.html/))
         return 'Senaste';
@@ -83,6 +87,7 @@ Tv4.getUrl = function(tag, extra) {
     {
     case "main":
         Tv4.fetchUnavailableShows();
+        return "http://webapi.tv4play.se/play/programs?per_page=50&page=1&is_premium=false&recommended=true";
 
     case "section":
         switch(extra.location) {
@@ -145,7 +150,7 @@ Tv4.getUrl = function(tag, extra) {
 };
 
 Tv4.decodeMain = function(data, extra) {
-    Tv4.decode(data, extra);
+    Tv4.decodeShows(data, extra);
 };
 
 Tv4.decodeSection = function(data, extra) {
@@ -185,8 +190,65 @@ Tv4.decodeLive = function(data, extra) {
 };
 
 Tv4.decodeShowList = function(data, extra) {
-    Tv4.decode(data, extra);
-}
+
+    if (!extra.is_clips && !extra.season) {
+        data = JSON.parse(data.responseText).results;
+        var showThumb = (data.length > 0) ? Tv4.fixThumb(data[0].program.program_image) : null;
+        var seasons = [];
+        var non_seasons = [];
+        var cbComplete = extra.cbComplete;
+
+        // 0 Means the only season
+        if (extra.season != 0) {
+            // Find seasons and non-seasons
+            for (var k=0; k < data.length; k++) {
+                if (data[k].season && seasons.indexOf(data[k].season) == -1)
+                    seasons.push(data[k].season);
+                else if (!data[k].season)
+                    non_seasons.push(data[k])
+            }
+            if (seasons.length > 1 || non_seasons.length >= 1) {
+                seasons.sort(function(a, b){return b-a})
+                for (var i=0; i < seasons.length; i++) {
+                    seasonToHtml("Säsong " + seasons[i],
+                                 showThumb,
+                                 extra.url + "&season=" + seasons[i],
+                                 seasons[i].season
+                                )
+                };
+            } else if (seasons.length == 1) {
+                return callTheOnlySeason("Säsong " + seasons[0], extra.url);
+            }
+        }
+
+        extra.cbComplete      = false;
+        extra.already_decoded = true;
+
+        if (extra.season == 0) {
+            Tv4.decode(data, extra);
+        } else if (non_seasons.length) {
+            Tv4.decode(non_seasons, extra);
+        }
+
+        // Check if clips exists
+        var clips_url;
+        if (data.length > 0) {
+            clips_url = Tv4.getUrl("clips") + data[0].program.nid;
+        } else {
+            clips_url = getLocation().replace(/.+(http.+)&history.+/, "$1")
+            clips_url = clips_url.replace("episode", "clips")
+        }
+        var data = JSON.parse(httpRequest(clips_url+"&per_page=1", {sync:true}).data);
+        if (data.total_hits > 0) {
+            clipToHtml(showThumb,
+                       clips_url
+                      )
+        }
+        if (cbComplete) cbComplete();
+    } else {
+        Tv4.decode(data, extra)
+    }
+};
 
 Tv4.decodeSearchList = function(data, extra) {
 
@@ -214,7 +276,7 @@ Tv4.keyRed = function() {
 	setLocation('PopularClips.html');
     } else if ($("#a-button").text().match(/lip/)) {
 	setLocation('LatestClips.html');
-    } else if ($("#a-button").text().match(/Pop/)) {
+    } else if ($("#a-button").text().match(/^Re/)) {
 	setLocation('index.html');
     } else {
 	setLocation('Latest.html');
@@ -248,8 +310,11 @@ Tv4.getAButtonText = function(language) {
 	    return 'Senaste Klipp';
         }
     } else {
-        // Use Default
-        return null;
+        if(language == 'English'){
+	    return 'Recommended';
+        } else {
+	    return 'Rekommenderat';
+        }
     }
 };
 
@@ -281,7 +346,8 @@ Tv4.decode = function(data, extra) {
             extra = {};
 
         Tv4.result = [];
-        data = JSON.parse(data.responseText).results;
+        if (!extra.already_decoded)
+            data = JSON.parse(data.responseText).results;
 
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
@@ -293,12 +359,9 @@ Tv4.decode = function(data, extra) {
             starttime = (IsLive) ? timeToDate(data[k].broadcast_date_time) : null;
             IsRunning = IsLive && starttime && (getCurrentDate() > starttime);
 
-            if (extra.strip_show) {
+            if (extra.strip_show && data[k].program.name && Name != data[k].program.name) {
                 Name = Name.replace(data[k].program.name,"").replace(/^[,. :\-]*/,"").trim();
-                if (data[k].season)
-                    Name = "Säsong " + data[k].season + " - " + Name;
-                else
-                    Name = Name.replace(/^./,Name[0].toUpperCase());
+                Name = Tv4.capitalize(Name);
             }
             ImgLink = Tv4.fixThumb(data[k].image); 
             Duration = data[k].duration;
@@ -368,21 +431,6 @@ Tv4.decode = function(data, extra) {
                        });
             }
 	}
-        if (extra.strip_show && !extra.is_clips) {
-            var clips_url;
-            if (data.length > 0) {
-                clips_url = Tv4.getUrl("clips") + data[0].program.nid;
-            } else {
-                clips_url = getLocation().replace(/.+(http.+)&history.+/, "$1")
-                clips_url = clips_url.replace("episode", "clips")
-            }
-            var data = JSON.parse(httpRequest(clips_url+"&per_page=1", {sync:true}).data);
-            if (data.total_hits > 0) {
-                clipToHtml(Tv4.fixThumb(data.results[0].program.program_image),
-                           clips_url
-                          )
-            }
-        }
         data = null;
         Tv4.result = [];
     } catch(err) {
@@ -525,12 +573,12 @@ Tv4.getShowData = function(url, data) {
 
     try {
 
-        data = JSON.parse(data.responseText)[0];
+        data = JSON.parse(data.responseText).results[0];
         Name = data.name;
         Description = data.description.trim();
 	DetailsImgLink = Tv4.fixThumb(data.program_image, TV4_DETAILS_IMG_SIZE);
-        for (var i=0; i < data.genres.length; i++) {
-            Genre.push(data.genres[i])
+        for (var i=0; i < data.tags.length; i++) {
+            Genre.push(Tv4.capitalize(data.tags[i].replace(/-/," & ")));
         }
         Genre = Genre.join('/');
     } catch(err) {
@@ -621,4 +669,8 @@ Tv4.isViewable = function (data, isLive, currentDate) {
 
 Tv4.requestNextPage = function(url, callback) {
     requestUrl(url,callback,callback);
+}
+
+Tv4.capitalize = function(String) {
+    return String.replace(/^./,String[0].toUpperCase())
 }

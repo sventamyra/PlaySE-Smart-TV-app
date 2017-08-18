@@ -507,6 +507,11 @@ Player.reloadVideo = function(time)
 
 Player.skipInVideo = function()
 {
+    if (startup) {
+        // Can't skip yet...
+        skipTimer = null;
+        return null;
+    }
     window.clearTimeout(osdTimer);
     var timediff = +skipTime - +ccTime;
     timediff = timediff / 1000;
@@ -693,13 +698,11 @@ Player.removeResumeInfo = function(url) {
 }
 
 Player.storeResumeInfo = function() {
-    if (videoUrl && resumeTime > 20 && !Player.isLive) {
-        Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " videoUrl:" + videoUrl + "!Player.isLive:" + !Player.isLive);
+    if (masterUrl && resumeTime > 20 && !Player.isLive) {
+        Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " masterUrl:" + masterUrl + "!Player.isLive:" + !Player.isLive);
 
-        var streamKey  = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
         var masterKey  = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");
-        var resumeList = Player.removeResumeInfo(streamKey);
-        resumeList = Player.removeResumeInfo(masterKey);
+        var resumeList = Player.removeResumeInfo(masterKey);
         if (resumeTime < (0.97*Player.GetDuration()/1000)) {
             resumeList.unshift({url:masterKey, time:resumeTime});
             resumeList = resumeList.slice(0,20);
@@ -710,12 +713,13 @@ Player.storeResumeInfo = function() {
 }
 
 Player.getStoredResumeTime = function() {
-    var stream = videoUrl.replace(/\|.+/, "").replace(/\?.+/,"");
-    var master = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");
-    var resumeList = Player.getResumeList();
-    for (var i = 0; i < resumeList.length; i++) {
-        if (resumeList[i].url == master || resumeList[i].url == stream) {
-            return resumeList[i].time;
+    if (!Player.isLive) {
+        var master = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");
+        var resumeList = Player.getResumeList();
+        for (var i = 0; i < resumeList.length; i++) {
+            if (resumeList[i].url == master) {
+                return resumeList[i].time;
+            }
         }
     }
     return null
@@ -836,6 +840,8 @@ Player.SetCurTime = function(time)
                 Player.updateOffset(Player.startTime);
             }
             Player.setResolution(Player.GetResolution());
+            if (!skipTimer && skipTime)
+                window.setTimeout(this.skipInVideo, 0);
 	} else if (!resumeJump)
             resumeTime = +time/1000;
 	ccTime = +time + Player.offset;
@@ -856,39 +862,37 @@ Player.SetCurTime = function(time)
 };
 
 Player.updateSeekBar = function(time){
-	var tsecs = time / 1000;
-	var secs  = Math.floor(tsecs % 60);
-	var mins  = Math.floor(tsecs / 60);
-        var hours = Math.floor(mins / 60);
-	var smins;
-	var ssecs;
+    var tsecs = time / 1000;
+    var secs  = Math.floor(tsecs % 60);
+    var mins  = Math.floor(tsecs / 60);
+    var hours = Math.floor(mins / 60);
+    var smins;
+    var ssecs;
 
-        mins  = Math.floor(mins % 60);
+    mins  = Math.floor(mins % 60);
 
-	if(mins < 10){
-		smins = '0' + mins;
-	}
-	else{
-		smins = mins;
-	}
-	if(secs < 10){
-		ssecs = '0' + secs;
-	}
-	else{
-		ssecs = secs;
-	}
-	
-	$('.currentTime').text(hours + ':' + smins + ':' + ssecs);
-        Player.setFrontPanelTime(hours, mins, secs);
-	
-        var progressFactor = time / Player.GetDuration();
-        if (progressFactor > 1)
-            progressFactor = 1;
-	var progress = Math.floor(MAX_WIDTH * progressFactor);
-	$('.progressfull').css("width", progress);
-   // Display.setTime(time);
-   this.setTotalTime();
-	
+    if(mins < 10){
+	smins = '0' + mins;
+    }
+    else{
+	smins = mins;
+    }
+    if(secs < 10){
+	ssecs = '0' + secs;
+    }
+    else{
+	ssecs = secs;
+    }
+    
+    $('.currentTime').text(hours + ':' + smins + ':' + ssecs);
+    Player.setFrontPanelTime(hours, mins, secs);
+    var progress = Math.floor(time/Player.GetDuration()*100);
+    if (progress > 100)
+        progress = 100;
+    $('.progressfull').css("width", progress + "%");
+    // Display.setTime(time);
+    this.setTotalTime();
+    
 }; 
 
 Player.BwToString = function(bw) {
@@ -1082,18 +1086,25 @@ Player.PlaybackFailed = function(text)
 
 Player.GetDuration = function()
 {
-    if (!Player.pluginDuration) {
-        if (!Player.plugin)
-            return this.sourceDuration
-        Player.pluginDuration = Player.plugin.Execute("GetDuration");
-    }
-        
-    var duration = Player.pluginDuration - Player.durationOffset;
+    if (!this.sourceDuration && 
+        Details.fetchedDetails && 
+        Details.fetchedDetails.duration
+       )
+        Player.setDuration(Details.fetchedDetails.duration);
 
-    if (duration > this.sourceDuration)
-        return duration;
-    else
-        return this.sourceDuration;
+    var duration = this.sourceDuration;
+    if (Player.plugin && !Player.pluginDuration ) {
+        Player.pluginDuration = Player.plugin.Execute("GetDuration");
+        duration = Player.pluginDuration - Player.durationOffset
+    }
+
+    if (this.sourceDuration > duration)
+        duration = this.sourceDuration;
+
+    if (ccTime > duration) 
+        duration = ccTime;
+
+    return duration;
 };
 
 Player.toggleRepeat = function() {
@@ -1349,7 +1360,8 @@ Player.refreshStartData = function(details) {
         Player.setDuration(details.duration);
         Player.updateOffset(details.start_time);
         Player.setDetailsData(details);
-    }
+    } else if (!Player.sourceDuration && details.duration)
+        Player.setDuration(details.duration);
 };
     
 Player.updateOffset = function (startTime) {

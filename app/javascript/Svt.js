@@ -1005,7 +1005,6 @@ Svt.decodeChannels = function(data) {
         var ImgLink;
         var starttime;
         var endtime;
-        var IsRunning;
         var BaseUrl = 'http://www.svtplay.se/kanaler';
 
         data = Svt.decodeJson(data).channelsPage.schedule;
@@ -1020,13 +1019,11 @@ Svt.decodeChannels = function(data) {
             starttime = timeToDate(data[k].publishingTime);
             endtime = timeToDate(data[k].publishingEndTime);
             Duration  = Math.round((endtime-starttime)/1000);
-            IsRunning = (getCurrentDate()-starttime) > -60*1000;
             Name = dateToClock(starttime) + "-" + dateToClock(endtime) + " " + data[k].programmeTitle.trim();
             toHtml({name:Name,
                     duration:Duration,
                     is_live:false,
                     is_channel:true,
-                    is_running:IsRunning,
                     link:Link,
                     link_prefix:'<a href="details.html?ilink=',
                     thumb:ImgLink
