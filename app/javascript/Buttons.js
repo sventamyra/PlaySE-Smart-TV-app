@@ -459,6 +459,12 @@ Buttons.keyHandleForDetails = function()
             setLocation($('#extraButton').attr('href'));
         }
 	break;
+
+    case tvKey.KEY_PLAY:
+        if($('#playButton').is(':visible')) {
+            Details.startPlayer();
+        }
+	break;
 	
     case tvKey.KEY_INFO:
 	goBack();

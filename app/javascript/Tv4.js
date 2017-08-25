@@ -67,6 +67,20 @@ Tv4.checkShows = function(i, data) {
     }
 }
 
+Tv4.reCheckUnavailableShows = function(data) {
+    if (!Tv4.updatingUnavailableShows && !data.is_clip && data.program)
+    {
+        var showIndex = Tv4.unavailableShows.indexOf(data.program.nid);
+        if (showIndex != -1) {
+            Tv4.unavailableShows.splice(showIndex,1);
+            var savedShows = Config.read("tv4UnavailableShows");
+            savedShows.shows = Tv4.unavailableShows.join(";");
+            Config.save("tv4UnavailableShows", savedShows);
+            alert(data.program.name + " is now available");
+        }
+    }
+}
+
 Tv4.getMainTitle = function () {
     return "Rekommenderat"
 }
@@ -143,6 +157,9 @@ Tv4.getUrl = function(tag, extra) {
     case "searchVideos":
         return 'http://webapi.tv4play.se/play/video_assets?is_live=false&per_page=200&is_premium=false&platform=web' + drm + '&q=' + extra.query
 
+    case "popular":
+        return 'http://webapi.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
+
     default:
         return tag;
         break;
@@ -150,7 +167,17 @@ Tv4.getUrl = function(tag, extra) {
 };
 
 Tv4.decodeMain = function(data, extra) {
-    Tv4.decodeShows(data, extra);
+    var cbComplete = extra.cbComplete;
+    extra.cbComplete = null;
+    extra.recommended_nids = Tv4.decodeShows(data, extra);
+    requestUrl(Tv4.getUrl("popular", extra),
+                   function(status, data)
+                   {
+                       Tv4.decodeShows(data, extra);
+                       data = null;
+                   },
+                   {cbComplete:cbComplete}
+                  );
 };
 
 Tv4.decodeSection = function(data, extra) {
@@ -252,6 +279,8 @@ Tv4.decodeShowList = function(data, extra) {
 
 Tv4.decodeSearchList = function(data, extra) {
 
+    var cbComplete = extra.cbComplete;
+    extra.cbComplete = null;
     Tv4.decodeShows(data, extra);
     data = null;
     if (extra.query.length > 1) {
@@ -261,10 +290,10 @@ Tv4.decodeSearchList = function(data, extra) {
                        Tv4.decode(data);
                        data = null;
                    },
-                   {cbComplete:extra.cbComplete}
+                   {cbComplete:cbComplete}
                   );
-    } else if (extra.cbComplete)
-        extra.cbComplete();
+    } else if (cbComplete)
+        cbComplete();
 };
 
 Tv4.getHeaderPrefix = function() {
@@ -355,6 +384,7 @@ Tv4.decode = function(data, extra) {
             if (!Tv4.isViewable(data[k], IsLive, CurrentDate))
                 // Premium/DRM
                 continue;
+            Tv4.reCheckUnavailableShows(data[k]);
 
             starttime = (IsLive) ? timeToDate(data[k].broadcast_date_time) : null;
             IsRunning = IsLive && starttime && (getCurrentDate() > starttime);
@@ -456,10 +486,23 @@ Tv4.decodeShows = function(data, extra) {
         var checkSeasons=false;
         var json = null;
         var queryTest = (extra.query && extra.query.length == 1) ? new RegExp("^" + extra.query, 'i') : null;
+        var nids = [];
+        var CurrentDate = getCurrentDate();
 
         Tv4.result = [];
         data = JSON.parse(data.responseText).results;
         for (var k=0; k < data.length; k++) {
+            if (extra.recommended_nids) {
+                if (!Tv4.isViewable(data[k], false, CurrentDate))
+                    // Premium/DRM
+                    continue;
+                Tv4.reCheckUnavailableShows(data[k]);
+                data[k] = data[k].program
+                if (extra.recommended_nids.indexOf(data[k].nid) != -1)
+                    continue;
+                else
+                    extra.recommended_nids.push(data[k].nid);
+            }
             Name = data[k].name;
             if (queryTest && !queryTest.test(Name))
                 continue;
@@ -469,6 +512,7 @@ Tv4.decodeShows = function(data, extra) {
             ImgLink = Tv4.fixThumb(data[k].program_image);
             Link = Tv4.getUrl("episodes") + data[k].nid
             Tv4.result.push({name:Name, link:Link, thumb:ImgLink});
+            nids.push(data[k].nid);
         }
         data = null;
 
@@ -493,6 +537,8 @@ Tv4.decodeShows = function(data, extra) {
     }
     if (extra.cbComplete)
         extra.cbComplete();
+
+    return nids;
 };
 
 Tv4.getDetailsData = function(url, data) {
