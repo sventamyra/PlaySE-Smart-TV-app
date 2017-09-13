@@ -679,15 +679,15 @@ Svt.decodeShowList = function(data, extra) {
     var has_zero_season = false
     data = data.relatedVideoContent;
     if (!extra.is_clips && !extra.season && !extra.variant) {
-        for (var i=0; i < data.relatedVideosTabs.length; i++) {
-            if (data.relatedVideosTabs[i].season > 0) {
-                seasons.push({season:data.relatedVideosTabs[i].season,
-                              name  : data.relatedVideosTabs[i].name.trim()
+        for (var i=0; i < data.relatedVideosAccordion.length; i++) {
+            if (data.relatedVideosAccordion[i].season > 0) {
+                seasons.push({season:data.relatedVideosAccordion[i].season,
+                              name  : data.relatedVideosAccordion[i].name.trim()
                              });
-            } else if (data.relatedVideosTabs[i].season == 0) {
+            } else if (data.relatedVideosAccordion[i].season == 0) {
                 has_zero_season = true;
             }
-            if (!has_clips && data.relatedVideosTabs[i].type == "RELATED_VIDEO_TABS_CLIP")
+            if (!has_clips && data.relatedVideosAccordion[i].type == "RELATED_VIDEOS_ACCORDION_CLIP")
                 has_clips = true
         }
 
@@ -706,25 +706,25 @@ Svt.decodeShowList = function(data, extra) {
     }
     // Get Correct Tab
     var videos = [];
-    for (var i=0; i < data.relatedVideosTabs.length; i++) {
+    for (var i=0; i < data.relatedVideosAccordion.length; i++) {
         if (extra.season && extra.season != 0) {
-            if (data.relatedVideosTabs[i].season == +extra.season) {
-                videos = data.relatedVideosTabs[i].videos
+            if (data.relatedVideosAccordion[i].season == +extra.season) {
+                videos = data.relatedVideosAccordion[i].videos
                 break
             }
         } else if (extra.is_clips) {
-            if (data.relatedVideosTabs[i].type == "RELATED_VIDEO_TABS_CLIP") {
-                videos = data.relatedVideosTabs[i].videos
+            if (data.relatedVideosAccordion[i].type == "RELATED_VIDEOS_ACCORDION_CLIP") {
+                videos = data.relatedVideosAccordion[i].videos
                 break
             }
         } else {
                 if (has_zero_season) {
-                    if (data.relatedVideosTabs[i].season == 0) {
-                        videos = data.relatedVideosTabs[i].videos
+                    if (data.relatedVideosAccordion[i].season == 0) {
+                        videos = data.relatedVideosAccordion[i].videos
                         break;
                     }
-                } else if (data.relatedVideosTabs[i].type != "RELATED_VIDEO_TABS_CLIP") {
-                    videos = data.relatedVideosTabs[i].videos
+                } else if (data.relatedVideosAccordion[i].type != "RELATED_VIDEOS_ACCORDION_CLIP") {
+                    videos = data.relatedVideosAccordion[i].videos
                     break
                 }
         }
