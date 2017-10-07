@@ -821,10 +821,7 @@ Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
                        } catch(err) {
                            srtUrl = null;
                        }
-                       if (callback)
-                           Resolution.setStreamUrl(JSON.parse(data.responseText).hls, srtUrl, callback, {useBitrates:true,useCookies:true});
-                       else
-                           Resolution.getCorrectStream(JSON.parse(data.responseText).hls, srtUrl, {useBitrates:true,useCookies:true});
+                       Resolution.getCorrectStream(JSON.parse(data.responseText).hls, srtUrl, {useBitrates:true,useCookies:true}, callback);
                    }
                },
                {cookie:cookie}

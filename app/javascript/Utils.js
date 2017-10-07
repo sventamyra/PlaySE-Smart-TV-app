@@ -756,7 +756,7 @@ loadFinished = function(status, refresh) {
 }
 
 contentShow = function() {
-    waitForImages(function() {$("#content-scroll").show()}, retries=20);
+    waitForImages(function() {$("#content-scroll").show()}, 20);
 }
 
 waitForImages = function(callback, retries) {

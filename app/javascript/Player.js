@@ -80,11 +80,11 @@ Player.togglePlayer = function() {
 
 Player.init = function()
 {
-    if (this.plugin)
-        return true
     var success = true;
-    
     this.state = this.STOPPED;
+    if (this.plugin)
+        return success;
+
     if (deviceYear > 2010 && useSef) {
         Log("Using sef");
         this.plugin = document.getElementById("pluginSef");
@@ -447,6 +447,7 @@ Player.pauseVideo = function()
 Player.stopVideo = function(keep_playing)
 {
     this.state = this.STOPPED;
+    requestedUrl = null;
     Player.plugin.Execute("Stop");
     window.clearTimeout(delayedPlayTimer);
     Player.storeResumeInfo();
@@ -459,19 +460,6 @@ Player.stopVideo = function(keep_playing)
     if (this.stopCallback)
     {
         this.stopCallback(keep_playing);
-    }
-};
-
-Player.stopVideoNoCallback = function()
-{
-    if (this.state != this.STOPPED)
-    {
-        Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
-        Player.plugin.Execute("Stop");
-    }
-    else
-    {
-        Log("Ignoring stop request, not in correct state");
     }
 };
 
@@ -639,7 +627,7 @@ Player.OnBufferingComplete = function()
     if (startup)
         this.setFullscreen();
     // Only reset in case no additional skip is in progess
-    if (skipTime == skipTimeInProgress) {
+    else if (skipTime == skipTimeInProgress) {
         this.skipState = -1; 
         skipTime = 0;
     }
@@ -788,17 +776,21 @@ Player.keyReturn = function() {
 	Player.stopVideo();
 };
 
+Player.startPlayback = function(time) {
+    window.clearTimeout(delayedPlayTimer);
+    // Stop in case delayedPlayTimer already expired...
+    Player.plugin.Execute("Stop");
+    if (!videoUrl.match(/=WMDRM/))
+        Player.plugin.Execute("InitPlayer", videoUrl);
+    Player.resumePlayback(time);
+};
+
 Player.keyEnter = function()
 {
     if ($('.bottomoverlaybig').html().match(/Press ENTER/)) {
         $('.bottomoverlaybig').html("Resuming");
-        window.clearTimeout(delayedPlayTimer);
-        // Stop in case delayedPlayTimer already expired...
-        Player.plugin.Execute("Stop");
-        if (!videoUrl.match(/=WMDRM/))
-            Player.plugin.Execute("InitPlayer", videoUrl);
-        Player.resumePlayback(resumeTime-10);
-    } else {
+        Player.startPlayback(resumeTime-10);
+    } else if(!$('.bottomoverlaybig').html().match(/Resuming/)) {
         Player.togglePause();
     }
 };
@@ -832,6 +824,9 @@ Player.GetResolution = function() {
 }
 Player.SetCurTime = function(time)
 {
+    if (this.state == this.STOPPED)
+        return;
+
 	// work-around for samsung bug. Mute sound first after the player started.
 	if(startup) {
 	    startup = false;
@@ -1077,11 +1072,18 @@ Player.OnAuthenticationFailed = function()
 
 Player.PlaybackFailed = function(text)
 {
-        Log(text); 
-        loadingStop();
-	Player.showControls();
-        Player.enableScreenSaver();
-	$('.bottomoverlaybig').html(text);
+    Log(text); 
+    loadingStop();
+    Player.showControls();
+    Player.enableScreenSaver();
+    $('.bottomoverlaybig').html(text);
+    Channel.tryAltPlayUrl(videoUrl, 
+                          function(){
+                              Log("Trying alternative");
+                              $('.bottomoverlaybig').html("Trying alternative stream");
+                              Player.reloadVideo()
+                          }
+                         );
 };
 
 Player.GetDuration = function()
@@ -1300,6 +1302,9 @@ Player.decreaseZoom = function() {
 
 Player.startPlayer = function(url, isLive, startTime)
 {
+    var oldKeyHandleID = Buttons.getKeyHandleID();
+    Buttons.setKeyHandleID(2);
+
     retries = 0;
     loadingStart();
     window.clearTimeout(detailsTimer);
@@ -1309,6 +1314,7 @@ Player.startPlayer = function(url, isLive, startTime)
     Player.durationOffset = 0;
     Player.pluginDuration = 0;
 
+    videoUrl = "";
     subtitles = [];
     ccTime = 0;
     lastPos = 0;
@@ -1325,11 +1331,9 @@ Player.startPlayer = function(url, isLive, startTime)
     $('#outer').hide();
     this.hideDetailedInfo();
     this.showControls();
-    $('.bottomoverlaybig').html('');
-    
-    var oldKeyHandleID = Buttons.getKeyHandleID();
-    Buttons.setKeyHandleID(2);
-    
+    if (!$('.bottomoverlaybig').html().match(/Trying alternative/))
+        $('.bottomoverlaybig').html('');
+
     if ( Player.init() && Audio.init())
     {
 	

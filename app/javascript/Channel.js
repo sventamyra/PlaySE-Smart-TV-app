@@ -119,6 +119,13 @@ Channel.refreshPlayUrl = function(cbComplete) {
         cbComplete()
 }
 
+Channel.tryAltPlayUrl = function(failedUrl, cbComplete) {
+    if (this.impl.tryAltPlayUrl) {
+        Log("tryAltPlayUrl");
+        this.impl.tryAltPlayUrl(failedUrl, cbComplete);
+    }
+}
+
 Channel.fetchSubtitles = function(srtUrl, hlsSubs) {
     if (srtUrl && srtUrl != "") {
         if (this.impl.fetchSubtitles)

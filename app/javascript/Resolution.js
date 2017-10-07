@@ -12,8 +12,6 @@ Resolution.init = function()
     return true;
 };
 
-
-
 Resolution.displayRes = function(){
     var value = bwidths.indexOf(this.getTarget(false));
     $(resButton[value]).addClass('checked');
@@ -27,81 +25,80 @@ Resolution.getTarget = function(IsLive) {
     return bwidths[res];
 };
 
-Resolution.getCorrectStream = function(videoUrl, srtUrl, extra){
-    Resolution.setStreamUrl(videoUrl, 
-                            srtUrl, 
-                            function() {Player.playVideo()},
-                            extra
-                           );
-};
+Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
+    if (!callback)
+        callback = function() {Player.playVideo()};
 
-Resolution.setStreamUrl = function(videoUrl, srtUrl, callback, extra) {
-        if (!extra) extra  = {};
-        var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,"");
-        var target = Resolution.getTarget(extra.isLive);
-        var master = videoUrl;
-        requestUrl(videoUrl,
-                   function(status, data)
-	           {
-                       var streams, is_hls = videoUrl.match(/\.m3u8/);
-                       if (is_hls) {
-                           streams = Resolution.getHlsStreams(videoUrl, data)
-                       } else if (videoUrl.match(/\.ism/)) {
-                           streams = Resolution.getIsmStreams(videoUrl, data)
-                       }
-                       extra.cookies = streams.cookies;
-                       extra.audio_idx = streams.audio_idx;
-                       extra.hls_subs = streams.hls_subs;
-                       if (target != "Auto") {
-                           streams = streams.streams;
-                           streams.sort(function(a, b){
-                               if (a.bandwidth > b.bandwidth)
-                                   return 1
-                               else
-                                   return -1
-                           });
-                           var current = 0;
-		           var currentId = 0;
-                           if (target == "Max")
-                               currentId = streams.length-1;
-                           else if (target == "Min")
-                               currentId = 0
-                           else {
-		               for (var i = 0; i < streams.length; i++) {
-                                   if (+target >= streams[i].bandwidth)
-                                       currentId = i;
-                                   else 
-                                       break
-                               }
-		           }
-                           target = streams[currentId].bandwidth
-                           if (!streams[currentId].url.match(/^http/))
-                               streams[currentId].url = prefix + streams[currentId].url;
-                           // Log("Target url data:" + httpRequest(streams[currentId].url,{sync:true}).data.slice(0,600));
-                           if (extra.useBitrates || !is_hls) {
-                               videoUrl = videoUrl + "|STARTBITRATE=" + target +"|BITRATES=" + target + ":" + target
-                           } else {
-                               videoUrl = streams[currentId].url;
-                               if (!videoUrl.match(/^http/))
-                                   videoUrl = prefix + videoUrl;
+    if (!extra) extra  = {};
+    var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,"");
+    var target = Resolution.getTarget(extra.isLive);
+    var master = videoUrl;
+    requestUrl(videoUrl,
+               function(status, data)
+	       {
+                   var streams, is_hls = videoUrl.match(/\.m3u8/);
+                   if (is_hls) {
+                       streams = Resolution.getHlsStreams(videoUrl, data)
+                   } else if (videoUrl.match(/\.ism/)) {
+                       streams = Resolution.getIsmStreams(videoUrl, data)
+                   } else if (videoUrl.match(/\.mpd/)) {
+                       streams = Resolution.getHasStreams(videoUrl, data)
+                   }
+                   extra.cookies = streams.cookies;
+                   extra.audio_idx = streams.audio_idx;
+                   extra.hls_subs = streams.hls_subs;
+                   if (target != "Auto") {
+                       streams = streams.streams;
+                       streams.sort(function(a, b){
+                           if (a.bandwidth > b.bandwidth)
+                               return 1
+                           else
+                               return -1
+                       });
+                       var current = 0;
+		       var currentId = 0;
+                       if (target == "Max")
+                           currentId = streams.length-1;
+                       else if (target == "Min")
+                           currentId = 0
+                       else {
+		           for (var i = 0; i < streams.length; i++) {
+                               if (+target >= streams[i].bandwidth)
+                                   currentId = i;
+                               else 
+                                   break
                            }
-		           Log('current: ' + target);
-                           // Log("current url: " + streams[currentId].url);
-                           extra.bw = target;
-	               }
-                       if (is_hls)
-                           videoUrl = videoUrl + "|COMPONENT=HLS"
-                       else if (videoUrl.match(/\.ism/)) {
-                           if (target == "Auto")
-                               videoUrl = videoUrl + "|STARTBITRATE=CHECK";
+		       }
+                       target = streams[currentId].bandwidth
+                       if (!streams[currentId].url.match(/^http/))
+                           streams[currentId].url = prefix + streams[currentId].url;
+                       // Log("Target url data:" + httpRequest(streams[currentId].url,{sync:true}).data.slice(0,600));
+                       if (extra.useBitrates || !is_hls) {
+                           videoUrl = videoUrl + "|STARTBITRATE=" + target +"|BITRATES=" + target + ":" + target
+                       } else {
+                           videoUrl = streams[currentId].url;
+                           if (!videoUrl.match(/^http/))
+                               videoUrl = prefix + videoUrl;
+                       }
+		       Log('current: ' + target);
+                       // Log("current url: " + streams[currentId].url);
+                       extra.bw = target;
+	           }
+                   if (is_hls)
+                       videoUrl = videoUrl + "|COMPONENT=HLS"
+                   else {
+                       if (target == "Auto")
+                           videoUrl = videoUrl + "|STARTBITRATE=CHECK";
+                       if (videoUrl.match(/\.ism/)) {
                            videoUrl = videoUrl + "|COMPONENT=WMDRM";
                        } else if (videoUrl.match(/\.mpd/)) {
                            videoUrl = videoUrl + "|COMPONENT=HAS";
                        }
-		       Player.setVideoURL(master, videoUrl, srtUrl, extra);
-		       callback();
                    }
-                  );
+		   Player.setVideoURL(master, videoUrl, srtUrl, extra);
+		   callback();
+               }
+              );
 };
 
 Resolution.getHlsStreams = function (videoUrl, data) {
@@ -161,6 +158,26 @@ Resolution.getIsmStreams = function (videoUrl, data) {
     }
 
     return {streams:streams, audio_idx:swe_audio_idx}
+}
+
+Resolution.getHasStreams = function (videoUrl, data) {
+    data = data.responseText.split(/<AdaptionSet/);
+    for (var i = 0; i < data.length; i++) {
+        if (data[i].match(/.*type.*=.*video/i)) {
+            data = data[i]
+            break;
+        }
+    }
+    var bandwidths = data.match(/bandwidth=[^0-9]?([0-9]+)/mg);
+    var streams = [];
+
+    for (var i = 0; i < bandwidths.length; i++) {
+        streams.push({bandwidth: +bandwidths[i].replace(/.*bandwidth=[^0-9]?([0-9]+).*/,"$1"),
+                      url:videoUrl
+                     }
+                    );
+    }
+    return {streams:streams};
 }
 
 Resolution.setRes = function(value)

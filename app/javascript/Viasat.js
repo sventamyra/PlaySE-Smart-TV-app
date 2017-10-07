@@ -53,7 +53,8 @@ Viasat.getUrl = function(tag, extra) {
             // Force new channel name
             Header.display(document.title);
         }
-        url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.popular&device=mobile&premium=open&country=se';
+        url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=50&order=popularity&page=999';
+        // url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.popular&device=mobile&premium=open&country=se';
         break;
 
     case "section":
@@ -102,7 +103,9 @@ Viasat.getUrl = function(tag, extra) {
 };
 
 Viasat.decodeMain = function(data, extra) {
-    Viasat.decode(data, extra);
+
+    extra.reverse=true;
+    Viasat.decodeShows(data, extra);
 }
 
 Viasat.decodeSection = function(data, extra) {
@@ -600,11 +603,14 @@ Viasat.decodeShows = function(data, extra) {
                                          );
         }
 
-        Viasat.result.sort(function(a, b) {
-            var name_a = (checkSeasons) ? Number(a.name.replace(/[^0-9]+/, "")) : a.name.toLowerCase();
-            var name_b = (checkSeasons) ? Number(b.name.replace(/[^0-9]+/, "")) : b.name.toLowerCase();
-            return (name_a > name_b) ? 1 : -1;
-        });
+        if (extra.reverse) 
+            Viasat.result.reverse();
+        else
+            Viasat.result.sort(function(a, b) {
+                var name_a = (checkSeasons) ? Number(a.name.replace(/[^0-9]+/, "")) : a.name.toLowerCase();
+                var name_b = (checkSeasons) ? Number(b.name.replace(/[^0-9]+/, "")) : b.name.toLowerCase();
+                return (name_a > name_b) ? 1 : -1;
+            });
 
         if (extra.query && extra.query.length == 1)
             query = new RegExp("^" + extra.query, 'i')
@@ -644,7 +650,7 @@ Viasat.decodeShows = function(data, extra) {
 
 Viasat.getDetailsData = function(url, data) {
 
-    if (url.match(/(\/formats\/|\?format=)/))
+    if (url.match(/(\/formats\/|\?format=|type=clip)/))
         return Viasat.getShowData(url,data);
 
     var Name="";
@@ -715,27 +721,31 @@ Viasat.getShowData = function(url, data) {
 
     var Name="";
     var DetailsImgLink="";
+    var Description="";
 
     try {
-
         data = JSON.parse(data.responseText);
-
-        Name = data.title;
-	DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
-
+        if (url.match(/type=clip/)) {
+            data = data._embedded.videos[0];
+            Name = "Klipp";
+        } else {
+            Name = data.title;
+            Description = data.summary;
+        }
+        DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
     } catch(err) {
         Log("Viasat.getShowData exception:" + err.message);
         Log("Name:" + Name);
+        Log("Description:" + Description);
         Log("DetailsImgLink:" + DetailsImgLink);
     }
     data = null;
     return {show          : true,
             name          : Name,
-            description   : "",
+            description   : Description,
             genre         : "",
             thumb         : DetailsImgLink
            };
-    
 };
 
 Viasat.getDetailsUrl = function(streamUrl) {
@@ -770,10 +780,12 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
 Viasat.fixThumb = function(thumb, size) {
     if (!thumb)
         return thumb;
-        
+
     if (!size)
         size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
-    return thumb.replace(/(({size})|([0-9]+x[0-9]+))/, size);
+    thumb = thumb.replace(/(({size})|([0-9]+x[0-9]+))/, size);
+    thumb = thumb.split(/(^.+\/)([^\/]+)$/);
+    return thumb[1]+encodeURIComponent(thumb[2]);
 }
 
 Viasat.fetchSubtitles = function (subUrls, hlsSubs) {
