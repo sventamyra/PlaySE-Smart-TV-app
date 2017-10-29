@@ -16,7 +16,7 @@ var videoUrl;
 var videoData = {};
 var masterUrl;
 var detailsUrl;
-var requestedUrl;
+var requestedUrl = null;
 var startup = true;
 var smute = 0;
 var subtitles = [];
@@ -364,7 +364,9 @@ Player.getHlsVersion = function(url, callback)
 
 Player.playVideo = function()
 {
-    if (videoUrl == null)
+    // Check requestedUrl to avoid race when Playback has been aborted.
+    if (videoUrl == null || requestedUrl == null)
+    // if (videoUrl == null)
     {
         Log("No videos to play");
     }
@@ -448,15 +450,15 @@ Player.stopVideo = function(keep_playing)
 {
     this.state = this.STOPPED;
     requestedUrl = null;
-    Player.plugin.Execute("Stop");
-    window.clearTimeout(delayedPlayTimer);
     Player.storeResumeInfo();
-    loadingStop();
     widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
     $("#srtId").hide();
+    window.clearTimeout(delayedPlayTimer);
+    loadingStop();
     Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
     Player.enableScreenSaver();
     window.clearTimeout(detailsTimer);
+    Player.plugin.Execute("Stop");
     if (this.stopCallback)
     {
         this.stopCallback(keep_playing);
@@ -687,7 +689,7 @@ Player.removeResumeInfo = function(url) {
 
 Player.storeResumeInfo = function() {
     if (masterUrl && resumeTime > 20 && !Player.isLive) {
-        Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " masterUrl:" + masterUrl + "!Player.isLive:" + !Player.isLive);
+        Log("Player.storeResumeInfo, resumeTime:" + resumeTime + " duration:" + Player.GetDuration() + " masterUrl:" + masterUrl + " !Player.isLive:" + !Player.isLive);
 
         var masterKey  = masterUrl.replace(/\|.+/, "").replace(/\?.+/,"");
         var resumeList = Player.removeResumeInfo(masterKey);
@@ -1506,8 +1508,8 @@ Player.fetchHlsSubtitles = function (hlsSubs) {
 Player.parseSubtitle = function (data) {
     try {
         subtitles = [];
-        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/(^[0-9:.]+ --> [0-9:.]+) .+$/mg,'$1').replace(/<\/*[0-9]+>/g, "").replace(/\n\n+/g,"\n\n"));
-        srtContent     = srtContent.split('\n\n');
+        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/\n\n*/g,"\n").replace(/(^([0-9]+\n)?[0-9:.]+ --> [0-9:.]+)(.+)?\n/mg,'\n$1\n').replace(/<\/*[0-9]+>/g, ""));
+        srtContent = srtContent.split('\n\n');
         for (var i = 0; i < srtContent.length; i++) {
             this.parseSrtRecord(srtContent[i]);
         }
