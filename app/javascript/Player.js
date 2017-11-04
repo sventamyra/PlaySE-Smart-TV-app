@@ -1508,7 +1508,7 @@ Player.fetchHlsSubtitles = function (hlsSubs) {
 Player.parseSubtitle = function (data) {
     try {
         subtitles = [];
-        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/\n\n*/g,"\n").replace(/(^([0-9]+\n)?[0-9:.]+ --> [0-9:.]+)(.+)?\n/mg,'\n$1\n').replace(/<\/*[0-9]+>/g, ""));
+        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/\n\n*/g,"\n").replace(/(^([0-9]+\n)?[0-9:.,]+ --> [0-9:.,]+)(.+)?\n/mg,'\n$1\n').replace(/<\/*[0-9]+>/g, ""));
         srtContent = srtContent.split('\n\n');
         for (var i = 0; i < srtContent.length; i++) {
             this.parseSrtRecord(srtContent[i]);

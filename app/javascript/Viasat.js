@@ -827,9 +827,9 @@ Viasat.parseSubtitles = function (data) {
         
         start = data[i].match(/TimeIn="([^"]+)/)[1];
         stop  = data[i].match(/TimeOut="([^"]+)/)[1];
-        text  = data[i].match(/[0-9]">(.+)<\/Text/mg);
+        text  = data[i].match(/">(.+)<\/Text/mg);
         for (var j=0; j<text.length; j++) {
-            text[j] = text[j].match(/[0-9]">(.+)<\/Text/)[1];
+            text[j] = text[j].match(/">(.+)<\/Text/)[1];
         }
         subtitles.push(
             {
