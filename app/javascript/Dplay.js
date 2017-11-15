@@ -712,10 +712,11 @@ Dplay.getDetailsData = function(url, data) {
         data = JSON.parse(data.responseText).data;
         Name = Dplay.determineEpisodeName(data);
         Title = (data.episode_number) ? "Avsnitt " + data.episode_number : Name;
+        isLive = data.live
         if (data.show)
             Title = data.show.title.trim() + " - " + Title;
 	DetailsImgLink = Dplay.fixThumb(data.thumbnail_image, DETAILS_THUMB_FACTOR);
-        AirDate = timeToDate(data.first_run);
+        AirDate = (isLive) ? timeToDate(data.live.start) : timeToDate(data.first_run);
         VideoLength = data.duration;
         if (!VideoLength && data.live) {
             VideoLength = (timeToDate(data.live.end)-timeToDate(data.live.start));
@@ -728,7 +729,7 @@ Dplay.getDetailsData = function(url, data) {
         if (data.available_until) {
             AvailDate = timeToDate(data.available_until);
         }
-        isLive = data.live
+
         if (data.show && Dplay.isItemOk(data.show.title.trim(), data.show)) {
             Show = {name : data.show.title.trim(),
                     url  : Dplay.makeShowUrl(data.show.id)
@@ -886,8 +887,11 @@ Dplay.isAvailable = function(Name, data) {
             // Future/Ended live show
             return false;
         }
-    } else if (data.rights && data.rights.advod) {
-        if (timeToDate(data.rights.advod.start) > getCurrentDate()) {
+    } else if (data.rights) {
+        var start = (data.rights.advod) ? data.rights.advod.start : null;
+        if (!start && data.rights.svod)
+            start = data.rights.svod.start
+        if (start && timeToDate(start) > getCurrentDate()) {
             // Premium/Future episode
             return false;
         }

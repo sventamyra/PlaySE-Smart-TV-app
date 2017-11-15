@@ -528,25 +528,36 @@ Viasat.decodeShows = function(data, extra) {
         var Name;
         var Link;
         var ImgLink;
-        var next = null;
+        var next = nextLast = null;
         var checkSeasons=false;
         var LinkPrefix = '<a href="showList.html?name='
         var query = null;
         var json = null;
+        var prevResult = []
 
-        if (!extra.is_next) {
+        if (!extra.is_next && !extra.is_prev) {
             Viasat.result = [];
             Viasat.show_ids = [];
+        } else if (extra.is_prev) {
+            prevResult = Viasat.result
+            Viasat.result = []
         }
 
         if (data && data.responseText)
             data = data.responseText;
 
         json = JSON.parse(data);
-        if (json._links && json._links.next)
+        if (!extra.reverse && json._links && json._links.next)
             next = json._links.next.href
         else 
             next = null;
+
+        if (+json.count.total_pages > 1) {
+            nextLast = +json.count.total_pages - 1
+            nextLast = extra.url.replace(/page=[0-9]+/, "page="+nextLast)
+        }
+        else 
+            nextLast = null;
 
         if (json.data && json.data.formats) {
             json = json.data.formats;
@@ -603,8 +614,20 @@ Viasat.decodeShows = function(data, extra) {
                                          );
         }
 
-        if (extra.reverse) 
-            Viasat.result.reverse();
+        if (extra.reverse) {
+            Viasat.result = Viasat.result.concat(prevResult)
+            if (Viasat.result.length < 50 && nextLast)
+                return Viasat.requestNextPage(nextLast, 
+                                              function(status, nextData) {
+                                                  extra.is_prev = true;
+                                                  Viasat.decodeShows(nextData, extra);
+                                              },
+                                              extra.no_abort
+                                             );
+            else {
+                Viasat.result.reverse();
+            }
+        }
         else
             Viasat.result.sort(function(a, b) {
                 var name_a = (checkSeasons) ? Number(a.name.replace(/[^0-9]+/, "")) : a.name.toLowerCase();
