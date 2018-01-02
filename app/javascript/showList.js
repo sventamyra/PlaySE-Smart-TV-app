@@ -18,11 +18,8 @@ showList.onUnload = function()
 
 
 showList.getUrl=function(location){
-    if (location.indexOf("name=") > 0)
-    {
-        return location.match(/name=(.+)&history=/)[1];
-    }
-    return "";
+    location = location.match(/[?&]name=(.+)&history=/);
+    return (location) ? location[1] : "";
 };
 
 showList.loadXml = function(refresh)
@@ -34,12 +31,16 @@ showList.loadXml = function(refresh)
     season = (season) ? +season[1] : null
     var variant = location.match("variant=([^&]+)");
     variant = (variant) ? variant[1] : null
-    var cbComplete = function(status){loadFinished(status, refresh)};
+    var cbComplete = function(status) {
+        if (refresh || myPos || !Channel.checkResume(location))
+            loadFinished(status, refresh);
+    };
     requestUrl(url,
                function(status, data)
                {
                    Channel.decodeShowList(data, 
                                           {url:url, 
+                                           loc:location,
                                            refresh:refresh,
                                            strip_show:true,
                                            is_clips:(location.indexOf("clips=1") != -1),

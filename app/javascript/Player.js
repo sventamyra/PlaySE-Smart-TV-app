@@ -458,6 +458,8 @@ Player.stopVideo = function(keep_playing)
     Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
     Player.enableScreenSaver();
     window.clearTimeout(detailsTimer);
+    window.clearTimeout(skipTimer);
+    this.skipState = -1;
     Player.plugin.Execute("Stop");
     if (this.stopCallback)
     {
@@ -646,6 +648,8 @@ Player.OnRenderingStart = function()
         Log("jump:"+Player.plugin.Execute("JumpForward", resumeJump)+" resumeJump:" + resumeJump);
         resumeJump = null;
     }
+    if (Details.fetchedDetails && Details.fetchedDetails.parent_show)
+        History.addShow(Details.fetchedDetails);
 };
 
 Player.OnRenderingComplete = function()
@@ -1323,6 +1327,7 @@ Player.startPlayer = function(url, isLive, startTime)
     videoBw = null;
     videoData = {};
     resumeJump = null;
+    Player.skipState = -1;
     skipTime = 0;
     skipTimeInProgress = 0;
     Player.setTopOSDText("");

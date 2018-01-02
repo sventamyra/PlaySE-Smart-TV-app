@@ -52,6 +52,7 @@ Details.getUrl=function(detailsUrl){
     {
         name = url.match(/(ilink|name)=(.+)&history=/)[2]
     }
+    name = checkSetTmpChannel(name)
     return Channel.getDetailsUrl(name);
 };
 

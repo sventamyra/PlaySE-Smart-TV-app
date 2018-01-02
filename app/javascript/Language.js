@@ -44,9 +44,10 @@ Language.init = function()
 	html += '<li class="title"><a href="#">Channel / Kanal:</a></li>';
 	html += '<li id="svt"    channel=Svt    class="checked unselected"><a href="#">Svt</a></li>';
 	html += '<li id="oa"     channel=Oa     class="unselected"><a href="#">Öppet Arkiv</a></li>';
-	html += '<li id="viasat" channel=Viasat class="unselected"><a href="#">Viasat</a></li>';
-	html += '<li id="tv4"    channel=Tv4    class="unselected"><a href="#">Tv4</a></li>';
-	html += '<li id="dplay"  channel=Dplay  class="unselected"><a href="#">Dplay</a></li>';
+	html += '<li id="viasat"  channel=Viasat  class="unselected"><a href="#">Viasat</a></li>';
+	html += '<li id="tv4"     channel=Tv4     class="unselected"><a href="#">Tv4</a></li>';
+	html += '<li id="dplay"   channel=Dplay   class="unselected"><a href="#">Dplay</a></li>';
+	html += '<li id="history" channel=History class="unselected"><a href="#">Historik</a></li>';
 	html += '</ul>';
 	html += '</div>';
 	$(".slider-language").html(html);
@@ -64,19 +65,15 @@ Language.setLang = function(value){
         this.fixAButton(value);
         this.fixBButton(value);
         this.fixCButton(value);
+        this.fixDButton(value);
 	if(value == 'English'){
 		$('#english').addClass('checked');
 		$('#swedish').removeClass('checked');
-
 		src="url(images/name-english.png)";
-		$("#d-button").text('Search');
 		isSwedish=false;
-		
 	} else {
-
 		$('#swedish').addClass('checked');
 		$('#english').removeClass('checked');
-		$("#d-button").text('Sök');		
 		isSwedish=true;
 	}
 	
@@ -194,4 +191,12 @@ Language.fixCButton = function(language)
         language = this.checkLanguage();
 
     $("#c-button").text(Channel.getCButtonText(language))
+};
+
+Language.fixDButton = function(language)
+{
+    if (!language)
+        language = this.checkLanguage();
+
+    $("#d-button").text(Channel.getDButtonText(language))
 };

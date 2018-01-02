@@ -32,12 +32,11 @@ ConnectionError.show = function(hide)
 		Buttons.setKeyHandleID(9);
             }
 	}
-        else if (oldKeyHandle) {
+        else if (oldKeyHandle != null) {
 		Buttons.setKeyHandleID(oldKeyHandle);
                 oldKeyHandle = null;
 	}
-	$(".slider-error").slideToggle(500, function() {});	
-
+	$(".slider-error").slideToggle(500, function() {});
 };
 
 

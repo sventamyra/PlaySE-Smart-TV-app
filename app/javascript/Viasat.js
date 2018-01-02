@@ -349,6 +349,7 @@ Viasat.decode = function(data, extra) {
         var seasonUrl = null;
         var AirDate;
         var Episode=null;
+        var Season=null;
         var Show=null;
         var ShowId=null;
 
@@ -414,14 +415,18 @@ Viasat.decode = function(data, extra) {
             AirDate = Viasat.getAirDate(data[k]);
             if (data[k].format_position) {
                 Episode = data[k].format_position.episode;
+                Season  = data[k].format_position.season;
             } else if (data[k].season_number) {
                 Episode = data[k].episode_number;
+                Season  = +data[k].season_number;
             } else {
-                Episode = undefined
+                Season = Episode = undefined
             }
             if (clipsUrl && !seasonUrl && data[k]._links.season)
                 seasonUrl = data[k]._links.season.href;
             Viasat.result.push({name:Name, 
+                                show:Show,
+                                season:Season,
                                 episode:Episode,
                                 link:Link, 
                                 thumb:ImgLink, 
@@ -471,7 +476,10 @@ Viasat.decode = function(data, extra) {
                         link:Viasat.result[k].link,
                         link_prefix:Viasat.result[k].link_prefix,
                         description:Viasat.result[k].description,
-                        thumb:Viasat.result[k].thumb
+                        thumb:Viasat.result[k].thumb,
+                        show:Viasat.result[k].show,
+                        season:Viasat.result[k].season,
+                        episode:Viasat.result[k].episode
                        });
             }
 	}
@@ -530,7 +538,7 @@ Viasat.decodeShows = function(data, extra) {
         var ImgLink;
         var next = nextLast = null;
         var checkSeasons=false;
-        var LinkPrefix = '<a href="showList.html?name='
+        var LinkPrefix = null;
         var query = null;
         var json = null;
         var prevResult = []
@@ -574,6 +582,7 @@ Viasat.decodeShows = function(data, extra) {
         }
 
         for (var k=0; k < json.length; k++) {
+            LinkPrefix = null;
             Name = json[k].title;
             if (json[k]._links.videos && 
                 (!json[k]._links.seasons ||
@@ -596,7 +605,7 @@ Viasat.decodeShows = function(data, extra) {
             if (checkSeasons) {
                 if (JSON.parse(httpRequest(Link,{sync:true}).data).count.total_items == 0)
                     continue;
-                LinkPrefix = '<a href="showList.html?season=1' + encodeURIComponent(Name) + '&name=';
+                LinkPrefix = makeSeasonLinkPrefix(Name, json[k].format_position.season);
             }
             if (extra.query)
                 Viasat.show_ids.push(json[k].id);
@@ -642,7 +651,7 @@ Viasat.decodeShows = function(data, extra) {
 
         if (!extra.query && extra.url && !extra.url.cached && extra.url.match(/\/seasons/)) {
             if (Viasat.result.length == 1) {
-                callTheOnlySeason(Viasat.result[0].name, Viasat.result[0].link);
+                callTheOnlySeason(Viasat.result[0].name, Viasat.result[0].link, extra.loc);
                 Viasat.result = [];
                 return;
             }
@@ -684,6 +693,8 @@ Viasat.getDetailsData = function(url, data) {
     var AvailDate=null;
     var Description="";
     var Show=null;
+    var Season=null;
+    var Episode=null;
     try {
 
         data = JSON.parse(data.responseText);
@@ -712,9 +723,17 @@ Viasat.getDetailsData = function(url, data) {
 	    Description = data.summary;
 
         if (data._embedded && data._embedded.format) {
-            Show = {name : data._embedded.format.title,
-                    url  : data._embedded.format._links.seasons.href.replace("https", "http")
+            Show = {name  : data._embedded.format.title,
+                    url   : data._embedded.format._links.seasons.href.replace("https", "http"),
+                    thumb : Viasat.fixThumb(data._embedded.format._links.image.href)
                    }
+        }
+        if (data.format_position) {
+            Episode = data.format_position.episode;
+            Season  = data.format_position.season;
+        } else if (data.season_number) {
+            Episode = data.episode_number;
+            Season  = +data.season_number;
         }
     } catch(err) {
         Log("Viasat.getDetailsData Exception:" + err.message);
@@ -736,6 +755,9 @@ Viasat.getDetailsData = function(url, data) {
             description   : Description,
             not_available : false,
             thumb         : DetailsImgLink,
+            season        : Season,
+            episode       : Episode,
+            episode_name  : Name,
             parent_show   : Show
     }
 };

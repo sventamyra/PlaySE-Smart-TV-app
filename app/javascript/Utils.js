@@ -25,13 +25,35 @@ var LOAD_NEXT_COLUMN  = Math.floor((8*(MAX_PAGES-1))/2)+2;
 var LOAD_PRIOR_COLUMN = 2;
 var THUMBS_PER_PAGE   = 8;
 
-setChannel = function(newChannel) {
-    if (Channel.set(newChannel)) {
-        myLocation = null;
-        setLocation('index.html', undefined);
-        myHistory = []; 
-        Language.setLang();
+checkSetTmpChannel = function(location) {
+    var tmpChannel = location.match(/[?&]tmp_channel_id=([^&]+)/);
+    if (tmpChannel) {
+        setTmpChannel(tmpChannel[1])
     }
+    return location;
+}
+
+checkClrTmpChannel = function(location) {
+    if (location.match(/[?&]tmp_channel_clr=([^&]+)/))
+        Channel.clearTmp()
+}
+
+setChannel = function(newChannel, newId) {
+    if (Channel.set(newChannel, newId)) {
+        initChannel();
+    }
+}
+
+initChannel = function() {
+    myLocation = null;
+    setLocation(Channel.getStartPage(), undefined);
+    myHistory = []; 
+    Language.setLang();
+}
+
+setTmpChannel = function(newId) {
+    var newChannel = eval($(".channel-content").find("#"+newId).attr("channel"))
+    Channel.setTmp(newChannel, newId)
 }
 
 getDeviceYear = function() {
@@ -122,6 +144,7 @@ loadingStop = function() {
 refreshLocation = function(entry)
 {
     myRefreshLocation = entry.loc;
+    checkClrTmpChannel(myRefreshLocation)
     Language.fixAButton();
     Language.fixBButton();
     dispatch(myRefreshLocation, true);
@@ -136,18 +159,19 @@ setLocation = function(location, oldPos, skipHistory)
 {
     if (location == myLocation)
         return;
+
+    alert("location:" + location)
+
     if (oldPos == undefined) {
         myPos = null;
-        if (!skipHistory) {
+        if (myLocation && !skipHistory) {
             myHistory.push(
                 {
                     loc: myLocation,
-                    pos: 
-                    {
-                        col:     columnCounter,
-                        top:     isTopRowSelected,
-                        section: htmlSection
-                    }
+                    pos: Channel.savePosition({col     : columnCounter,
+                                               top     : isTopRowSelected,
+                                               section : htmlSection
+                                              })
                 }
             );
         }
@@ -155,6 +179,9 @@ setLocation = function(location, oldPos, skipHistory)
     } else {
         myPos = oldPos;
     }
+
+    location = checkSetTmpChannel(location)
+    checkClrTmpChannel(location)
 
     var isDetails = location.match(/details.html/);
     myLocation = location;
@@ -343,8 +370,12 @@ setPosition = function(pos)
     else         itemSelected = $('.bottomitem').eq(pos.col).addClass('selected');
     columnCounter    = pos.col;
     isTopRowSelected = pos.top;
-    // Log("Position set to "  + columnCounter + " " + isTopRowSelected);
-    Buttons.sscroll();
+    var newPos = Channel.checkPosition(pos)
+    if (newPos == pos)
+        // Log("Position set to "  + columnCounter + " " + isTopRowSelected);
+        Buttons.sscroll();
+    else
+        setPosition(newPos)
 };
 
 getCurrentDate = function() {
@@ -795,8 +826,12 @@ makeSeasonLinkPrefix = function(Name, Season, Variant) {
 }
 
 // Replace Current Location with the only Season existing
-callTheOnlySeason = function(Name, Link) {
+callTheOnlySeason = function(Name, Link, Location) {
     LinkPrefix = makeSeasonLinkPrefix(Name, "0")
+    // Must keep the show name
+    var ShowName = Location.match(/[?&](show_name=[^&]+)/)
+    if (ShowName)
+        LinkPrefix = LinkPrefix.replace(/([&?])name=/, "$1" + ShowName[1] + "&name=")
     replaceLocation(LinkPrefix + Link + "&history=" + getHistory(Name));
 }
 
@@ -806,7 +841,7 @@ clipToHtml = function(Thumb, Link) {
 
 showToHtml = function(Name, Thumb, Link, LinkPrefix) {
     if (!LinkPrefix)
-        LinkPrefix = '<a href="showList.html?name='
+        LinkPrefix = makeShowLinkPrefix()
 
     toHtml({name: Name,
             link: Link,
@@ -821,13 +856,33 @@ showToHtml = function(Name, Thumb, Link, LinkPrefix) {
            });
 };
 
+makeShowLinkPrefix = function(UrlParams) {
+    if (UrlParams)
+        UrlParams = UrlParams + "&name="
+    else
+        UrlParams = "name="
+    return '<a href="showList.html?' + UrlParams
+}
+
 makeShowLink = function(Name, Url) {
     return makeLink("showList.html?name=", Name, Url);
 }
 
-makeLink = function(LinkPrefix, Name, Url) {
+itemToLink = function(Item, UrlParams) {
+
+    if (Item.link_prefix.match(/categoryDetail\.html/) && !Item.link.match(/&catThumb/)) {
+        Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);
+        Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
+    }
+    return makeLink(Item.link_prefix,Item.name,Item.link, UrlParams)
+};
+
+makeLink = function(LinkPrefix, Name, Url, UrlParams) {
+    if (UrlParams)
+        LinkPrefix = LinkPrefix.replace(/\?/, "?" + UrlParams + "&")
+
     return LinkPrefix + Url + '&history=' + getHistory(Name);
-}
+};
 
 toHtml = function(Item) {
     // Item.name = "" + (items.length+1)
@@ -857,12 +912,9 @@ itemToHtml = function(Item, OnlyReturn) {
     } else {
         IsLiveText = (Item.is_live) ? " not-yet-available" : "";
     }
-    if (Item.link_prefix.match(/categoryDetail\.html/) && !Item.link.match(/&catThumb/)) {
-        Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);
-        Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
-    }
+
     html += '<div class="scroll-item-img">';
-    html += makeLink(Item.link_prefix,Item.name,Item.link) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
+    html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
 
     var itemsIndex = items.indexOf(Item);
     if (Item.thumb && itemCounter < THUMBS_PER_PAGE) {
@@ -920,7 +972,7 @@ finaliseHtml = function() {
                 for (var i=8*MAX_PAGES; i<items.length; i++)
                     itemToHtml(items[i])
             } else {
-                htmlSection = {index:0, load_next_column:LOAD_NEXT_COLUMN, load_prior_column:-1}
+                htmlSection = getInitialSection();
                 preloadAdjacentSectionThumbs();
                 alert("loaded from:" + htmlSection.index + " to:" + itemCounter)
                 alert("Section itemCounter:" + itemCounter);
@@ -935,9 +987,7 @@ finaliseHtml = function() {
 };
 
 loadSection = function(maxIndex) {
-    if (!maxIndex) maxIndex = htmlSection.index+(8*MAX_PAGES);
-    if  (items.length-maxIndex < 8)
-        maxIndex = items.length;
+    if (!maxIndex) maxIndex = getMaxIndex();
     itemCounter = 0
     var topHtml="", bottomHtml="", result;
     alert("loading from:" + htmlSection.index + " to:" + maxIndex)
@@ -951,7 +1001,7 @@ loadSection = function(maxIndex) {
     $('#topRow').html(topHtml);
     $('#bottomRow').html(bottomHtml);
     preloadAdjacentSectionThumbs();
-    return maxIndex
+    return maxIndex;
 }
 
 preloadAdjacentSectionThumbs = function() {
@@ -988,29 +1038,52 @@ preloadAdjacentSectionThumbs = function() {
     }
 }
 
-loadNextSection = function() {
+getInitialSection = function() {
+    return {index:0, load_next_column:LOAD_NEXT_COLUMN, load_prior_column:-1}
+}
+
+getMaxIndex = function() {
+    var maxIndex = htmlSection.index+(8*MAX_PAGES);
+    if  (items.length-maxIndex < 8)
+        maxIndex = items.length;
+    return maxIndex
+}
+
+getNextSection = function() {
     if (htmlSection.load_next_column > 0) {
         // We need to keep 2 pages
         htmlSection.index = htmlSection.index+(8*(MAX_PAGES-2));
     } else {
         htmlSection.index = 0;
     }
-    var maxIndex = loadSection();
+    var maxIndex = getMaxIndex();
     if (htmlSection.load_next_column > 0) {
+        if (maxIndex >= items.length)
+            htmlSection.load_next_column = 0;
+        htmlSection.load_prior_column=LOAD_PRIOR_COLUMN;
+    } else {
+        htmlSection.load_next_column=LOAD_NEXT_COLUMN;
+        htmlSection.load_prior_column=-1;
+    }
+    return maxIndex
+
+}
+
+loadNextSection = function() {
+    var maxIndex = getNextSection();
+    loadSection(maxIndex)
+    if (htmlSection.load_next_column > 0 ||
+        maxIndex >= items.length) 
+    {
         // Check if we're gonna be on second or first page. Depends on which page we're on now.
         if (columnCounter >= 4*(MAX_PAGES-1))
             columnCounter = (columnCounter % 4) + 4
         else
             // We're on second page - we will be on first page now
             columnCounter = (columnCounter % 4)
-        if (maxIndex >= items.length)
-            htmlSection.load_next_column = 0;
-        htmlSection.load_prior_column=LOAD_PRIOR_COLUMN;
         Buttons.refresh();
     } else {
         columnCounter = 0;
-        htmlSection.load_next_column=LOAD_NEXT_COLUMN;
-        htmlSection.load_prior_column=-1;
     }
     alert("Section itemCounter:" + itemCounter);
     alert(JSON.stringify(htmlSection))
@@ -1019,7 +1092,7 @@ loadNextSection = function() {
         return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
     else
         return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected')
-}
+};
 
 loadPriorSection = function() {
     var maxIndex = htmlSection.index+(8*MAX_PAGES)

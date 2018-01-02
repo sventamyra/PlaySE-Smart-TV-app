@@ -4,7 +4,8 @@ var Svt =
     section_max_index:0,
     category_details:[],
     category_detail_max_index:0,
-    thumbs_index:null
+    thumbs_index:null,
+    play_args:{}
 };
 
 var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
@@ -226,6 +227,10 @@ Svt.getDetailsData = function(url, data) {
     var endTime=0;
     var Show = null;
     var isLive = false;
+    var Season=null;
+    var Episode=null;
+    var EpisodeName=null;
+    var Variant=null;
     try {
         if (url.indexOf("oppetarkiv") > -1) {
             data = data.responseText.split("<aside class=\"svtoa-related svt-position-relative")[0];
@@ -268,7 +273,8 @@ Svt.getDetailsData = function(url, data) {
                 data = data.videoPage;
                 if (data.titlePage && data.titlePage.programTitle) {
                     Show = {name : data.titlePage.programTitle.trim(),
-                            url  : Svt.fixLink(data.titlePage.urlFriendlyTitle)
+                            url  : Svt.fixLink(data.titlePage.urlFriendlyTitle),
+                            thumb: Svt.getThumb(data.titlePage)
                            }
                     
                     // Lets see if we need this below...
@@ -281,6 +287,12 @@ Svt.getDetailsData = function(url, data) {
                     // }
                 }
                 data = data.video;
+                Season  = data.season;
+                Episode = data.episodeNumber;
+                EpisodeName = Svt.determineEpisodeName(data),
+                Variant = data.accessService;
+                if (Variant == "none")
+                    Variant = null;
                 if (data.programTitle == data.title || !data.programTitle) {
                     Name = data.title;
                     if (Show && Show.name != data.title)
@@ -349,6 +361,10 @@ Svt.getDetailsData = function(url, data) {
             description   : Description,
             not_available : NotAvailable,
             thumb         : ImgLink,
+            season        : Season,
+            variant       : Variant,
+            episode       : Episode,
+            episode_name  : EpisodeName.trim(),
             parent_show   : Show
     }
 };
@@ -701,7 +717,7 @@ Svt.decodeShowList = function(data, extra) {
                             )
             };
         } else if (extra.season!=0 && seasons.length == 1) {
-            return callTheOnlySeason(seasons[0].name, extra.url);
+            return callTheOnlySeason(seasons[0].name, extra.url, extra.loc);
         }
     }
     // Get Correct Tab
@@ -789,8 +805,9 @@ Svt.decodeSearchList = function (data, extra) {
         extra.cbComplete();
 };
 
-Svt.getPlayUrl = function(url, isLive, streamUrl)
+Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
 {
+    Svt.play_args = {url:url, is_live:isLive, stream_url:streamUrl};
     // url = Svt.fixLink(url);
     // Log("url:" + url);
     var video_url, extra = {isLive:isLive};
@@ -815,7 +832,7 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
                            data.subtitleReferences = []
                        } else if (streamUrl == url) {
                            streamUrl = SVT_ALT_API_URL + Svt.decodeJson(data).videoPage.video.id;
-                           return Svt.getPlayUrl(url, isLive, streamUrl);
+                           return Svt.getPlayUrl(url, isLive, streamUrl, cb, failedUrl);
                        } else {
                            data = JSON.parse(data.responseText);
                        }
@@ -851,8 +868,8 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
                                break;
                            }
 		       }
-		       if (video_url.match(/\.m3u8/)) {
-		           Resolution.getCorrectStream(video_url, srtUrl, extra);
+		       if (video_url.match(/\.(m3u8|mpd)/)) {
+		           Resolution.getCorrectStream(video_url, srtUrl, extra, cb);
 		       }
 		       else{
 		           Player.setVideoURL(video_url, video_url, srtUrl, extra);
@@ -862,6 +879,18 @@ Svt.getPlayUrl = function(url, isLive, streamUrl)
                }
               );
 };
+
+Svt.tryAltPlayUrl = function(failedUrl, cb)
+{
+    if (failedUrl.match(/\.m3u8/) || failedUrl.match(/[?&]alt=/)) {
+        Svt.getPlayUrl(Svt.play_args.url,
+                       Svt.play_args.is_live,
+                       Svt.play_args.stream_url,
+                       cb,
+                       failedUrl
+                      );
+    }
+}
 
 Svt.decodeJson = function(data) {
     data = data.responseText.split("root\['__svtplay']")
@@ -1041,6 +1070,7 @@ Svt.decode = function(data, extra) {
     try {
         var html;
         var Titles;
+        var Show;
         var Name;
         var Link;
         var LinkPrefix;
@@ -1083,16 +1113,7 @@ Svt.decode = function(data, extra) {
             }
         }
         for (var k=0; k < data.length; k++) {
-            if (data[k].movie && data[k].programTitle)
-                Name = data[k].programTitle.trim();
-            else if (data[k].title)
-                Name = data[k].title.trim()
-            else if (data[k].programTitle)
-                Name = data[k].programTitle.trim()
-            else if (data[k].name)
-                Name = data[k].name.trim()
-            else
-                Name = "WHAT?!?!?"
+            Name = Svt.determineEpisodeName(data[k]);
             Duration = data[k].materialLength;
             Description = data[k].description;
             if (!extra.strip_show) {
@@ -1156,6 +1177,7 @@ Svt.decode = function(data, extra) {
             else {
                 Duration = 0;
             }
+            Show    = data[k].programTitle;
             Season  = data[k].season;
             Episode = data[k].episodeNumber; // || Name.match(/avsnitt\s*([0-9]+)/i) || Description.match(/[Dd]el\s([0-9]+)/i);
             for (var i=0; !extra.variant && data[k].versions && i < data[k].versions.length; i++) {
@@ -1193,7 +1215,8 @@ Svt.decode = function(data, extra) {
                         thumb:ImgLink,
                         largeThumb:(ImgLink) ? ImgLink.replace("small", "large") : null,
                         season:Season,
-                        episode:Episode
+                        episode:Episode,
+                        show:Show
                        })
             data[k] = "";
 	};
@@ -1222,6 +1245,8 @@ Svt.getVariantName = function(accessService) {
     switch (accessService) {
     case "signInterpretation":
         return "Teckentolkat";
+    case "signLanguage":
+        return "Teckentolkat";
     case "audioDescription":
         return "Syntolkat";
     case "liveCaptioning":
@@ -1230,6 +1255,19 @@ Svt.getVariantName = function(accessService) {
         return accessService
     }
 }
+
+Svt.determineEpisodeName = function(data) {
+    if (data.movie && data.programTitle)
+        return data.programTitle.trim();
+    else if (data.title)
+        return data.title.trim()
+    else if (data.programTitle)
+        return data.programTitle.trim()
+    else if (data.name)
+        return data.name.trim()
+    else
+        return "WHAT?!?!?"
+};
 
 Svt.getAirDate = function(data) {
     if (data.broadcastStartTime)

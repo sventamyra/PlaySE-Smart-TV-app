@@ -240,11 +240,11 @@ Tv4.decodeShowList = function(data, extra) {
                     seasonToHtml("Säsong " + seasons[i],
                                  showThumb,
                                  extra.url + "&season=" + seasons[i],
-                                 seasons[i].season
+                                 seasons[i]
                                 )
                 };
             } else if (seasons.length == 1) {
-                return callTheOnlySeason("Säsong " + seasons[0], extra.url);
+                return callTheOnlySeason("Säsong " + seasons[0], extra.url, extra.loc);
             }
         }
 
@@ -319,7 +319,7 @@ Tv4.getLiveTitle = function() {
 Tv4.getAButtonText = function(language) {
 
     var loc = getIndexLocation();
-    
+
     if (loc.match(/index\.html/)) {
         if(language == 'English'){
 	    return 'Latest';
@@ -354,6 +354,15 @@ Tv4.getCButtonText = function (language) {
         return 'Livesändningar';
 };
 
+Tv4.determineEpisodeName = function(data) {
+    var Name = data.title.trim();
+    var Show = (data.program) ? data.program.name : null;
+    if (Show && Name != Show) {
+        Name = Name.replace(Show,"").replace(/^[,. :\-]*/,"").trim();
+        Name = Tv4.capitalize(Name);
+    }
+    return Name
+}
 Tv4.decode = function(data, extra) {
     try {
         var Name;
@@ -367,6 +376,7 @@ Tv4.decode = function(data, extra) {
         var ImgLink;
         var next = null;
         var AirDate;
+        var Show=null;
         var Season=null;
         var Episode=null;
         var CurrentDate = getCurrentDate();
@@ -380,6 +390,7 @@ Tv4.decode = function(data, extra) {
 
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
+            Show = (data[k].program) ? data[k].program.name : null;
             IsLive = data[k].is_live;
             if (!Tv4.isViewable(data[k], IsLive, CurrentDate))
                 // Premium/DRM
@@ -389,9 +400,8 @@ Tv4.decode = function(data, extra) {
             starttime = (IsLive) ? timeToDate(data[k].broadcast_date_time) : null;
             IsRunning = IsLive && starttime && (getCurrentDate() > starttime);
 
-            if (extra.strip_show && data[k].program.name && Name != data[k].program.name) {
-                Name = Name.replace(data[k].program.name,"").replace(/^[,. :\-]*/,"").trim();
-                Name = Tv4.capitalize(Name);
+            if (extra.strip_show) {
+                Name = Tv4.determineEpisodeName(data[k])
             }
             ImgLink = Tv4.fixThumb(data[k].image); 
             Duration = data[k].duration;
@@ -401,6 +411,7 @@ Tv4.decode = function(data, extra) {
             Season = (data[k].season) ? data[k].season : null;
             Episode = (data[k].episode) ? data[k].episode : null;
             Tv4.result.push({name:Name, 
+                             show:Show,
                              season:Season,
                              episode:Episode,
                              link:Link, 
@@ -457,7 +468,10 @@ Tv4.decode = function(data, extra) {
                         link:Tv4.result[k].link,
                         link_prefix:Tv4.result[k].link_prefix,
                         description:Tv4.result[k].description,
-                        thumb:Tv4.result[k].thumb
+                        thumb:Tv4.result[k].thumb,
+                        show:Tv4.result[k].show,
+                        season:Tv4.result[k].season,
+                        episode:Tv4.result[k].episode
                        });
             }
 	}
@@ -558,6 +572,9 @@ Tv4.getDetailsData = function(url, data) {
     var NotAvailable=false;
     var isLive=false;
     var Show=null;
+    var Season=null;
+    var Episode=null;
+    var EpisodeName = null;
     try {
 
         data = JSON.parse(data.responseText).results[0];
@@ -583,9 +600,13 @@ Tv4.getDetailsData = function(url, data) {
         if (data.program && !data.program.is_premium && Tv4.unavailableShows.indexOf(data.program.nid) == -1) {
             Show = {name : data.program.name,
                     // Will fail if there's only clips...
-                    url  : Tv4.getUrl("episodes") + data.program.nid
+                    url   : Tv4.getUrl("episodes") + data.program.nid,
+                    thumb : Tv4.fixThumb(data.program.program_image)
                    }
         }
+        Season = (data.season) ? data.season : null;
+        Episode = (data.episode) ? data.episode : null;
+        EpisodeName = Tv4.determineEpisodeName(data);
     } catch(err) {
         Log("Tv4.getDetailsData Exception:" + err.message);
         Log("Name:" + Name);
@@ -607,6 +628,9 @@ Tv4.getDetailsData = function(url, data) {
             description   : Description,
             not_available : NotAvailable,
             thumb         : DetailsImgLink,
+            season        : Season,
+            episode       : Episode,
+            episode_name  : EpisodeName,
             parent_show   : Show
     }
 };

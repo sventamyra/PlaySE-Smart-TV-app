@@ -1,16 +1,26 @@
 var Channel =
 {
-    impl:null
+    main_impl : null,
+    main_ch_id : null,
+    impl : null,
+    ch_id : null
 };
 
 Channel.init = function() {
-    if (!Channel.impl)
-        Channel.impl = Svt;
+    if (!Channel.impl) {
+        Channel.set(Svt, "svt")
+    }
 };
 
-Channel.set = function(newChannel) {
-    if (this.impl != newChannel || Channel.isSubChannelSet()) {
-        this.impl = newChannel;
+Channel.id = function() {
+    return this.ch_id
+}
+
+Channel.set = function(newChannel, newId) {
+    if (this.main_ch_id != newId || Channel.isSubChannelSet()) {
+        Channel.setTmp(newChannel, newId)
+        this.main_impl = this.impl;
+        this.main_ch_id = this.ch_id;
         Channel.resetSubChannel()
         return true;
     } else {
@@ -18,13 +28,25 @@ Channel.set = function(newChannel) {
     }
 }
 
+Channel.setTmp = function(newChannel, newId) {
+    // Log("Channel.setTmp: " + newId)
+    this.impl  = newChannel;
+    this.ch_id = newId;
+}
+
+Channel.clearTmp = function() {
+    // Log("Channel.clearTmp")
+    this.impl  = this.main_impl;
+    this.ch_id = this.main_ch_id;
+}
+
 Channel.setCheckedChannelText = function(button) {
-    if (this.impl.getCheckedChannelText)
+    if (this.main_impl.getCheckedChannelText)
         button.find("a").text(this.impl.getCheckedChannelText());
 }
 
 Channel.setUnCheckedChannelText = function(button) {
-    if (this.impl.getCheckedChannelText)
+    if (this.main_impl.getCheckedChannelText)
         button.find("a").text(this.impl.getUnCheckedChannelText());
 }
 
@@ -39,12 +61,38 @@ Channel.resetSubChannel = function() {
         this.impl.resetSubChannel()
 }
 
+Channel.savePosition = function(pos) {
+    if (this.main_impl.savePosition)
+        return this.main_impl.savePosition(pos)
+    else
+        return pos
+}
+
+Channel.checkPosition = function(pos) {
+    if (this.main_impl.checkPosition)
+        return this.main_impl.checkPosition(pos)
+    return pos
+}
+
+Channel.savePosition = function(pos) {
+    if (this.main_impl.savePosition)
+        return this.main_impl.savePosition(pos)
+    else
+        return pos
+}
+
+Channel.checkResume = function(location) {
+    if (this.main_impl.checkResume)
+        return this.main_impl.checkResume(location)
+    return false
+}
+
 Channel.getName = function() {
     return this.getHeaderPrefix(true).toLowerCase()
 }
 
 Channel.getHeaderPrefix = function(MainName) {
-    return this.impl.getHeaderPrefix(MainName)
+    return this.main_impl.getHeaderPrefix(MainName)
 }
 
 Channel.getHeaders = function() {
@@ -52,6 +100,13 @@ Channel.getHeaders = function() {
         return this.impl.getHeaders()
     else
         return null
+}
+
+Channel.getStartPage = function() {
+    if (this.main_impl.getStartPage)
+        return this.main_impl.getStartPage();
+    else
+        return "index.html"
 }
 
 Channel.getUrl = function(tag, extra) {
@@ -138,17 +193,17 @@ Channel.fetchSubtitles = function(srtUrl, hlsSubs) {
 
 Channel.keyRed = function() {
     if (Channel.isLoggedIn()) {
-        if (this.impl.keyRed)
-            this.impl.keyRed()
+        if (this.main_impl.keyRed)
+            this.main_impl.keyRed()
         else
-            setLocation('index.html');
+            setLocation(Channel.getStartPage());
     }
 }
 
 Channel.keyGreen = function() {
     if (Channel.isLoggedIn()) {
-        if (this.impl.keyGreen)
-            this.impl.keyGreen()
+        if (this.main_impl.keyGreen)
+            this.main_impl.keyGreen()
         else
             setLocation('categories.html');
     }
@@ -156,8 +211,8 @@ Channel.keyGreen = function() {
 
 Channel.keyYellow = function() {
     if (Channel.isLoggedIn()) {
-        if (this.impl.keyYellow)
-            this.impl.keyYellow()
+        if (this.main_impl.keyYellow)
+            this.main_impl.keyYellow()
         else
             setLocation('live.html');
     }
@@ -165,8 +220,8 @@ Channel.keyYellow = function() {
 
 Channel.keyBlue = function() {
     if (Channel.isLoggedIn()) {
-        if (this.impl.keyBlue)
-            this.impl.keyBlue()
+        if (this.main_impl.keyBlue)
+            this.main_impl.keyBlue()
         else {
             Language.hide();
             Search.imeShow()
@@ -175,8 +230,8 @@ Channel.keyBlue = function() {
 };
 
 Channel.getMainTitle = function() {
-    if (this.impl.getMainTitle)
-        return this.impl.getMainTitle();
+    if (this.main_impl.getMainTitle)
+        return this.main_impl.getMainTitle();
     else
         return "Populärt";
 }
@@ -207,8 +262,8 @@ Channel.getLiveTitle = function() {
 Channel.getAButtonText = function(language) {
     var text = null;
 
-    if (this.impl.getAButtonText)
-        text =  this.impl.getAButtonText(language)
+    if (this.main_impl.getAButtonText)
+        text =  this.main_impl.getAButtonText(language)
 
     if (text == null) {
         if(language == 'English'){
@@ -223,8 +278,8 @@ Channel.getAButtonText = function(language) {
 Channel.getBButtonText = function(language)
 {
     var text = null;
-    if (this.impl.getBButtonText)
-        text = this.impl.getBButtonText(language)
+    if (this.main_impl.getBButtonText)
+        text = this.main_impl.getBButtonText(language)
 
     if (text === null) {
         if(language == 'English')
@@ -238,11 +293,21 @@ Channel.getBButtonText = function(language)
 };
 
 Channel.getCButtonText = function(language) {
-    if (this.impl.getCButtonText)
-        return this.impl.getCButtonText(language)
+    if (this.main_impl.getCButtonText)
+        return this.main_impl.getCButtonText(language)
 
     if(language == 'English')
 	return 'Channels & live broadcasts';
     else
         return 'Kanaler & livesändningar';
+}
+
+Channel.getDButtonText = function(language) {
+    if (this.main_impl.getDButtonText)
+        return this.main_impl.getDButtonText(language)
+
+    if(language == 'English')
+	return 'Search';
+    else
+        return 'Sök';
 }

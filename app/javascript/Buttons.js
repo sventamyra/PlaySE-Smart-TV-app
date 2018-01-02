@@ -1,6 +1,6 @@
 var tvKey = new Common.API.TVKeyValue();
 
-var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, player2 = 5, settings = 6, imeSearch = 7, blocked = 8, connection error = 9
+var index = 0; // list = 0, details = 1, player = 2, kanaler = 3, settings = 6, imeSearch = 7, blocked = 8, connection error = 9
 var lastKey = 0;
 var keyHeld = false;
 var keyHeldCounter = 0;
@@ -12,12 +12,10 @@ var capslock = false;
 var rowCount = 1;
 var keyCount = 0;
 var first = true;
-var channels = ['svt1', 'svt2', 'svt24', 'barnkanalen', 'kunskapskanalen'];
-var channelId = 0;
 var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5", "#res6"];
 var reslButton = ["#reslauto", "#resl1", "#resl2", "#resl3", "#resl4", "#resl5", "#resl6"];
 var langButton = ["#english", "#swedish"];
-var channelButton = ["#svt", "#oa", "#viasat", "#tv4", "#dplay"];
+var channelButton = ["#svt", "#oa", "#viasat", "#tv4", "#dplay", "#history"];
 var menuId = 0;
 var menu = [{id:'.language-content .title', button:langButton},
             {id:'.res-content .title', button:resButton}, 
@@ -85,10 +83,6 @@ Buttons.keyDown = function()
     else if(index == 3){
 	this.keyHandleForKanaler();
     }
-    else if(index == 5){
-	this.getCurrentChannelId();
-	this.keyHandleForPlayer2();
-    }
     else if(index == 6){
 	this.keyHandleForSettings();
     }
@@ -99,17 +93,6 @@ Buttons.keyDown = function()
 	this.keyHandleForGeofilter();
     }
     lastKey = event.keyCode;
-};
-
-Buttons.getCurrentChannelId = function(){
-	var url = document.location.href;
-	for(var i = 0; i < channels.length; i++){
-		if (url.indexOf(channels[i])>0)
-		{
-			channelId = i;
-		}
-	}
-	
 };
 
 Buttons.setKeyHandleID = function(iid){
@@ -191,7 +174,7 @@ Buttons.keyHandleForList = function()
 {
     if (Buttons.checkKey(true) == -1)
         return
-    
+
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
     var keyCode = event.keyCode;
@@ -256,7 +239,6 @@ Buttons.keyHandleForList = function()
     case tvKey.KEY_PANEL_ENTER:
     case tvKey.KEY_PLAY:
 	var ilink = itemSelected.find('.ilink').attr("href");
-	Log(ilink);
         if (ilink != undefined)
         {
             if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
@@ -287,6 +269,21 @@ Buttons.keyHandleForList = function()
     this.sscroll();
 };
 
+selectItemIndex = function(i) {
+    columnCounter = Math.floor(i/2);
+    isTopRowSelected = (i % 2 == 0)
+    if (items.length >= 8*(MAX_PAGES+1)) {
+        htmlSection = getInitialSection();
+        orgColumnCounter = columnCounter;
+        while (columnCounter >= htmlSection.load_next_column && 
+               htmlSection.load_next_column > 0) {
+            getNextSection();
+            columnCounter = orgColumnCounter - htmlSection.index/2;
+        }
+    } else
+        htmlSection = null;
+    alert("i:" + i + " col:" + columnCounter + " top:" + isTopRowSelected + " htmlSection:" + JSON.stringify(htmlSection));
+}
 
 checkLoadNextSection = function(column, steps) {
     var selected = null;
@@ -565,7 +562,8 @@ Buttons.keyHandleForSettings = function()
             case 3:
                 Language.hide();
                 Channel.setUnCheckedChannelText($(button[checked]))
-                setChannel(eval($(button[selected]).attr("channel")));
+                setChannel(eval($(button[selected]).attr("channel")),
+                           $(button[selected]).attr("id"));
                 Channel.setCheckedChannelText($(button[selected]))
                 break;
             }
@@ -584,9 +582,7 @@ Buttons.keyHandleForKanaler = function()
 {
     Log("keyHandleForKanaler!!!");
 };
-Buttons.keyHandleForPlayer2 = function(){
-    Log("keyHandleForPlayer2!!!");
-};
+
 Buttons.keyHandleForPlayer = function() {
 
     Buttons.checkKey()
@@ -789,6 +785,9 @@ Buttons.handleMenuKeys = function(keyCode){
 	Audio.uiToggleMute();
 	break;
 	break;
+    case tvKey.KEY_0:
+        Buttons.changeChannel(History);
+        break;
     case tvKey.KEY_1:
         Buttons.changeChannel(Svt);
         break;
@@ -819,10 +818,13 @@ Buttons.changeChannel = function (channel) {
             newButton = $(channelButton[i]);
         }
     }
+    if (!newButton) 
+        newButton = oldButton;
+
     Language.hide();
     oldButton.removeClass('checked');
     Channel.setUnCheckedChannelText(oldButton);
-    setChannel(channel);
+    setChannel(channel, newButton.attr("id"));
     Channel.setCheckedChannelText(newButton);
     newButton.addClass('checked');
 };
@@ -980,6 +982,7 @@ Buttons.runNextItem = function(direction, play) {
             oldPos = myHistory.pop();
             oldPos.pos.col=tmpItem.col;
             oldPos.pos.top=tmpItem.top;
+            oldPos.pos = Channel.savePosition(oldPos.pos)
             myHistory.push(oldPos);
         }
         if (myLocation.match(/details.html/)) {

@@ -7,8 +7,9 @@ var Header =
 Header.addPrefix = function(location) {
     if (!location.match(/.+\/$/))
         location = location + '/';
-
-    return Channel.getHeaderPrefix() + '/' + location;
+    if (Channel.getHeaderPrefix())
+        location = Channel.getHeaderPrefix() + '/' + location;
+    return location
 }
 
 Header.urldecode = function(str) {

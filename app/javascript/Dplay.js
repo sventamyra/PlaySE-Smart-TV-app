@@ -494,11 +494,13 @@ Dplay.decode = function(data, extra) {
         var ImgLink;
         var next = null;
         var AirDate;
+        var Show=null;
+        var Season=null;
         var Episode=null;
 
         Dplay.reset();
         if (extra.url.match(/\/seasons\?/)) {
-            return Dplay.decodeSeason(extra.url, data, extra.cbComplete);
+            return Dplay.decodeSeason(extra, data);
         }
 
         data = JSON.parse(data.responseText);
@@ -510,6 +512,7 @@ Dplay.decode = function(data, extra) {
             data = data.data;
             for (var k=0; k < data.length; k++) {
                 Name = Dplay.determineEpisodeName(data[k]);
+                Show = (data[k].show) ? data[k].show.title.trim() : null;
                 if (!Dplay.isItemOk(Name, data[k]))
                     continue;
                 if (data[k].widevineRequired)
@@ -517,12 +520,14 @@ Dplay.decode = function(data, extra) {
                 if (extra.strip_show && data[k].episode_number) {
                     Description = data[k].title.trim();
                     Name        = "Avsnitt " + data[k].episode_number;
-                } else if (!extra.strip_show && data[k].show){
-                    if (Name.indexOf(data[k].show.title) == -1) {
-                        Name = data[k].show.title.trim() + " - " + Name;
+                } else if (!extra.strip_show && Show){
+                    if (Name.indexOf(Show) == -1) {
+                        Name = Show + " - " + Name;
                     }
                     Description = data[k].description.trim();
                 }
+                if (Description == Name)
+                    Description = "";
                 Duration = (data[k].duration)/1000;
                 if (!Duration && data[k].live) {
                     Duration = (timeToDate(data[k].live.end)-timeToDate(data[k].live.start))/1000;
@@ -530,9 +535,12 @@ Dplay.decode = function(data, extra) {
                 ImgLink = Dplay.fixThumb(data[k].thumbnail_image);
                 AirDate = data[k].first_run;
                 Link = Dplay.makeApiUrl("/videos/" + data[k].id);
+                Season  = (data[k].season) ? data[k].season.season_number : null;
                 Episode = data[k].episode_number
                 Dplay.other_result.push(
                     {name:Name, 
+                     show:Show,
+                     season:Season,
                      episode:Episode,
                      link:Link, 
                      thumb:ImgLink, 
@@ -639,13 +647,13 @@ Dplay.decodeShows = function(data, extra) {
     }
 };
 
-Dplay.decodeSeason = function(targetUrl, data, completeFun) {
+Dplay.decodeSeason = function(extra, data) {
     try {
         var Name;
         var Link;
         var ImgLink;
         var seasons = [];
-        var showId = targetUrl.match(/\/shows\/([0-9]+)\/seasons/)[1]
+        var showId = extra.url.match(/\/shows\/([0-9]+)\/seasons/)[1]
         data = JSON.parse(data.responseText).data;
         for (var k=0; k < data.length; k++) {
             if (data[k].episodes_available > 0) {
@@ -657,7 +665,7 @@ Dplay.decodeSeason = function(targetUrl, data, completeFun) {
         }
         data = null;
         if (seasons.length == 1) {
-            return callTheOnlySeason(seasons[0].name, seasons[0].link);
+            return callTheOnlySeason(seasons[0].name, seasons[0].link, extra.loc);
         }
         seasons.sort(function(a, b){
                 if (a.season > b.season)
@@ -668,14 +676,14 @@ Dplay.decodeSeason = function(targetUrl, data, completeFun) {
         ImgLink = JSON.parse(httpRequest(Dplay.makeApiUrl("/shows/" + showId),{sync:true}).data).data;
         ImgLink = Dplay.fixThumb(ImgLink.poster_image);
         for (var k=0; k < seasons.length; k++) {
-            seasonToHtml(seasons[k].name, ImgLink, seasons[k].link);
+            seasonToHtml(seasons[k].name, ImgLink, seasons[k].link, seasons[k].season);
         }
                      
     } catch(err) {
         Log("Dplay.decodeSeason Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
     }
-    if (completeFun)
-        completeFun();
+    if (extra.cbComplete)
+        extra.cbComplete();
 };
 
 Dplay.channelToHtml = function(name, idx, thumb) {
@@ -708,6 +716,8 @@ Dplay.getDetailsData = function(url, data) {
     var Description="";
     var Show=null;
     var isLive = false;
+    var Season = null;
+    var Episode = null;
     try {
         data = JSON.parse(data.responseText).data;
         Name = Dplay.determineEpisodeName(data);
@@ -731,10 +741,14 @@ Dplay.getDetailsData = function(url, data) {
         }
 
         if (data.show && Dplay.isItemOk(data.show.title.trim(), data.show)) {
-            Show = {name : data.show.title.trim(),
-                    url  : Dplay.makeShowUrl(data.show.id)
+            Show = {name  : data.show.title.trim(),
+                    url   : Dplay.makeShowUrl(data.show.id),
+                    thumb : Dplay.fixThumb(data.show.poster_image)
                    }
         }
+
+        Season  = (data.season) ? data.season.season_number : null;
+        Episode = data.episode_number;
 
     } catch(err) {
         Log("Dplay.getDetailsData Exception:" + err.message);
@@ -745,6 +759,7 @@ Dplay.getDetailsData = function(url, data) {
         Log("DetailsImgLink:" + DetailsImgLink);
     }
     data = null;
+    alert("show:" +Show);
     return {name          : Name,
             title         : Title,
             is_live       : isLive,
@@ -755,6 +770,9 @@ Dplay.getDetailsData = function(url, data) {
             description   : Description,
             not_available : false,
             thumb         : DetailsImgLink,
+            season        : Season,
+            episode       : Episode,
+            episode_name  : Name,
             parent_show   : Show
     }
 };
@@ -933,7 +951,10 @@ Dplay.resultToHtml = function() {
                 link:Dplay.other_result[k].link,
                 link_prefix:'<a href="details.html?ilink=',
                 description:Dplay.other_result[k].description,
-                thumb:Dplay.other_result[k].thumb
+                thumb:Dplay.other_result[k].thumb,
+                show:Dplay.other_result[k].show,
+                season:Dplay.other_result[k].season,
+                episode:Dplay.other_result[k].episode
                });
     };
 };

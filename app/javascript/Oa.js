@@ -90,14 +90,18 @@ Oa.getDetailsData = function(url, data) {
     var VideoLength = "";
     var Description="";
     var Show = null;
+    var Season = null;
+    var Episode = null;
+    var EpisodeName = null;
 
     try {
         data = JSON.parse(data.responseText);
         switch (data.contentType) {
         case "video":
             if (data.programTitle) {
-                Show = {name : data.programTitle.trim(),
-                        url  : Oa.makeTagLink(data)
+                Show = {name  : data.programTitle.trim(),
+                        url   : Oa.makeTagLink(data),
+                        thumb : data.thumbnailSmall
                        }
             }
             if (data.programTitle == data.title || !data.programTitle) {
@@ -117,6 +121,9 @@ Oa.getDetailsData = function(url, data) {
             else if (data.activateDate)
                 AirDate = timeToDate(data.activateDate);
             VideoLength = dataLengthToVideoLength(null,data.materialLength);
+            Season = data.seasonNumber,
+            Episode = data.episodeNumber,
+            EpisodeName = data.title.trim();
             data = null;
             return {name          : Name.trim(),
                     title         : Title.trim(),
@@ -124,6 +131,9 @@ Oa.getDetailsData = function(url, data) {
                     duration      : VideoLength,
                     description   : Description,
                     thumb         : ImgLink,
+                    season        : Season,
+                    episode       : Episode,
+                    episode_name  : EpisodeName,
                     parent_show   : Show
                    }
             break;
@@ -363,7 +373,7 @@ Oa.decodeShowList = function(data, extra) {
             }
         }
         if (extra.season != 0 && Items.length == 0 && Seasons.length == 1)
-            return callTheOnlySeason(Seasons[0].name, extra.url);
+            return callTheOnlySeason(Seasons[0].name, extra.url, extra.loc);
         else if (Seasons.length > 1) {
             Seasons.sort(function(a, b){return a.season-b.season})
             for (var k=0; k < Seasons.length; k++)
