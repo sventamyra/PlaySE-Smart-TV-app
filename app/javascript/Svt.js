@@ -5,7 +5,8 @@ var Svt =
     category_details:[],
     category_detail_max_index:0,
     thumbs_index:null,
-    play_args:{}
+    play_args:{},
+    live_url:'http://www.svtplay.se/live'
 };
 
 var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
@@ -162,12 +163,16 @@ Svt.addSections = function(data) {
     data = data.startPage.content
     var name, url;
     for (var key in data) {
-        if (key.match(/Url$/) && !key.match(/live/i)) {
-            name = key.replace(/Url$/, "Header");
-            if (key.match(/popu/i)) {
-                Svt.sections.unshift({name:data[name], url:Svt.fixLink(data[key])})
+        if (key.match(/Url$/)) {
+            if  (key.match(/live/i)) {
+                Svt.live_url = Svt.fixLink(data[key])
             } else {
-                Svt.sections.push({name:data[name], url:Svt.fixLink(data[key])})
+                name = key.replace(/Url$/, "Header");
+                if (key.match(/popu/i)) {
+                    Svt.sections.unshift({name:data[name], url:Svt.fixLink(data[key])})
+                } else {
+                    Svt.sections.push({name:data[name], url:Svt.fixLink(data[key])})
+                }
             }
         }
     }
@@ -673,7 +678,7 @@ Svt.decodeCategoryDetail = function (data, extra) {
 
 Svt.decodeLive = function(data, extra) {
     Svt.decodeChannels(data);
-    extra.url = 'http://www.svtplay.se/live'; 
+    extra.url = Svt.live_url; 
     requestUrl(extra.url,
                function(status, data)
                {
@@ -844,12 +849,23 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
 
 		       for (var i = 0; i < videoReferences.length; i++) {
 		           Log("videoReferences:" + videoReferences[i].url);
-                           if (!video_url || video_url.indexOf(".m3u8") == -1)
-		               video_url = videoReferences[i].url;
-                           if (videoReferences[i].format &&
-                               videoReferences[i].format.indexOf("vtt") > -1) {
-		               video_url = videoReferences[i].url;
-                               break
+                           if (cb) {
+                               if (failedUrl && failedUrl.match(/[?&]alt=/)) {
+                                   video_url = decodeURIComponent(failedUrl.match(/[?&]alt=([^|]+)/)[1])
+                                   break;
+                               }
+                               if (videoReferences[i].url.match(/\.mpd/)) {
+                                   video_url = videoReferences[i].url
+                                   break;
+                               }
+                           } else {
+                               if (!video_url || !video_url.match(/\.m3u8/))
+		                   video_url = videoReferences[i].url;
+                               if (videoReferences[i].format &&
+                                   videoReferences[i].format.match(/vtt/)) {
+		                   video_url = videoReferences[i].url;
+                                   break
+                               }
                            }
 		       }
                        if (data.video && data.video.subtitleReferences)
