@@ -70,7 +70,7 @@ History.findLinkPrefix = function(show, regexp) {
 History.findEpisode = function(show, meta) {
     alert("Resume Episode " + meta.episode + " season " + meta.season + " name " + meta.episode_name)
     var hits = []
-    for (var i=0; meta.episode_name && i < items.length; i++) {
+    for (var i=0; meta.episode && i < items.length; i++) {
         if ((!meta.season || meta.season == items[i].season) &&
             meta.episode == items[i].episode) {
             hits.push(i)
@@ -78,14 +78,14 @@ History.findEpisode = function(show, meta) {
     }
     if (hits.length > 1) {
         var name_hits = [];
-        for (var i=0; i < hits.length; i++) {
+        for (var i=0; meta.episode_name && i < hits.length; i++) {
             if (items[hits[i]].name == meta.episode_name)
                 name_hits.push(hits[i])
         }
         hits = name_hits;
     }
     else if (hits.length == 0) {
-        for (var i=0; i < items.length; i++) {
+        for (var i=0; meta.episode_name && i < items.length; i++) {
             if (items[i].name == meta.episode_name)
                 hits.push(i)
         }
