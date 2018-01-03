@@ -55,8 +55,7 @@ History.findVariant = function(show, meta) {
 History.findLinkPrefix = function(show, regexp) {
     for (var i=0; i < items.length; i++) {
         if (items[i].link_prefix.match(regexp)) {
-            var link = itemToLink(items[i], "show_name=" + encodeURIComponent(show)) + ">";
-            // setLocation(itemToLink(items[i], "show_name=" + encodeURIComponent(show)))
+            var link = itemToLink(items[i], "show_name=" + encodeURIComponent(show)) + '"/>';
             window.setTimeout(function() {
                 selectItemIndex(i);
                 setLocation($(link).attr("href"));
