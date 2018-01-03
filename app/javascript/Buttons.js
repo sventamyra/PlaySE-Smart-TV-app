@@ -243,7 +243,7 @@ Buttons.keyHandleForList = function()
         {
             if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
                 Buttons.playItem();
-                break;
+                return;
             }
             else if (keyCode == tvKey.KEY_INFO && (ilink.match("showList.html\\?name=") || ilink.match("categoryDetail.html"))) {
                 // Info of show.
@@ -251,9 +251,9 @@ Buttons.keyHandleForList = function()
             }
             else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
                 // Info of non-episode/show, not relevant.
-                break;
+                return;
             }
-	    setLocation(ilink);
+	    return setLocation(ilink);
         }
         else {
 	    itemSelected.removeClass('selected');

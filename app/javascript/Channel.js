@@ -17,7 +17,9 @@ Channel.id = function() {
 }
 
 Channel.set = function(newChannel, newId) {
-    if (this.main_ch_id != newId || Channel.isSubChannelSet()) {
+    if (this.main_ch_id != newId || 
+        this.main_ch_id != this.ch_id ||
+        Channel.isSubChannelSet()) {
         Channel.setTmp(newChannel, newId)
         this.main_impl = this.impl;
         this.main_ch_id = this.ch_id;
