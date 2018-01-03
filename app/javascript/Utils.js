@@ -30,7 +30,6 @@ checkSetTmpChannel = function(location) {
     if (tmpChannel) {
         setTmpChannel(tmpChannel[1])
     }
-    return location;
 }
 
 checkClrTmpChannel = function(location) {
@@ -180,7 +179,7 @@ setLocation = function(location, oldPos, skipHistory)
         myPos = oldPos;
     }
 
-    location = checkSetTmpChannel(location)
+    checkSetTmpChannel(location)
     checkClrTmpChannel(location)
 
     var isDetails = location.match(/details.html/);

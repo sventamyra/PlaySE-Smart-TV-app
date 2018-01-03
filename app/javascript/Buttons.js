@@ -245,7 +245,9 @@ Buttons.keyHandleForList = function()
                 Buttons.playItem();
                 return;
             }
-            else if (keyCode == tvKey.KEY_INFO && (ilink.match("showList.html\\?name=") || ilink.match("categoryDetail.html"))) {
+            else if (keyCode == tvKey.KEY_INFO && 
+                     (ilink.match(/showList.html\?((show_name|tmp_channel_id)=[^&]+&)*name=/) || 
+                      ilink.match("categoryDetail.html"))) {
                 // Info of show.
                 ilink = "details.html?" + ilink;
             }

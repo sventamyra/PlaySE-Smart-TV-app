@@ -48,11 +48,11 @@ Details.getUrl=function(detailsUrl){
     if (url.match(/category=/)) {
         name = url.match(/category=(.+)&catThumb=/)[1];
     }
-    else if (url.match(/(ilink|name)=/))
+    else if (url.match(/[?&](ilink|name)=/))
     {
-        name = url.match(/(ilink|name)=(.+)&history=/)[2]
+        name = url.match(/[?&](ilink|name)=(.+)&history=/)[2]
     }
-    name = checkSetTmpChannel(name)
+    checkSetTmpChannel(url)
     return Channel.getDetailsUrl(name);
 };
 
@@ -126,7 +126,7 @@ Details.toHtml = function (programData) {
         else if (programData.show) {
             var title = myLocation.match(/title=([^&]+)/);
             title = (title) ? title[1] : "Programmet"
-            html+='<a href="#" id="enterShowButton" class="link-button selected">Till ' + title + '</a>';
+            html+='<a href="#" id="enterShowButton" class="link-button selected">Till ' + decodeURIComponent(title) + '</a>';
         } else if (programData.not_available) {
             html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
         } else {
