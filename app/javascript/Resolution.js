@@ -37,14 +37,16 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
                function(status, data)
 	       {
                    var streams, is_hls = videoUrl.match(/\.m3u8/);
+                   extra.cookies = data.getAllResponseHeaders().match(/Set-Cookie: ?.+$/igm);
+                   for (var i=0; extra.cookies && i < extra.cookies.length; i++)
+                       extra.cookies[i] = extra.cookies[i].replace(/.*Set-Cookie: ?/i, "")
                    if (is_hls) {
-                       streams = Resolution.getHlsStreams(videoUrl, data)
+                       streams = Resolution.getHlsStreams(videoUrl, data, prefix)
                    } else if (videoUrl.match(/\.ism/)) {
-                       streams = Resolution.getIsmStreams(videoUrl, data)
+                       streams = Resolution.getIsmStreams(videoUrl, data, prefix)
                    } else if (videoUrl.match(/\.mpd/)) {
-                       streams = Resolution.getHasStreams(videoUrl, data)
+                       streams = Resolution.getHasStreams(videoUrl, data, prefix)
                    }
-                   extra.cookies = streams.cookies;
                    extra.audio_idx = streams.audio_idx;
                    extra.hls_subs = streams.hls_subs;
                    if (target != "Auto") {
@@ -86,39 +88,42 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
 	           }
                    if (is_hls)
                        videoUrl = videoUrl + "|COMPONENT=HLS"
+                   else if (videoUrl.match(/\.mpd/))
+                       videoUrl = videoUrl + "|COMPONENT=HAS";
                    else {
                        if (target == "Auto")
                            videoUrl = videoUrl + "|STARTBITRATE=CHECK";
                        if (videoUrl.match(/\.ism/)) {
                            videoUrl = videoUrl + "|COMPONENT=WMDRM";
-                       } else if (videoUrl.match(/\.mpd/)) {
-                           videoUrl = videoUrl + "|COMPONENT=HAS";
                        }
                    }
 		   Player.setVideoURL(master, videoUrl, srtUrl, extra);
 		   callback();
-               }
+               },
+               {headers:Channel.getHeaders()}
               );
 };
 
-Resolution.getHlsStreams = function (videoUrl, data) {
+Resolution.getHlsStreams = function (videoUrl, data, prefix) {
     // Log("M3U8 content: " + data.responseText);
-    
+
     var subs = data.responseText.match(/^#.+TYPE=SUBTITLES.+URI="[^"]+.+$/mg);
-    var anyResoution = data.responseText.match(/^#.+BANDWIDTH=[0-9]+.+RESOLUTION/mg);
+    var anyResolution = data.responseText.match(/^#.+BANDWIDTH=[0-9]+.+RESOLUTION/mg);
     var bandwidths = data.responseText.match(/^#.+BANDWIDTH=[0-9]+(.+RESOLUTION)?/mg);
     var urls = data.responseText.match(/^([^#\r\n]+)$/mg);
     var streams = [];
     var subsStreams = [];
-    var cookies = data.getAllResponseHeaders().match(/Set-Cookie:(.+)/gm);
 
     for (var i = 0; i < bandwidths.length; i++) {
         // Ignore audio only streams
-        if (anyResoution && !bandwidths[i].match(/RESOLUTION/)) {
+        if (anyResolution && !bandwidths[i].match(/RESOLUTION/)) {
             continue;
         }
+        if (bandwidths[i].match(/EXT-X-I-FRAME-STREAM-INF/))
+            // Some new stuff...
+            break;
         streams.push({bandwidth: +bandwidths[i].replace(/.*BANDWIDTH=([0-9]+).*/,"$1"),
-                      url:urls[i]
+                      url: (urls[i].match(/http[s]?:/)) ? urls[i] : prefix + urls[i]
                      }
                     );
     }
@@ -127,14 +132,16 @@ Resolution.getHlsStreams = function (videoUrl, data) {
             // Only keep Swedish subtitles
             continue;
         }
-        subsStreams.push(subs[i].match(/URI="([^"]+)/)[1])
+        subs[i] = subs[i].match(/URI="([^"]+)/)[1];
+        subs[i] = (subs[i].match(/http[s]?:/)) ? subs[i] : prefix + subs[i];
+        subsStreams.push(subs[i])
     }
     if (subsStreams.length == 0)
         subsStreams = null;
-    return {streams:streams, cookies:cookies, hls_subs:subsStreams}
+    return {streams:streams, hls_subs:subsStreams}
 }
 
-Resolution.getIsmStreams = function (videoUrl, data) {
+Resolution.getIsmStreams = function (videoUrl, data, prefix) {
     data = data.responseText.replace(/StreamIndex[	 ]*\r?\n/gm,"StreamIndex");
     // Log("ISM content: " + data);
     data = data.split(/StreamIndex.+="video"/)
@@ -160,7 +167,7 @@ Resolution.getIsmStreams = function (videoUrl, data) {
     return {streams:streams, audio_idx:swe_audio_idx}
 }
 
-Resolution.getHasStreams = function (videoUrl, data) {
+Resolution.getHasStreams = function (videoUrl, data, prefix) {
     data = data.responseText.split(/<AdaptionSet/);
     for (var i = 0; i < data.length; i++) {
         if (data[i].match(/.*type.*=.*video/i)) {

@@ -28,7 +28,8 @@ live.loadXml = function(refresh) {
                    data = null;
                },
                {cbError:function(status){cbComplete(status)},
-                headers:Channel.getHeaders()
+                headers:Channel.getHeaders(),
+                no_cache:true
                });
 };
 

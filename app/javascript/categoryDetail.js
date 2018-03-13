@@ -21,10 +21,14 @@ categoryDetail.onUnload = function()
 
 categoryDetail.loadXml = function(location, refresh) {
     $("#content-scroll").hide();
+    var url = location;
     if (location.match(/category=/))
-        location = location.match(/category=(.+)&catThumb/)[1]
-    var url = Channel.getUrl("categoryDetail", {refresh:refresh, location:location});
-    var cbComplete = function(status){loadFinished(status, refresh)};
+        url = location.match(/category=(.+)&catThumb/)[1]
+    url = Channel.getUrl("categoryDetail", {refresh:refresh, location:url});
+    var cbComplete = function(status) {
+        if (refresh || myPos || !Channel.checkResume(location))
+            loadFinished(status, refresh);
+    };
     requestUrl(url,
                function(status, data)
                {
@@ -41,4 +45,3 @@ categoryDetail.loadXml = function(location, refresh) {
                 headers:Channel.getHeaders()
                });
 };
-//window.location = 'showList.html?name=' + ilink + '&history=' + historyPath + iname + '/';

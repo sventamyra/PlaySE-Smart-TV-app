@@ -65,7 +65,6 @@ Details.loadXml = function(isBackground) {
                         name        : decodeURIComponent(myLocation.match(/catName=([^&]+)/)[1]),
                         thumb       : decodeURIComponent(myLocation.match(/catThumb=([^&]+)/)[1]),
                        });
-        
         window.setTimeout(loadingStop, 0);
         return;
     }
@@ -87,7 +86,8 @@ Details.loadXml = function(isBackground) {
                    if (!isBackground) {
                        loadingStop();
                    }},
-                headers:Channel.getHeaders()
+                headers:Channel.getHeaders(),
+                no_cache:Details.noCache()
                }
               )
 };
@@ -102,11 +102,21 @@ Details.toHtml = function (programData) {
             // Ignore extra if inside show
             if (getOldLocation() && !getOldLocation().match(/showList\.html/) &&
                 programData.parent_show) {
-                extra = {loc: makeShowLink(programData.parent_show.name,
-                                           programData.parent_show.url
-                                          ),
-                         name: "Till Programmet"
-                        }
+
+                if (programData.parent_show.is_category) {
+                    extra = {loc: makeCategoryLink(programData.parent_show.name,
+                                                   programData.parent_show.large_thumb,
+                                                   programData.parent_show.url
+                                                  ),
+                             name: "Till Kategorin"
+                            }
+                } else {
+                    extra = {loc: makeShowLink(programData.parent_show.name,
+                                               programData.parent_show.url
+                                              ),
+                             name: "Till Programmet"
+                            }
+                }
             }
             if (programData.air_date)
 	        html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+dateToHuman(programData.air_date)+'</a></div>';
@@ -133,14 +143,14 @@ Details.toHtml = function (programData) {
             html+='<a href="#" id="playButton" class="link-button selected">Spela upp</a>';
         }
         if (extra) {
-            html+='<a href="'+extra.loc+'" id="extraButton" class="link-button'
+            html+=extra.loc+'" id="extraButton" class="link-button'
             if (programData.not_available)
                 html+=' selected'
             html+='" style="margin-top:3px;">'+extra.name+'</a>';
         }
         html+=' </div>';
 	html+=' </div>';
-	
+
         html+='</div>';
 	html+='<img class="imagestyle" src="'+programData.thumb+'" alt="Image" />';
         // Add "header" elements last to determine max-height
@@ -155,6 +165,11 @@ Details.toHtml = function (programData) {
     })
 }
 
+Details.noCache = function() {
+   return itemSelected &&
+        (itemSelected.find('.ilink').attr("is-live") != null ||
+         itemSelected.find('.ilink').attr("not-yet-available") != null);
+}
 
 Details.fetchData = function(detailsUrl, refresh) {
     Details.init();
@@ -165,7 +180,8 @@ Details.fetchData = function(detailsUrl, refresh) {
                 {cb: function(status, data) {
                     Details.fetchedDetails = Details.getData(detailsUrl,{responseText:data});
                 },
-                 headers:Channel.getHeaders()
+                 headers:Channel.getHeaders(),
+                 no_cache:Details.noCache()
                 });
 };
 

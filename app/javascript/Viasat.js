@@ -53,7 +53,7 @@ Viasat.getUrl = function(tag, extra) {
             // Force new channel name
             Header.display(document.title);
         }
-        url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=50&order=popularity&page=999';
+        url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=50&order=-popularity';
         // url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.popular&device=mobile&premium=open&country=se';
         break;
 
@@ -103,8 +103,6 @@ Viasat.getUrl = function(tag, extra) {
 };
 
 Viasat.decodeMain = function(data, extra) {
-
-    extra.reverse=true;
     Viasat.decodeShows(data, extra);
 }
 
@@ -145,12 +143,11 @@ Viasat.decodeCategories = function(data, extra) {
             }
 	    ImgLink  = Viasat.fixThumb(data[k]._links.image.href);
 
-            toHtml({name:Name,
-                    link:Link + "&limit=500",
-                    link_prefix:'<a href="categoryDetail.html?category=',
-                    thumb:ImgLink,
-                    largeThumb:Viasat.fixThumb(ImgLink, VIASAT_DETAILS_IMG_SIZE)
-                   });
+            categoryToHtml(Name,
+                           ImgLink,
+                           Viasat.fixThumb(ImgLink, VIASAT_DETAILS_IMG_SIZE),
+                           Link + "&limit=500"
+                          );
 	}
 	data = null;
     } catch(err) {
@@ -536,36 +533,25 @@ Viasat.decodeShows = function(data, extra) {
         var Name;
         var Link;
         var ImgLink;
-        var next = nextLast = null;
+        var next = null;
         var checkSeasons=false;
         var LinkPrefix = null;
         var query = null;
         var json = null;
-        var prevResult = []
 
-        if (!extra.is_next && !extra.is_prev) {
+        if (!extra.is_next) {
             Viasat.result = [];
             Viasat.show_ids = [];
-        } else if (extra.is_prev) {
-            prevResult = Viasat.result
-            Viasat.result = []
         }
 
         if (data && data.responseText)
             data = data.responseText;
 
         json = JSON.parse(data);
-        if (!extra.reverse && json._links && json._links.next)
+        if (!extra.url.match(/\-popularity/) && json._links && json._links.next)
             next = json._links.next.href
-        else 
+        else
             next = null;
-
-        if (+json.count.total_pages > 1) {
-            nextLast = +json.count.total_pages - 1
-            nextLast = extra.url.replace(/page=[0-9]+/, "page="+nextLast)
-        }
-        else 
-            nextLast = null;
 
         if (json.data && json.data.formats) {
             json = json.data.formats;
@@ -623,21 +609,7 @@ Viasat.decodeShows = function(data, extra) {
                                          );
         }
 
-        if (extra.reverse) {
-            Viasat.result = Viasat.result.concat(prevResult)
-            if (Viasat.result.length < 50 && nextLast)
-                return Viasat.requestNextPage(nextLast, 
-                                              function(status, nextData) {
-                                                  extra.is_prev = true;
-                                                  Viasat.decodeShows(nextData, extra);
-                                              },
-                                              extra.no_abort
-                                             );
-            else {
-                Viasat.result.reverse();
-            }
-        }
-        else
+        if (!extra.url.match(/\-popularity/))
             Viasat.result.sort(function(a, b) {
                 var name_a = (checkSeasons) ? Number(a.name.replace(/[^0-9]+/, "")) : a.name.toLowerCase();
                 var name_b = (checkSeasons) ? Number(b.name.replace(/[^0-9]+/, "")) : b.name.toLowerCase();

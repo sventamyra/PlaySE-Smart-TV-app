@@ -53,6 +53,7 @@ initChannel = function() {
 setTmpChannel = function(newId) {
     var newChannel = eval($(".channel-content").find("#"+newId).attr("channel"))
     Channel.setTmp(newChannel, newId)
+    Channel.login()
 }
 
 getDeviceYear = function() {
@@ -576,6 +577,8 @@ requestUrl = function(url, cbSucces, extra) {
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:Channel.getName()};
     addToMyUrls(url, extra);
     var retrying = false;
+    var cache = (extra.no_cache) ? false : true;
+
     if (extra.cookie) {
         
         extra.cookie = addCookiePath(extra.cookie, url);
@@ -591,6 +594,7 @@ requestUrl = function(url, cbSucces, extra) {
             tryCount : 0,
             retryLimit : 3,
 	    timeout: 15000,
+            cache: cache,
             beforeSend: function (request)
             {
                 if (extra.headers) {
@@ -657,6 +661,11 @@ isRequestStillValid = function (request) {
     return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==Channel.getName());
 }
 
+addUrlParam = function(url, key, value) {
+    url = (url.match(/\?/)) ? url+"&" : url+"?";
+    return url + key + "=" + encodeURIComponent(value)
+};
+
 httpRequest = function(url, extra) {
     if (!extra) extra = {};
     addToMyUrls(url, extra);
@@ -676,11 +685,16 @@ httpRequest = function(url, extra) {
             handleHttpResult(url, timer, extra, 
                              {data:     xhr.responseText,
                               status:   xhr.status,
-                              location: xhr.getResponseHeader('location')
+                              location: xhr.getResponseHeader('location'),
+                              xhr     : xhr
                              });
             xhr.destroy();
             xhr = null;
         }
+    }
+    if (extra.no_cache) {
+        url = addUrlParam(url, "_", new Date().getTime())
+        alert("no cache url:" + url)
     }
     if (extra.params) {
         alert("POST Request params: "+ extra.params)
@@ -696,11 +710,13 @@ httpRequest = function(url, extra) {
     if (extra.sync) {
         var result = {data:     xhr.responseText,
                       status:   xhr.status,
-                      location: xhr.getResponseHeader('location')
+                      location: xhr.getResponseHeader('location'),
+                      xhr     : xhr
                      };
+        result = handleHttpResult(url, timer, extra, result);
         xhr.destroy();
         xhr = null;
-        return handleHttpResult(url, timer, extra, result);
+        return result
     }
 };
 
@@ -716,7 +732,7 @@ handleHttpResult = function(url, timer, extra, result) {
     window.clearTimeout(timer);
 
     if (extra.params)
-        alert(xhr.getAllResponseHeaders())
+        alert(result.xhr.getAllResponseHeaders())
     if (result.status == 200) {
         if (!extra.no_log)
             Log('Success:' + url);
@@ -726,30 +742,34 @@ handleHttpResult = function(url, timer, extra, result) {
         // else
         //     alert('Failure:' + url + " status:" + result.status);
     }
+    if (extra.cb) {
+        extra.cb(result.status, result.data, result.xhr)
+    }
     if (extra.sync) {
         result.success = (result.status == 200);
         if (result.status != 302)
             result.location = null;
         return result
-    } else if (extra.cb) {
-        extra.cb(result.status, result.data)
     }
 }
 
-httpLoop = function(urls, urlCallback, cbComplete) {
-    runHttpLoop(urls, urlCallback, cbComplete, "")
+httpLoop = function(urls, urlCallback, cbComplete, extra) {
+    runHttpLoop(urls, urlCallback, cbComplete, extra, "")
 };
 
-runHttpLoop = function(urls, urlCallback, cbComplete, totalData) {
-    httpRequest(urls[0],
-                {cb:function(status,data) {
-                    totalData = totalData + urlCallback(urls[0], data, status)
-                    if (urls.length > 1)
-                        runHttpLoop(urls.slice(1), urlCallback, cbComplete, totalData)
-                    else {
-                        cbComplete(totalData)
-                    }
-                }});
+runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData) {
+    if (!extra) extra = {};
+    extra.cb =
+        function(status,data) {
+            totalData = totalData + urlCallback(urls[0], data, status);
+            if (urls.length > 1) {
+                var this_extra = extra;
+                runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData)
+            } else {
+                cbComplete(totalData)
+            }
+        };
+    httpRequest(urls[0], extra);
 }
 
 getHistory = function(Name) {
@@ -838,6 +858,16 @@ clipToHtml = function(Thumb, Link) {
     showToHtml("Klipp", Thumb, Link, '<a href="showList.html?clips=1&title=Klipp&name=');
 };
 
+categoryToHtml = function(Name, Thumb, LargeThumb, Link, UrlParams) {
+    toHtml({name:        Name,
+            link:        fixCategoryLink(Name, LargeThumb, Link),
+            link_prefix: makeCategoryLinkPrefix(UrlParams),
+            thumb:       Thumb,
+            description: "",
+            duration:    ""
+           });
+};
+
 showToHtml = function(Name, Thumb, Link, LinkPrefix) {
     if (!LinkPrefix)
         LinkPrefix = makeShowLinkPrefix()
@@ -847,32 +877,41 @@ showToHtml = function(Name, Thumb, Link, LinkPrefix) {
             link_prefix: LinkPrefix,
             thumb: Thumb,
             description: "",
-            duration:"",
-            is_live:false,
-            is_channel:false,
-            is_running:null,
-            starttime:null
+            duration:""
            });
 };
 
-makeShowLinkPrefix = function(UrlParams) {
+makeLinkPrefix = function(Link, Key, UrlParams) {
     if (UrlParams)
-        UrlParams = UrlParams + "&name="
+        UrlParams = UrlParams + "&" + Key + "=";
     else
-        UrlParams = "name="
-    return '<a href="showList.html?' + UrlParams
+        UrlParams = Key + "=";
+    return '<a href="' + Link + '?' + UrlParams;
+};
+
+makeCategoryLinkPrefix = function(UrlParams) {
+    return makeLinkPrefix("categoryDetail.html", "category", UrlParams);
+};
+
+makeShowLinkPrefix = function(UrlParams) {
+    return makeLinkPrefix("showList.html", "name", UrlParams)
+};
+
+makeCategoryLink = function(Name, Thumb, Url) {
+    return makeLink(makeCategoryLinkPrefix(), Name, fixCategoryLink(Name,Thumb,Url));
+}
+
+fixCategoryLink = function(Name, Thumb, Url) {
+    return Url +"&catThumb=" + encodeURIComponent(Thumb) +
+        "&catName=" + encodeURIComponent(Name);
 }
 
 makeShowLink = function(Name, Url) {
-    return makeLink("showList.html?name=", Name, Url);
+    return makeLink(makeShowLinkPrefix(), Name, Url);
 }
 
 itemToLink = function(Item, UrlParams) {
 
-    if (Item.link_prefix.match(/categoryDetail\.html/) && !Item.link.match(/&catThumb/)) {
-        Item.link = Item.link + "&catThumb=" + encodeURIComponent(Item.largeThumb);
-        Item.link = Item.link + "&catName=" + encodeURIComponent(Item.name);
-    }
     return makeLink(Item.link_prefix,Item.name,Item.link, UrlParams)
 };
 

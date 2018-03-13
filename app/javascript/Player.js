@@ -1477,7 +1477,8 @@ Player.fetchSubtitles = function (srtUrls, hlsSubs) {
                      if (url.match(/\.(web)?vtt/)) {
                          data = data.slice(data.search(/^[0-9]/m));
                          data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
-                         data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
+                         if (!data.match(/^[0-9]+[	 ]*(\r)?\n[0-9]+:/m))
+                             data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
                      }
                      return data + "\n\n"
                  }
@@ -1488,25 +1489,32 @@ Player.fetchSubtitles = function (srtUrls, hlsSubs) {
                      Player.parseSubtitle(srtData);
                  if (anyFailed && hlsSubs)
                      Player.fetchHlsSubtitles(hlsSubs)
-             }
+             },
+             {headers:Channel.getHeaders()}
             );
 };
 
 Player.fetchHlsSubtitles = function (hlsSubs) {
+    var extra = {headers:Channel.getHeaders()};
     httpLoop(hlsSubs,
              function(url, data) {
                  var urls = data.match(/^([^#].+)$/mg)
                  var prefix  = url.replace(/[^\/]+(\?.+)?$/,"");
-                 for (var i=0; i < urls.length; i++) {
-                     if (!urls[i].match(/http[s]?:/))
-                         urls[i] = prefix + urls[i]
+                 if (urls) {
+                     for (var i=0; i < urls.length; i++) {
+                         if (!urls[i].match(/http[s]?:/))
+                             urls[i] = prefix + urls[i]
+                     }
+                     return urls.join(" ") + " "
                  }
-                 return urls.join(" ") + " "
+                 else
+                     return ""
              },
              function (urls) {
                  urls = urls.trim().split(" ");
                  Player.fetchSubtitles({list:urls})
-             }
+             },
+             extra
             );
 };
 

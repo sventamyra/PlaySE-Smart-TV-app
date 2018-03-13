@@ -1,5 +1,6 @@
 var History =
 {
+    resume_index: null
 };
 
 History.savePosition = function(pos) {
@@ -44,12 +45,18 @@ History.checkResume = function(location) {
 
 History.findSeason = function(show, meta) {
     alert("Resume Season " + meta.season);
-    return History.findLinkPrefix(show, new RegExp("[?&]season=" + meta.season + "(&.+)?$"));
+    if (History.findLinkPrefix(show, new RegExp("[?&]season=" + meta.season + "(&.+)?$")))
+        return true;
+    else
+        return History.findVariant(show, meta);
 };
 
 History.findVariant = function(show, meta) {
     alert("Resume Variant " + meta.variant + " season:" + meta.season);
-    return History.findLinkPrefix(show, new RegExp("[?&]variant=" + meta.variant + "(&.+)?$"));
+    if (History.findLinkPrefix(show, new RegExp("[?&]variant=" + meta.variant + "(&.+)?$")))
+        return true;
+    else
+        return History.findEpisode(show, meta);
 }
 
 History.findLinkPrefix = function(show, regexp) {
@@ -114,15 +121,35 @@ History.getUrl = function(tag, extra) {
 }
 
 History.decodeMain = function(data, extra) {
+    var LinkPrefix;
+    var UrlParams;
     Shows = Config.read("History")
     for (var i=0; Shows && i < Shows.length; i++) {
-        showToHtml(
-            Shows[i].name,
-            Shows[i].thumb,
-            Shows[i].url,
-            makeShowLinkPrefix("show_name=" + encodeURIComponent(Shows[i].name) + 
-                               "&tmp_channel_id=" + Shows[i].channel_id)
-        )
+        UrlParams = "show_name=" + encodeURIComponent(Shows[i].name) +
+            "&tmp_channel_id=" + Shows[i].channel_id;
+        if (Shows[i].is_category)
+            categoryToHtml(Shows[i].name,
+                           Shows[i].thumb,
+                           Shows[i].large_thumb,
+                           Shows[i].url,
+                           UrlParams
+                          );
+        else
+            showToHtml(Shows[i].name,
+                       Shows[i].thumb,
+                       Shows[i].url,
+                       makeShowLinkPrefix(UrlParams)
+                      );
+    }
+    if (History.resume_index) {
+        if (History.resume_index >= Shows.length)
+            History.resume_index = Shows.length-1;
+        selectItemIndex(History.resume_index)
+        myPos = {col     : columnCounter,
+                 top     : isTopRowSelected,
+                 section : htmlSection
+                };
+        History.resume_index = null;
     }
     if (extra.cbComplete)
         extra.cbComplete();
@@ -150,7 +177,9 @@ History.keyBlue = function() {
             channelId = channelId[1]
     }
     if (showName) {
-        History.removeShow(decodeURIComponent(showName[1]), channelId)
+        var index = History.removeShow(decodeURIComponent(showName[1]), channelId);
+        if (myLocation.match(/index\.html/))
+            History.resume_index = index
         initChannel()
     }
 };
@@ -180,19 +209,22 @@ History.getDButtonText = function(language) {
 }
 
 History.addShow = function(details) {
-    if (!details.parent_show)
+    if (details.is_live || details.is_channel || !details.parent_show)
         return
+
     var savedShows = History.removeShow(details.parent_show.name, Channel.id(), true);
     if (!savedShows)
         savedShows = []
     savedShows.unshift({channel_id   : Channel.id(), 
                         name         : details.parent_show.name,
                         thumb        : details.parent_show.thumb,
+                        large_thumb  : details.parent_show.large_thumb,
                         url          : details.parent_show.url,
                         season       : details.season,
                         variant      : details.variant,
                         episode      : details.episode,
-                        episode_name : details.episode_name
+                        episode_name : details.episode_name,
+                        is_category  : details.parent_show.is_category
                        })
     Config.save("History", savedShows.slice(0,30))
 }
@@ -200,8 +232,9 @@ History.addShow = function(details) {
 History.removeShow = function(showName, channelId, noSave) {
 
     var savedShows = Config.read("History")
+    var i;
     if (savedShows) {
-        for (var i=0; i < savedShows.length; i++) {
+        for (i=0; i < savedShows.length; i++) {
             if (savedShows[i].channel_id == channelId &&
                 savedShows[i].name == showName) {
                 savedShows.splice(i, 1)
@@ -213,6 +246,7 @@ History.removeShow = function(showName, channelId, noSave) {
         return savedShows
     else
         Config.save("History", savedShows)
+    return i
 }
 
 History.lookup = function(showName) {

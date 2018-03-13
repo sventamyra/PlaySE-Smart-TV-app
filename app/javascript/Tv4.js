@@ -194,11 +194,7 @@ Tv4.decodeCategories = function(data, extra) {
         for (var k=0; k < data.length; k++) {
             Name = data[k].name;
 	    Link = Tv4.getUrl("categoryUrl") + data[k].nid;
-            toHtml({name:Name,
-                    link:Link,
-                    link_prefix:'<a href="categoryDetail.html?category=',
-                    thumb:null
-                   });
+            categoryToHtml(Name, null, null, Link);
 	}
 	data = null;
     } catch(err) {
@@ -567,8 +563,6 @@ Tv4.getDetailsData = function(url, data) {
     var VideoLength = "";
     var AvailDate=null;
     var Description="";
-    var onlySweden="";
-    var isChannel=false;
     var NotAvailable=false;
     var isLive=false;
     var Show=null;

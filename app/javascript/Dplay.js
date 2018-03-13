@@ -145,11 +145,11 @@ Dplay.decodeCategories = function(data, extra, allFetched) {
 	    data = null;
 
             for (var k=0; k < genres.length; k++)
-                toHtml({name:genres[k].name,
-                        link:genres[k].link,
-                        link_prefix:'<a href="categoryDetail.html?category=',
-                        thumb:null
-                       });
+                categoryToHtml(genres[k].name,
+                               null,
+                               null,
+                               genres[k].link
+                              );
 
             if (extra.cbComplete)
                 extra.cbComplete();

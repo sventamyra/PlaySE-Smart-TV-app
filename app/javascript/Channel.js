@@ -118,7 +118,7 @@ Channel.getUrl = function(tag, extra) {
 Channel.login = function(callback) {
     if (this.impl.login)
         this.impl.login(callback);
-    else
+    else if (callback)
         callback()
 }
 

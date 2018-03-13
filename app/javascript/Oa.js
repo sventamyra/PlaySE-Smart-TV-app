@@ -248,12 +248,11 @@ Oa.decodeMain = function(data, extra) {
             continue
         };
         if (data[i].teaserlist.length)
-            toHtml({name:Name,
-                    link:Oa.getUrl("main", extra),
-                    link_prefix: '<a href="categoryDetail.html?category=',
-                    thumb:data[i].teaserlist[0].thumbnailSmall,
-                    largeThumb:data[i].teaserlist[0].thumbnailLarge
-                   });
+            categoryToHtml(Name,
+                           data[i].teaserlist[0].thumbnailSmall,
+                           data[i].teaserlist[0].thumbnailLarge,
+                           Oa.getUrl("main", extra)
+                          )
     };
     if (extra.cbComplete)
         extra.cbComplete();
@@ -284,16 +283,19 @@ Oa.decodeCategories = function (data, extra) {
                 ImgLink = data[i].match(/svtoa_genre-list__link-item-image" src="([^"]+)/)[1];
                 Name = data[i].match(/svtoa_grenre-list__link-item-text">([^<]+)/)[1];
                 Term = data[i].match(/etikett\/genre\/([^\/]+)/)[1];
-                Categories.push({name:Name,
-                                 link:Link+Term,
-                                 link_prefix: '<a href="categoryDetail.html?category=',
-                                 thumb:ImgLink,
-                                 largeThumb:ImgLink.replace("small", "large")
+                Categories.push({name:        Name,
+                                 link:        Link+Term,
+                                 thumb:       ImgLink,
+                                 large_thumb: ImgLink.replace("small", "large")
                                 });
             };
             Categories.sort(function(a, b){return (a.name > b.name) ? 1 : -1});
             for (var i=0; i<Categories.length; i++)
-                toHtml(Categories[i]);
+                categoryToHtml(Categories[i].name,
+                               Categories[i].thumb,
+                               Categories[i].large_thumb,
+                               Categories[i].link
+                              );
             break;
         case 1:
             data = data.responseText.split("svtoa-anchor-list-link").slice([1]);
@@ -315,7 +317,6 @@ Oa.decodeCategories = function (data, extra) {
 Oa.decodeCategoryDetail = function (data, extra) {
     data = JSON.parse(data.responseText);
     if (extra.url == Oa.getUrl("main", extra)) {
-        alert(getIndexLocation())
         var Label = decodeURIComponent(getIndexLocation().match(/catName=([^&]+)/)[1])
         for (var i=0; i<data.length; i++) {
             if (data[i].label == Label) {
@@ -351,7 +352,6 @@ Oa.decodeShowList = function(data, extra) {
     var SeasonNumbers = [];
     var Seasons = [];
     var Items = [];
-    alert("season:" + extra.season >= 0)
     if (extra.season) {
         for (var k=0; k < data.length; k++) {
             if (data[k].seasonNumber == extra.season)
@@ -516,20 +516,21 @@ Oa.decode = function(data, extra, FilterShows) {
                     alert("Skipping tagTeaser: " + Name)
                     continue;
                 }
-                LinkPrefix = '<a href="categoryDetail.html?category=';
+                Links.push(Link);
                 if (data[k].tagList[0].facet == "titleFacet") {
-                    LinkPrefix = '<a href="showList.html?name=';
+                    LinkPrefix = makeShowLinkPrefix();
                     Description = null;
                     FilterShows.push(data[k].tagList[0].term.trim());
                     Shows.push(data[k].tagList[0].term.trim())
+                } else {
+                    LinkPrefix = makeCategoryLinkPrefix();
+                    Link       = fixCategoryLink(Name, data[k].thumbnailLarge, Link)
                 }
-                Links.push(Link);
                 toHtml({name:Name,
                         description:Description,
                         link:Link,
                         link_prefix: LinkPrefix,
-                        thumb:data[k].thumbnailSmall,
-                        largeThumb:data[k].thumbnailLarge
+                        thumb:data[k].thumbnailSmall
                        });
                 break;
 
