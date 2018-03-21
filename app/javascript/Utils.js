@@ -52,6 +52,8 @@ initChannel = function() {
 
 setTmpChannel = function(newId) {
     var newChannel = eval($(".channel-content").find("#"+newId).attr("channel"))
+    if (!newChannel)
+        newChannel = eval(newId)
     Channel.setTmp(newChannel, newId)
     Channel.login()
 }
@@ -598,8 +600,11 @@ requestUrl = function(url, cbSucces, extra) {
             beforeSend: function (request)
             {
                 if (extra.headers) {
-                    for (var i=0;i<extra.headers.length;i++)
+                    for (var i=0;i<extra.headers.length;i++) {
+                        if (extra.headers[i].key.match(/user-agent/i))
+                            extra.ua = null;
                         request.setRequestHeader(extra.headers[i].key, extra.headers[i].value);
+                    }
                 }
                 if (deviceYear == 2014 && extra.cookie) {
                     extra.cookie = extra.cookie.replace(/ *;.*/,"")
@@ -952,8 +957,8 @@ itemToHtml = function(Item, OnlyReturn) {
     }
 
     html += '<div class="scroll-item-img">';
-    html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '><img src="' + Item.thumb + '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" alt="' + Item.name + '" /></a>';
-
+    html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '/>';
+    html += '<img class="image" src="' + Item.thumb + '" alt="' + Item.name + '"/>';
     var itemsIndex = items.indexOf(Item);
     if (Item.thumb && itemCounter < THUMBS_PER_PAGE) {
         imgCounter = (itemCounter == 0) ? 0 : imgCounter+1;
@@ -967,14 +972,14 @@ itemToHtml = function(Item, OnlyReturn) {
     thumbsLoaded[itemsIndex] = 1;
     Item.starttime = dateToHuman(Item.starttime);
     if (Item.is_live && !Item.is_running) {
-	html += '<span class="topoverlay">LIVE</span>';
-	html += '<span class="bottomoverlay">' + Item.starttime + '</span>';
+	html += '<span class="topoverlay">LIVE';
+	html += '<span class="bottomoverlay">' + Item.starttime + '</span></span>';
     }
     else if (Item.is_live){
-	html += '<span class="topoverlayred">LIVE</span>';
-	html += '<span class="bottomoverlayred">' + Item.starttime + '</span>';
+	html += '<span class="topoverlayred">LIVE';
+	html += '<span class="bottomoverlayred">' + Item.starttime + '</span></span>';
     }
-    html += '</div>';
+    html += '</div><div class="scroll-item-border"/>';
     Item.name = Item.name.trim();
     html += '<div class="scroll-item-name">';
     html +=	'<p><a href="#">' + Item.name + '</a></p>';

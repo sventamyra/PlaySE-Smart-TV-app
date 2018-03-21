@@ -376,7 +376,7 @@ Player.playVideo = function()
         Player.setFrontPanelText(Player.FRONT_DISPLAY_PLAY);
         Player.disableScreenSaver();
         this.setWindow();
-       
+
         // Player.plugin.Execute("SetInitialBuffer", 640*1024);
         // Player.plugin.Execute("SetPendingBuffer", 640*1024);
         // Player.plugin.Execute("SetTotalBufferSize", 640*1024);        
@@ -1495,7 +1495,6 @@ Player.fetchSubtitles = function (srtUrls, hlsSubs) {
 };
 
 Player.fetchHlsSubtitles = function (hlsSubs) {
-    var extra = {headers:Channel.getHeaders()};
     httpLoop(hlsSubs,
              function(url, data) {
                  var urls = data.match(/^([^#].+)$/mg)
@@ -1514,7 +1513,7 @@ Player.fetchHlsSubtitles = function (hlsSubs) {
                  urls = urls.trim().split(" ");
                  Player.fetchSubtitles({list:urls})
              },
-             extra
+             {headers:Channel.getHeaders()}
             );
 };
 

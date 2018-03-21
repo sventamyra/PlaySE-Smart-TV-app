@@ -553,33 +553,36 @@ ul.dropdown .root-item {
 }
 
 .scroll-content-item {
-    width: 250px;
+    width: 252px;
     height: 160px;
     float: left;
     margin: 0 5px;
     text-align: left;
 }
 
-.scroll-content-item .scroll-item-img {
+.scroll-item-img {
     position: relative;
-    padding: 6px;
-    border-bottom: 3px solid #141414;
+    border: 6px solid #050505;
     height: 135px;
     width: 240px;
     background: #050505;
+    overflow: hidden;
+}
+
+.image {
+    display: inline-block;
+    width: 100%;
+}
+
+.scroll-item-border {
+    padding-top: 3px;
     margin-bottom: 3px;
 }
 
-.scroll-content-item.selected .scroll-item-img {
-    padding: 6px;
-    border-bottom: 3px solid #58b827;
-    height: 135px;
-    width: 240px;
-    background: #050505;
-    margin-bottom: 3px;
+.scroll-content-item.selected .scroll-item-border {
+    border-top: 3px solid #58b827;
+    padding-top: 0;
 }
-
-
 
 .scroll-item-name {
     text-align: left
@@ -733,15 +736,15 @@ ul.dropdown .root-item {
     clear: both;
 }
 
-.imagestyle {
+.detailsImgContainer {
+    display: inline-block;
     width: 600px;
+    max-height: 337px;
+    overflow: hidden;
     float: left;
     margin-left: 10px;
     border: 9px solid #050505;
 }
-
-
-
 
 ul.pagination {
     position: absolute;
@@ -1261,52 +1264,30 @@ small {
     -webkit-text-stroke-width: 1px;
 }
 
-.topoverlay {
-    position: absolute;
-    top: 86px;
-    left: 0;
-    color: #e0e7ea;
-    font: bold 12px/24px Helvetica, Sans-Serif;
-    letter-spacing: -1px;
-    background: rgba(0, 0, 0, 0.7);
-    margin-left: 6px;
-    padding: 0 10px;
-}
-
-.bottomoverlay {
-    position: absolute;
-    top: 110px;
-    left: 0;
-    color: #e0e7ea;
-    font: bold 12px/24px Helvetica, Sans-Serif;
-    letter-spacing: -1px;
-    background: rgba(0, 0, 0, 0.7);
-    margin-left: 6px;
-    padding: 0 10px;
-}
-
-.topoverlayred {
-    position: absolute;
-    top: 86px;
-    left: 0;
-    color: #e0e7ea;
-    font: bold 12px/24px Helvetica, Sans-Serif;
-    letter-spacing: -1px;
-    background: rgba(255, 0, 0, 0.7);
-    margin-left: 6px;
-    padding: 0 10px;
-}
-
+.topoverlay,
+.bottomoverlay,
+.topoverlayred,
 .bottomoverlayred {
     position: absolute;
-    top: 110px;
+    top: 60%;
     left: 0;
     color: #e0e7ea;
     font: bold 12px/24px Helvetica, Sans-Serif;
     letter-spacing: -1px;
-    background: rgba(255, 0, 0, 0.7);
-    margin-left: 6px;
+    background: rgba(0, 0, 0, 0.7);
+    vertical-align: middle;
+    white-space: nowrap;
     padding: 0 10px;
+}
+
+.topoverlayred,
+.bottomoverlayred {
+    background: rgba(255, 0, 0, 0.7);
+}
+
+.bottomoverlay,
+.bottomoverlayred {
+    top: 24px
 }
 
 .topoverlayresolution {
