@@ -101,22 +101,21 @@ Details.toHtml = function (programData) {
         } else if (!programData.category) {
             // Ignore extra if inside show
             if (getOldLocation() && !getOldLocation().match(/showList\.html/) &&
-                programData.parent_show) {
+                programData.parent_show && !programData.parent_show.is_category) {
+                extra = {loc: makeShowLink(programData.parent_show.name,
+                                           programData.parent_show.url
+                                          ),
+                         name: "Till Programmet"
+                        }
+            } else if (getOldLocation() && !getOldLocation().match(/categoryDetail\.html/) &&
+                       programData.parent_show && programData.parent_show.is_category) {
 
-                if (programData.parent_show.is_category) {
-                    extra = {loc: makeCategoryLink(programData.parent_show.name,
-                                                   programData.parent_show.large_thumb,
-                                                   programData.parent_show.url
-                                                  ),
-                             name: "Till Kategorin"
-                            }
-                } else {
-                    extra = {loc: makeShowLink(programData.parent_show.name,
+                extra = {loc: makeCategoryLink(programData.parent_show.name,
+                                               programData.parent_show.large_thumb,
                                                programData.parent_show.url
                                               ),
-                             name: "Till Programmet"
-                            }
-                }
+                         name: "Till Kategorin"
+                        }
             }
             if (programData.air_date)
 	        html+='<div class="project-meta border"><a id="aired" type="text">Sändes: </a><a>'+dateToHuman(programData.air_date)+'</a></div>';

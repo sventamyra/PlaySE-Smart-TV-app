@@ -452,7 +452,7 @@ Dplay.decodeSearchHits = function(data) {
         for (var k=0; k < data.length; k++) {
 
             Name = Dplay.determineEpisodeName(data[k]);
-            if (!Dplay.isItemOk(Name, data))
+            if (!Dplay.isItemOk(Name, data[k]))
                 continue;
             if (data[k].widevineRequired)
                 continue;
