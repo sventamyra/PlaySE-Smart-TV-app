@@ -972,12 +972,12 @@ itemToHtml = function(Item, OnlyReturn) {
     thumbsLoaded[itemsIndex] = 1;
     Item.starttime = dateToHuman(Item.starttime);
     if (Item.is_live && !Item.is_running) {
-	html += '<span class="topoverlay">LIVE';
-	html += '<span class="bottomoverlay">' + Item.starttime + '</span></span>';
+	html += '<div class="topoverlay">LIVE';
+	html += '<div class="bottomoverlay">' + Item.starttime + '</div></div>';
     }
     else if (Item.is_live){
-	html += '<span class="topoverlayred">LIVE';
-	html += '<span class="bottomoverlayred">' + Item.starttime + '</span></span>';
+	html += '<div class="topoverlayred">LIVE';
+	html += '<div class="bottomoverlayred">' + Item.starttime + '</div></div>';
     }
     html += '</div><div class="scroll-item-border"/>';
     Item.name = Item.name.trim();
