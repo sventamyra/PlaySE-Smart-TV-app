@@ -13,7 +13,6 @@ var thumbsLoaded = [];
 var myLocation = "index.html";
 var myRefreshLocation = null;
 var myHistory = [];
-var myUrls    = [];
 var myPos = null;
 var loadingTimer = 0;
 var detailsOnTop = false;
@@ -404,8 +403,7 @@ setOffsets = function() {
                     var clockUrl = data.split(/iframe src="/).pop().match(/([^"]+)"/)[1];
                     httpRequest(clockUrl,
                                 {cb:function(status,data) {setClockOffset(actualDate, data)},
-                                 no_log:true, 
-                                 not_random:true
+                                 no_log:true
                                 });
                 },
                  no_log:true
@@ -577,7 +575,6 @@ requestUrl = function(url, cbSucces, extra) {
     }
         
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:Channel.getName()};
-    addToMyUrls(url, extra);
     var retrying = false;
     var cache = (extra.no_cache) ? false : true;
 
@@ -673,7 +670,6 @@ addUrlParam = function(url, key, value) {
 
 httpRequest = function(url, extra) {
     if (!extra) extra = {};
-    addToMyUrls(url, extra);
     var xhr = new XMLHttpRequest();
     var location = null, timer = null;
     if (extra.timeout || extra.timeout === 0) {
@@ -764,12 +760,32 @@ httpLoop = function(urls, urlCallback, cbComplete, extra) {
 
 runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData) {
     if (!extra) extra = {};
+    if (!extra.interval) extra.interval = 0;
     extra.cb =
         function(status,data) {
-            totalData = totalData + urlCallback(urls[0], data, status);
+            try {
+                data = urlCallback(urls[0], data, status, totalData);
+            } catch (err) {
+                Log("runHttpLoop: callback failed: " + err);
+                throw err
+            }
+            if (data == -1) {
+                Log("httpLoop aborted")
+                return -1
+            } else {
+                alert("data.length:" + data.length);
+            }
+
+            totalData = totalData + data;
             if (urls.length > 1) {
                 var this_extra = extra;
-                runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData)
+                window.setTimeout(
+                    function()
+                    {
+                        runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData)
+                    },
+                    extra.interval
+                )
             } else {
                 cbComplete(totalData)
             }
@@ -958,7 +974,9 @@ itemToHtml = function(Item, OnlyReturn) {
 
     html += '<div class="scroll-item-img">';
     html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '/>';
-    html += '<img class="image" src="' + Item.thumb + '" alt="' + Item.name + '"/>';
+    if (Item.thumb) {
+        html += '<img class="image" src="' + Item.thumb + '" alt="' + Item.name + '"/>';
+    }
     var itemsIndex = items.indexOf(Item);
     if (Item.thumb && itemCounter < THUMBS_PER_PAGE) {
         imgCounter = (itemCounter == 0) ? 0 : imgCounter+1;
@@ -977,7 +995,9 @@ itemToHtml = function(Item, OnlyReturn) {
     }
     else if (Item.is_live){
 	html += '<div class="topoverlayred">LIVE';
-	html += '<div class="bottomoverlayred">' + Item.starttime + '</div></div>';
+        if (Item.starttime)
+	    html += '<div class="bottomoverlayred">' + Item.starttime + '</div>';
+        html += '</div>'
     }
     html += '</div><div class="scroll-item-border"/>';
     Item.name = Item.name.trim();
@@ -1109,7 +1129,6 @@ getNextSection = function() {
         htmlSection.load_prior_column=-1;
     }
     return maxIndex
-
 }
 
 loadNextSection = function() {
@@ -1196,19 +1215,6 @@ slideToggle = function(id, timer, callback) {
     } else
         id.slideToggle(timer, callback);
 }
-
-addToMyUrls = function(url, extra) {
-    if (!extra) extra = {};
-    if (!extra.not_random) {
-        for (var i=0; i<myUrls.length; i++) {
-            if (myUrls[i].url == url) {
-                return;
-            }
-        }
-        myUrls.push({url:url, extra:extra});
-        myUrls = myUrls.slice(0,10);
-    }
-};
 
 loadImage = function (image, callback, timeout) {
     var thisTimeout = null;

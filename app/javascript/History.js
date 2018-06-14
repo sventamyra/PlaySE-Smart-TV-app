@@ -169,6 +169,8 @@ History.keyYellow = function() {
 
 History.keyBlue = function() {
     var showName = myLocation.match(/[?&]show_name=([^&]+)/);
+    if (!showName && detailsOnTop)
+        showName = getOldLocation().match(/[?&]show_name=([^&]+)/);
     var channelId = Channel.id();
     if (!showName && itemSelected) {
         showName = itemSelected.find(".ilink").attr("href").match(/[?&]show_name=([^&]+)/);

@@ -805,13 +805,13 @@ Viasat.fixThumb = function(thumb, size) {
     return thumb[1]+encodeURIComponent(thumb[2]);
 }
 
-Viasat.fetchSubtitles = function (subUrls, hlsSubs) {
+Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl) {
     if (hlsSubs && hlsSubs.length > subUrls.list.length) {
-        return Player.fetchHlsSubtitles(hlsSubs);
+        return Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl);
     } else if (subUrls.list.length == 0) {
         return;
     } else if (subUrls.list[0].match(/\.(web)?vtt/)) {
-        return Player.fetchSubtitles(subUrls, hlsSubs)
+        return Player.fetchSubtitles(subUrls, hlsSubs, usedRequestedUrl)
     }
     var anyFailed = false
     httpLoop(subUrls.list,
@@ -829,7 +829,7 @@ Viasat.fetchSubtitles = function (subUrls, hlsSubs) {
                  if (data.length > 0)
                      Viasat.parseSubtitles(data);
                  if (anyFailed && hlsSubs)
-                     Player.fetchHlsSubtitles(hlsSubs)
+                     Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl)
              }
             );
 };

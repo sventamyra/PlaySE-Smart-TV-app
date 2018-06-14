@@ -1,5 +1,5 @@
 var skipTime = 0;
-var skipTimeInProgress = 0;
+var skipTimeInProgress = false;
 var osdTimer; 
 var clockTimer; 
 var skipTimer; 
@@ -19,6 +19,7 @@ var detailsUrl;
 var requestedUrl = null;
 var startup = true;
 var smute = 0;
+var hlsSubsState = null;
 var subtitles = [];
 var subtitlesEnabled = false;
 var lastSetSubtitleTime = 0;
@@ -96,7 +97,7 @@ Player.init = function()
         this.plugin.Execute = function(Name){
             var args=[];
             if (Name == "StartPlayback") {
-                Name == "ResumePlay";
+                Name = "ResumePlay";
                 args.push(videoUrl)
             }
             Name = "Player.plugin." + Name
@@ -270,7 +271,7 @@ Player.setVideoURL = function(master, url, srtUrl, extra)
 
     masterUrl = master;
 
-    Channel.fetchSubtitles(srtUrl, extra.hls_subs)
+    Channel.fetchSubtitles(srtUrl, extra.hls_subs, requestedUrl)
 
     if (extra.bw) {
         this.bw = " " + Player.BwToString(extra.bw);
@@ -450,6 +451,7 @@ Player.stopVideo = function(keep_playing)
 {
     this.state = this.STOPPED;
     requestedUrl = null;
+    hlsSubsState = null;
     Player.storeResumeInfo();
     widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
     $("#srtId").hide();
@@ -634,9 +636,12 @@ Player.OnBufferingComplete = function()
     else if (skipTime == skipTimeInProgress) {
         this.skipState = -1; 
         skipTime = 0;
+        skipTimeInProgress = false;
     }
     if (!useSef)
         Player.OnRenderingStart();
+    else
+        Log("using sef");
 //	this.setWindow();
    //$('.loader').css("display", "none");
 };
@@ -848,7 +853,9 @@ Player.SetCurTime = function(time)
 	ccTime = +time + Player.offset;
 	if(this.skipState == -1){
 	    this.updateSeekBar(ccTime);
-	}
+	} else
+            Log("SkipState:" + this.skipState)
+        
 	if (this.state != this.PAUSED) { // because on 2010 device the device triggers this function even if video is paused
 	    this.setCurSubtitle(ccTime);
         }
@@ -884,7 +891,7 @@ Player.updateSeekBar = function(time){
     else{
 	ssecs = secs;
     }
-    
+
     $('.currentTime').text(hours + ':' + smins + ':' + ssecs);
     Player.setFrontPanelTime(hours, mins, secs);
     var progress = Math.floor(time/Player.GetDuration()*100);
@@ -1078,6 +1085,7 @@ Player.OnAuthenticationFailed = function()
 
 Player.PlaybackFailed = function(text)
 {
+    Log("Player.PlaybackFailed");
     Log(text); 
     loadingStop();
     Player.showControls();
@@ -1329,7 +1337,7 @@ Player.startPlayer = function(url, isLive, startTime)
     resumeJump = null;
     Player.skipState = -1;
     skipTime = 0;
-    skipTimeInProgress = 0;
+    skipTimeInProgress = false;
     Player.setTopOSDText("");
     $('.currentTime').text("");
     $('.totalTime').text("");
@@ -1343,7 +1351,7 @@ Player.startPlayer = function(url, isLive, startTime)
 
     if ( Player.init() && Audio.init())
     {
-	
+
 	Player.stopCallback = function(keep_playing)
 	{
             if (!keep_playing) {
@@ -1463,40 +1471,187 @@ Player.getSubtitlesEnabled = function () {
     }
 };
 
-Player.fetchSubtitles = function (srtUrls, hlsSubs) {
+Player.fetchSubtitles = function (srtUrls, hlsSubs, usedRequestedUrl, extra) {
     var anyFailed = false;
-    if (srtUrls && srtUrls.list)
+    var offset = -1;
+    var delta  = 0;
+    if (srtUrls && srtUrls.list) {
         srtUrls = srtUrls.list
-    else if (srtUrls)
+    } else if (srtUrls) {
         srtUrls = [srtUrls]
+    }
+    if (!extra) extra = {};
     httpLoop(srtUrls,
-             function(url, data, status) {
+             function(url, data, status, totalData) {
+                 if (!Player.checkPlayUrlStillValid(usedRequestedUrl))
+                     return -1;
+
                  if (status != 200)
                      anyFailed = true;
                  else if (data) {
                      if (url.match(/\.(web)?vtt/)) {
-                         data = data.slice(data.search(/^[0-9]/m));
-                         data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
-                         if (!data.match(/^[0-9]+[	 ]*(\r)?\n[0-9]+:/m))
-                             data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
+                         data   = Player.parseVttSubtitles(data, offset, delta, extra)
+                         offset = data.offset;
+                         delta  = data.delta;
+                         data   = data.data;
                      }
-                     return data + "\n\n"
+                     data = data + "\n\n";
+
+                     if (hlsSubsState) {
+                         if (!Player.updateHlsSubsState(totalData+data, data, offset, usedRequestedUrl, extra))
+                             return -1;
+                     } else if (extra.on_demand) {
+                         return -1;
+                     }
+                     // alert(data)
+                     return data
                  }
                  return ""
              },
              function(srtData) {
-                 if (srtData != "")
-                     Player.parseSubtitle(srtData);
-                 if (anyFailed && hlsSubs)
-                     Player.fetchHlsSubtitles(hlsSubs)
+                 if (Player.checkPlayUrlStillValid(usedRequestedUrl)) {
+                     extra.done = true;
+                     if (!hlsSubsState  ||
+                         Player.updateHlsSubsState(srtData, null, offset, usedRequestedUrl, extra)) {
+                         if (anyFailed && hlsSubs) {
+                             extra.done = false;
+                             Player.fetchHlsSubtitles(hlsSubs)
+                         } else if (srtData != "")
+                             Player.parseSubtitle(srtData);
+                     }
+                 }
              },
-             {headers:Channel.getHeaders()}
+             {headers:Channel.getHeaders(), interval:extra.interval}
             );
 };
 
-Player.fetchHlsSubtitles = function (hlsSubs) {
+Player.parseVttSubtitles = function(data, offset, delta, extra) {
+    var newOffset = data.match(/TIMESTAMP-MAP=MPEGTS:([0-9]+)/)
+    if (newOffset) {
+        newOffset = newOffset[1]
+        if (extra.on_demand && offset == -1)
+            offset = hlsSubsState.offset
+        if (offset != -1)
+            delta = delta + (newOffset - offset)/90000;
+        offset = newOffset;
+    }
+    data = data.slice(data.search(/^[0-9]/m));
+    data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
+    if (!data.match(/^[0-9]+[	 ]*(\r)?\n[0-9]+:/m))
+        data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
+    if (delta > 0)
+        data = Player.addVttOffset(data, delta)
+    return {data:data, offset:offset, delta:delta}
+};
+
+Player.addVttOffset = function (data, delta) {
+    var timeStamps = data.match(/([0-9]+:[0-9]+:[0-9]+\.[0-9]+)/mg);
+    var ts, s;
+    for (var i=0; timeStamps && i < timeStamps.length; i++) {
+        ts = timeStamps[i].split(/[:.]/);
+        s  = +ts[0]*3600 + +ts[1]*60 + +ts[2] + delta;
+        ts[0] = Math.floor(s/3600);
+        s = s - ts[0]*3600;
+        ts[1] = Math.floor(s/60);
+        ts[2] = s - ts[1]*60;
+        for (var k=0; k < 3; k++)
+            if (ts[k] < 10)
+                ts[k] = "0" + ts[k]
+        ts = ts[0] + ":" + ts[1] + ":" + ts[2] + "." + ts[3];
+        data = data.replace(timeStamps[i],ts)
+    }
+    return data
+}
+
+Player.updateHlsSubsState = function(totalData, data, offset, usedRequestedUrl, extra) {
+    // Resume isn't considered at the moment...
+    var time = (skipTimeInProgress) ? skipTimeInProgress : ccTime;
+    alert("updateHlsSubsState ccTime: " + ccTime + " skipTimeInProgress:" + skipTimeInProgress + " on.demand:" + extra.on_demand);
+    if (extra.on_demand && !hlsSubsState.on_demand) {
+        Log("On demand HLS aborted");
+        return false
+    }
+
+    if (extra.done) {
+        if (extra.on_demand) {
+            hlsSubsState.on_demand = null
+            Log("On demand HLS subtitles ended")
+        } else {
+            hlsSubsState = null;
+            Log("HLS subtitles ended")
+        }
+    } else {
+        if (extra.on_demand) {
+            hlsSubsState.on_demand.fetched += hlsSubsState.duration;
+            if (time > hlsSubsState.on_demand.fetched ||
+                time < hlsSubsState.on_demand.start) {
+                Log("Start on demand HLS subtitles for another period")
+                Player.StartOnDemandHlsSubtitles(time, usedRequestedUrl);
+                return false
+            } else if (hlsSubsState.on_demand.parsed == hlsSubsState.on_demand.start)
+                // First response...
+                Player.parseSubtitle(totalData);
+            else
+                Player.parseSubtitle(data, true);
+            hlsSubsState.on_demand.parsed = hlsSubsState.on_demand.fetched;
+        } else {
+            if (hlsSubsState.fetched == 0)
+                hlsSubsState.offset = offset;
+            hlsSubsState.fetched += hlsSubsState.duration;
+            if (time > hlsSubsState.fetched) {
+                if (!hlsSubsState.on_demand && hlsSubsState.duration)
+                    Player.StartOnDemandHlsSubtitles(time, usedRequestedUrl);
+            } else {
+                if (hlsSubsState.on_demand) {
+                    Log("On demand fetching intefering with main fetching of HLS.");
+                    hlsSubsState.on_demand = null;
+                    hlsSubsState.parsed = 0;
+                }
+                if (hlsSubsState.parsed == 0) {
+                    Player.parseSubtitle(totalData);
+                    hlsSubsState.parsed = hlsSubsState.fetched
+                } else
+                    Player.parseSubtitle(data, true);
+            }
+        }
+    }
+    return true
+};
+
+Player.getHlsInterval = function (duration) {
+    var interval = duration - 10*1000;
+    if (interval < 0) interval = 1000;
+    if (interval > 3000) interval = 3000;
+    return interval
+}
+
+Player.StartOnDemandHlsSubtitles = function(time, usedRequestedUrl) {
+    var urlIndex = Math.floor(time/hlsSubsState.duration);
+    hlsSubsState.on_demand = {};
+    hlsSubsState.on_demand.start   = time;
+    hlsSubsState.on_demand.fetched = time;
+    hlsSubsState.on_demand.parsed  = time;
+    Log("Starting On Demand HLS fetching, urlIndex: " + urlIndex + " " + JSON.stringify(hlsSubsState.on_demand) + " offset:" + hlsSubsState.offset)
+    Player.fetchSubtitles({list:hlsSubsState.urls.slice(urlIndex)},
+                          null,
+                          usedRequestedUrl,
+                          {interval:Player.getHlsInterval(hlsSubsState.duration),
+                           on_demand:true
+                          }
+                         );
+};
+
+Player.fetchHlsSubtitles = function (hlsSubs, usedRequestedUrl) {
+    var interval = 3000;
+    var duration = 0;
     httpLoop(hlsSubs,
              function(url, data) {
+                 duration = data.match(/EXT-X-TARGETDURATION: *([0-9]+)/);
+                 if (duration) {
+                     duration = (+duration[1])*1000;
+                     interval = Player.getHlsInterval(duration)
+                 }
+
                  var urls = data.match(/^([^#].+)$/mg)
                  var prefix  = url.replace(/[^\/]+(\?.+)?$/,"");
                  if (urls) {
@@ -1511,27 +1666,50 @@ Player.fetchHlsSubtitles = function (hlsSubs) {
              },
              function (urls) {
                  urls = urls.trim().split(" ");
-                 Player.fetchSubtitles({list:urls})
+                 if (Player.checkPlayUrlStillValid(usedRequestedUrl)) {
+                     // Doesn't necessarily work in case of multiple hlsSubs...
+                     hlsSubsState = {urls      : urls,
+                                     duration  : duration,
+                                     fetched   : 0,
+                                     parsed    : 0
+                                    };
+                     Log("Starting main HLS subtitle fetching")
+                     Player.fetchSubtitles({list:urls}, null, usedRequestedUrl, {interval:interval})
+                 }
              },
              {headers:Channel.getHeaders()}
             );
 };
 
-Player.parseSubtitle = function (data) {
+Player.parseSubtitle = function (data, append) {
     try {
-        subtitles = [];
+        if (!append) subtitles = [];
         var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/\n\n*/g,"\n").replace(/(^([0-9]+\n)?[0-9:.,]+ --> [0-9:.,]+)(.+)?\n/mg,'\n$1\n').replace(/<\/*[0-9]+>/g, ""));
         srtContent = srtContent.split('\n\n');
         for (var i = 0; i < srtContent.length; i++) {
             this.parseSrtRecord(srtContent[i]);
         }
         subtitles.sort(function(a, b){return a.start-b.start})
-        // for (var i = 0; i < 10 && i < subtitles.length; i++) {
+        this.mergeSubtitles()
+        // for (var i = 0; !append && i < 10 && i < subtitles.length; i++) {
         //     alert("start:" + subtitles[i].start + " stop:" + subtitles[i].stop + " text:" + subtitles[i].text);
         //     // Log("srtContent[" + i + "]:" + srtContent[i]);
         // }
     } catch (err) {
         Log("parseSubtitle failed:" + err);
+    }
+};
+
+Player.mergeSubtitles = function() {
+    if (subtitles.length) {
+        var tmpSubtitles = subtitles;
+        subtitles = []
+        for (var i = 0; i < tmpSubtitles.length; i++) {
+            if (tmpSubtitles[i+1] && tmpSubtitles[i].text == tmpSubtitles[i+1].text)
+                tmpSubtitles[i+1].start = tmpSubtitles[i].start
+            else
+                subtitles.push(tmpSubtitles[i])
+        }
     }
 };
 
@@ -1545,16 +1723,20 @@ Player.srtTimeToMS = function (srtTime) {
 };
 
 Player.parseSrtRecord = function (srtRecord) {
-    srtRecord = srtRecord.split("\n");
-    var start = srtRecord[1].match(/([^ 	]+)[ 	]+-->[ 	]+/)[1];
-    var stop  = srtRecord[1].match(/[ 	]+-->[ 	]+([^ 	]+)/)[1];
-    subtitles.push(
-        {
-            start: this.srtTimeToMS(start),
-            stop:  this.srtTimeToMS(stop),
-            text:  srtRecord.slice(2).join("<br />").replace(/<br \/>$/, "")
-        }
-    );
+    try {
+        srtRecord = srtRecord.split("\n");
+        var start = srtRecord[1].match(/([^ 	]+)[ 	]+-->[ 	]+/)[1];
+        var stop  = srtRecord[1].match(/[ 	]+-->[ 	]+([^ 	]+)/)[1];
+        subtitles.push(
+            {
+                start: this.srtTimeToMS(start),
+                stop:  this.srtTimeToMS(stop),
+                text:  srtRecord.slice(2).join("<br />").replace(/<br \/>$/, "")
+            }
+        );
+    } catch (err) {
+        Log("parseSrtRecord failed: " + err)
+    }
 };
 
 Player.setCurSubtitle = function (time) {

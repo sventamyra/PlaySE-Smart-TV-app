@@ -32,8 +32,7 @@ Tv4.refreshdUnavailableShows = function() {
                     var i = 0;
                     return Tv4.checkShows(i, data.results);
                 },
-                 no_log:true, 
-                 not_random:true
+                 no_log:true
                 });
 };
 
@@ -55,8 +54,7 @@ Tv4.checkShows = function(i, data) {
                         }
                         return Tv4.checkShows(i+1, data);
                     },
-                     no_log:true, 
-                     not_random:true
+                     no_log:true
                     });
     }
     else {
@@ -670,40 +668,45 @@ Tv4.getDetailsUrl = function(streamUrl) {
 };
 
 Tv4.getPlayUrl = function(streamUrl, isLive) {
+    var asset = streamUrl.replace(/.*\?id=([^&]+).*/, "$1");
+    var reqUrl = "https://playback-api.b17g.net/media/" + asset + "?service=tv4&device=browser&protocol=dash&drm=playready";
+    if (isLive)
+        reqUrl = reqUrl + "&is_live=true"
 
-    var reqUrl = streamUrl.replace(/.*\?id=([^&]+).*/, "http://prima.tv4play.se/api/web/asset/$1/play.json?protocol=hls3&videoFormat=mp4+ism+webvtt+livehls");
+    var cbComplete = function(stream, srtUrl) {
+        if (!stream) {
+            $('.bottomoverlaybig').html('Not Available!');
+        } else {
+            Resolution.getCorrectStream(stream, srtUrl, {useBitrates:true});
+        }}
 
     requestUrl(reqUrl,
                function(status, data)
                {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
-                       var stream=null, license=null, srtUrl=null;
-                       data = JSON.parse(data.responseText).playback.items.item;
-                       if (data.length == undefined)
-                           data = [data]
-                       for (var i = 0; i < data.length; i++) {
-                           if (data[i].mediaFormat == "webvtt") {
-                               srtUrl = data[i].url
-                           } else if (!stream && data[i].mediaFormat == "ism") {
-                               stream = data[i].url
-                               for (var key in data[i].license) {
-                                   if (key.match(/uri/)) {
-                                       license = data[i].license[key];
-                                       if (!license.match(/^http/))
-                                           license = "https://prima.tv4play.se" + license
-                                       break
-                                   }
-                               }
-                           } else if (data[i].mediaFormat == "mp4" ||
-                                      data[i].mediaFormat == "livehls") {
-                               stream = data[i].url
-                           }
-                       }
-                       if (!stream) {
-                           $('.bottomoverlaybig').html('Not Available!');
-                       } else {
-                           Resolution.getCorrectStream(stream, srtUrl, {license:license});
-                       }
+                       var stream=null, srtUrl=null;
+                       data = JSON.parse(data.responseText).playbackItem;
+                       stream = data.manifestUrl;
+                       if (!isLive)
+                           requestUrl(reqUrl.replace(/dash/,"hls"),
+                                      function(status, data)
+                                      {
+                                          try {
+                                              reqUrl = JSON.parse(data.responseText).playbackItem.manifestUrl;
+                                              data = httpRequest(reqUrl,{sync:true}).data;
+                                              srtUrl = data.match(/TYPE=SUBTITLES.+URI="([^"]+)/)[1]
+                                              if (stream && !srtUrl.match(/https?:\//)) {
+                                                  srtUrl = reqUrl.replace(/[^\/]+(\?.+)?$/,srtUrl);
+                                              }
+                                          } catch (err) {
+                                              Log("No subtitles: " + err + " reqUrl:" + reqUrl);
+                                              srtUrl = null;
+                                          }
+                                      },
+                                      {cbComplete: function() {cbComplete(stream,srtUrl)}}
+                                     );
+                       else
+                           cbComplete(stream, srtUrl)
                    }
                }
               );
@@ -717,7 +720,8 @@ Tv4.fixThumb = function(thumb, size) {
 };
 
 Tv4.isViewable = function (data, isLive, currentDate) {
-    if (data.is_premium || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free || (data.is_drm_protected && deviceYear < 2012)))
+    // Can't get drm protected stream to work at the moment...
+    if (data.is_drm_protected || data.is_premium || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free || (data.is_drm_protected && deviceYear < 2012)))
         return false;
     else {
         if (isLive) {

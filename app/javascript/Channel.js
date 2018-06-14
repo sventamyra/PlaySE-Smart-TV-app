@@ -183,14 +183,19 @@ Channel.tryAltPlayUrl = function(failedUrl, cbComplete) {
     }
 }
 
-Channel.fetchSubtitles = function(srtUrl, hlsSubs) {
+Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl) {
+    hlsSubsState = null;
+    if (typeof srtUrl == "string" && srtUrl.match(/\.m3u8/)) {
+        hlsSubs = [srtUrl]
+        srtUrl = null;
+    }
     if (srtUrl && srtUrl != "") {
         if (this.impl.fetchSubtitles)
-            this.impl.fetchSubtitles(srtUrl, hlsSubs)
+            this.impl.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl)
         else
-            Player.fetchSubtitles(srtUrl, hlsSubs)
+            Player.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl)
     } else if (hlsSubs)
-        Player.fetchHlsSubtitles(hlsSubs)
+        Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl)
 }
 
 Channel.keyRed = function() {

@@ -543,6 +543,7 @@ ul.dropdown .root-item {
     overflow: auto;
     overflow-y: hidden;
     -ms-overflow-y: hidden;
+    /*background-color:white;*/
 }
 
 .content-holder {
@@ -550,14 +551,16 @@ ul.dropdown .root-item {
     /*width for approx 6 pages*/
     height: 205px;
     position: relative;
+    /*background-color:yellow;*/
 }
 
 .scroll-content-item {
     width: 252px;
-    height: 160px;
+    height: 147px;
     float: left;
     margin: 0 5px;
     text-align: left;
+    /*background: red;*/
 }
 
 .scroll-item-img {
@@ -569,10 +572,40 @@ ul.dropdown .root-item {
     overflow: hidden;
 }
 
+/*.scroll-content-item.selected .scroll-item-img {*/
+
+/*    /\*border:6px solid #58b827;*\/*/
+
+/*    /\*margin-bottom:6px;*\/*/
+
+/*    border:0;*/
+
+/*    height:147px;*/
+
+/*    width:252px;*/
+
+/*}*/
+
 .image {
     display: inline-block;
     width: 100%;
 }
+
+/*.scroll-content-item.selected .scroll-item-img .img {*/
+
+/*    /\*border:6px solid #58b827;*\/*/
+
+/*    /\*margin-bottom:6px;*\/*/
+
+/*    /\*border:0;*\/*/
+
+/*    /\*max-width:252px;*\/*/
+
+/*    height:147px;*/
+
+/*    /\*width:100%;*\/*/
+
+/*}*/
 
 .scroll-item-border {
     padding-top: 3px;
@@ -921,7 +954,7 @@ a.link-button,
 a.link-button2,
 a.link-button3,
 .btn-submit {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: normal;
     text-transform: uppercase;
     display: block;
@@ -1269,15 +1302,15 @@ small {
 .topoverlayred,
 .bottomoverlayred {
     position: absolute;
-    top: 60%;
+    top: 70%;
     left: 0;
     color: #e0e7ea;
-    font: bold 12px/24px Helvetica, Sans-Serif;
+    font: bold 12px/18px Helvetica, Sans-Serif;
     letter-spacing: -1px;
     background: rgba(0, 0, 0, 0.7);
     vertical-align: middle;
     white-space: nowrap;
-    padding: 0 10px;
+    padding: 0 7px;
 }
 
 .topoverlayred,
@@ -1287,7 +1320,7 @@ small {
 
 .bottomoverlay,
 .bottomoverlayred {
-    top: 24px
+    top: 18px
 }
 
 .topoverlayresolution {

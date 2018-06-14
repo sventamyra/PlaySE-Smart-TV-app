@@ -34,11 +34,8 @@ Dplay.getUrl = function(tag, extra) {
     switch (tag)
     {
     case "main":
-        var newChannel = getLocation(extra.refresh).match(/dplay_channel=([0-9]+|reset|OldDplay)/);
+        var newChannel = getLocation(extra.refresh).match(/dplay_channel=([0-9]+|reset)/);
         newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
-        if (newChannel == "OldDplay") {
-            return setChannel(OldDplay, newChannel);
-        }
         if (newChannel && !extra.refresh)
             myHistory = [];
         if (newChannel && Dplay.channel_idx != newChannel) {
@@ -235,7 +232,6 @@ Dplay.decodeLive = function(data, extra) {
     data = JSON.parse(data.responseText);
     Includes = Dplay.decodeIncludes(data);
     data = data.data;
-    Dplay.channelToHtml("Old DPLAY", "OldDplay", null);
     for (var k=0; k < data.length; k++) {
         Name = data[k].attributes.name.trim();
         Dplay.channels.push({name:Name, id:data[k].id});
@@ -924,21 +920,18 @@ Dplay.getDetailsUrl = function(streamUrl) {
 
 Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
     Dplay.play_args = {stream_url:streamUrl, is_live:isLive};
-    var NotFoundCallback = function() {
-        var videoUrl = "https://disco-api.dplay.se/playback/videoPlaybackInfo/" + streamUrl.match(/\/videos\/([0-9]+)/)[1];
-        requestUrl(videoUrl,
-                   function(status, data)
-                   {
-                       if (Player.checkPlayUrlStillValid(streamUrl)) {
-                           data = JSON.parse(data.responseText).data.attributes;
-                           data = data.streaming.hls.url;
-                           Resolution.getCorrectStream(data, null, {useBitrates:true}, callback);
-                       }
-                   },
-                   {headers:Dplay.getHeaders()}
-                  );
-    };
-    OldDplay.getOldPlayUrl(Dplay.play_args, callback, NotFoundCallback);
+    var videoUrl = "https://disco-api.dplay.se/playback/videoPlaybackInfo/" + streamUrl.match(/\/videos\/([0-9]+)/)[1];
+    requestUrl(videoUrl,
+               function(status, data)
+               {
+                   if (Player.checkPlayUrlStillValid(streamUrl)) {
+                       data = JSON.parse(data.responseText).data.attributes;
+                       data = data.streaming.hls.url;
+                       Resolution.getCorrectStream(data, null, {useBitrates:true}, callback);
+                   }
+               },
+               {headers:Dplay.getHeaders()}
+              );
 };
 
 Dplay.refreshPlayUrl = function(callback) {
@@ -1037,15 +1030,16 @@ Dplay.isAvailable = function(Name, data) {
 
 Dplay.isItemOk = function(Name, data, genre) {
     if (!Dplay.isPlayable(Name, data)) {
+        // alert(JSON.stringify(data))
         // alert(Name + ": Premium");
         return false;
     }
     if (!Dplay.isCorrectChannel(Name, data)) {
-        // alert(Name + ": wrong channel");
+        alert(Name + ": wrong channel");
         return false;
     }
     if (!Dplay.isAvailable(Name, data)) {
-        // alert(Name + ": not yet available");
+        alert(Name + ": not yet available");
         return false;
     }
     return true;

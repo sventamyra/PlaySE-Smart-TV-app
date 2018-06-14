@@ -42,10 +42,10 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
                        extra.cookies[i] = extra.cookies[i].replace(/.*Set-Cookie: ?/i, "")
                    if (is_hls) {
                        streams = Resolution.getHlsStreams(videoUrl, data, prefix)
-                   } else if (videoUrl.match(/\.ism/)) {
-                       streams = Resolution.getIsmStreams(videoUrl, data, prefix)
                    } else if (videoUrl.match(/\.mpd/)) {
                        streams = Resolution.getHasStreams(videoUrl, data, prefix)
+                   } else if (videoUrl.match(/\.ism/)) {
+                       streams = Resolution.getIsmStreams(videoUrl, data, prefix)
                    }
                    extra.audio_idx = streams.audio_idx;
                    extra.hls_subs = streams.hls_subs;

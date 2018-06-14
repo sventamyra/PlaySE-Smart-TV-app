@@ -11,8 +11,7 @@ var deviceYear  = null;
 var Main =
 {
     loaded         : false,
-    clockTimer     : null,
-    keepAliveTimer : null
+    clockTimer     : null
 };
 
 Main.onLoad = function(refresh)
@@ -20,7 +19,6 @@ Main.onLoad = function(refresh)
     Config.init();
     Channel.init();
     Language.fixAButton();
-    
     if (!refresh) {
         document.title = Channel.getMainTitle();
 	Header.display(document.title);
@@ -35,8 +33,6 @@ Main.onLoad = function(refresh)
         Log("Model:" + model +  " DeviceYear:" + deviceYear + " IsEmulator:" + isEmulator + " curWidget:" + curWidget.name + " Cookies:" + document.cookie);
         loadingStart();
         Main.setClock();
-        // if (deviceYear == 2013)
-        //     Main.startKeepAlive();
         checkDateFormat();
         this.loaded = true;
 	Audio.init();
@@ -67,33 +63,6 @@ Main.setClock = function() {
     window.clearTimeout(Main.clockTimer);
     Main.clockTimer = setClock($('#footer-clock'), Main.setClock);
 }
-
-Main.startKeepAlive = function() {
-    Main.requestRandomUrl();
-}
-
-Main.toggleKeepAlive = function() {
-    Log("Player.toggleKeepAlive()")
-    if (Main.keepAliveTimer) {
-        window.clearTimeout(Main.keepAliveTimer);
-        Main.keepAliveTimer = null;
-    } else {
-        Main.startKeepAlive()
-    }
-}
-
-
-Main.requestRandomUrl = function() {
-    window.clearTimeout(Main.keepAliveTimer);
-    if (myUrls.length > 0) {
-        // Log("Main.requestRandomUrl")
-        var item = myUrls[Math.floor(Math.random()*myUrls.length)]
-        item.extra.not_random = true;
-        httpRequest(item.url, item.extra);
-    }
-    Main.keepAliveTimer = window.setTimeout(Main.requestRandomUrl, 30*1000);
-};
-
 
 Main.loadXml = function(refresh){
     $("#content-scroll").hide();
