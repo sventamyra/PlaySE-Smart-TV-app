@@ -126,10 +126,18 @@ Svt.getThumb = function(data, size) {
     else if (typeof(data) === 'string')
         Thumb = data;
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
-    if (!size || size == "small")
-        return Thumb.replace(/\/(medium|(extra)?large)\//, "/small/")
-    else if (size == "large")
-        return Thumb.replace(/\/(small|medium|extralarge)\//, "/large/")
+    if (Thumb.match(/\/wide\/[0-9]+/)) {
+        if (size == "extralarge")
+            size = MAX_WIDTH;
+        else if (size == "large")
+            size = DETAILS_THUMB_FACTOR*THUMB_WIDTH;
+        else
+            size = THUMB_WIDTH;
+        Thumb = Thumb.replace(/\/wide\/[0-9]+/, "/wide/" + size);
+    } else {
+        if (!size) size = "small";
+        Thumb = Thumb.replace(/\/(small|medium|(extra)?large)\//, "/" + size + "/")
+    }
     return Thumb
 }
 
@@ -924,6 +932,7 @@ Svt.decodeRecommended = function (data, extra) {
         var Description;
         var Duration;
         var ImgLink;
+        var Background;
         var recommendedLinks = [];
 
         if (!extra.json) {
@@ -938,6 +947,7 @@ Svt.decodeRecommended = function (data, extra) {
             Link = Svt.redirectUrl(Svt.fixLink(data[k].url));
             Description = data[k].description;
             ImgLink = Svt.getThumb(data[k]);
+            Background = Svt.getThumb(data[k], "extralarge");
             if (Svt.isPlayable(Link)) {
                 recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
@@ -962,7 +972,8 @@ Svt.decodeRecommended = function (data, extra) {
                     link:Link,
                     link_prefix:LinkPrefix,
                     description:Description,
-                    thumb:ImgLink
+                    thumb:ImgLink,
+                    background:Background
                    })
             data[k] = "";
 	}
@@ -1044,6 +1055,7 @@ Svt.decodeChannels = function(data) {
         var Duration;
         var Link;
         var ImgLink;
+        var Background;
         var starttime;
         var endtime;
         var BaseUrl = 'http://www.svtplay.se/kanaler';
@@ -1057,6 +1069,7 @@ Svt.decodeChannels = function(data) {
             }
 	    Link = BaseUrl + '/' + Name;
             ImgLink = Svt.GetChannelThumb(Name);
+            Background = Svt.getThumb(data[k], "extralarge"); 
             starttime = timeToDate(data[k].publishingTime);
             endtime = timeToDate(data[k].publishingEndTime);
             Duration  = Math.round((endtime-starttime)/1000);
@@ -1067,7 +1080,8 @@ Svt.decodeChannels = function(data) {
                     is_channel:true,
                     link:Link,
                     link_prefix:'<a href="details.html?ilink=',
-                    thumb:ImgLink
+                    thumb:ImgLink,
+                    background:Background
                    });
             data[k] = "";
 	};
@@ -1089,6 +1103,7 @@ Svt.decode = function(data, extra) {
         var Description;
         var Duration;
         var ImgLink;
+        var Background;
         var starttime;
         var IsRunning;
         var Season;
@@ -1174,6 +1189,7 @@ Svt.decode = function(data, extra) {
                     continue;
             }
             ImgLink = Svt.getThumb(data[k]);
+            Background = Svt.getThumb(data[k], "extralarge");
             IsLive = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
             starttime = (IsLive) ? Svt.getAirDate(data[k]) : null;
@@ -1228,6 +1244,7 @@ Svt.decode = function(data, extra) {
                         link_prefix:LinkPrefix,
                         description:Description,
                         thumb:ImgLink,
+                        background:Background,
                         season:Season,
                         episode:Episode,
                         show:Show

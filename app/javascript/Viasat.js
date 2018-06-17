@@ -1,4 +1,3 @@
-var VIASAT_DETAILS_IMG_SIZE="600x338";
 var Viasat =
 {
     channel_idx:null,
@@ -145,7 +144,7 @@ Viasat.decodeCategories = function(data, extra) {
 
             categoryToHtml(Name,
                            ImgLink,
-                           Viasat.fixThumb(ImgLink, VIASAT_DETAILS_IMG_SIZE),
+                           Viasat.fixThumb(ImgLink, DETAILS_THUMB_FACTOR),
                            Link + "&limit=500"
                           );
 	}
@@ -341,6 +340,7 @@ Viasat.decode = function(data, extra) {
         var Link;
         var Description;
         var ImgLink;
+        var Background;
         var next = null;
         var clipsUrl = null;
         var seasonUrl = null;
@@ -398,6 +398,7 @@ Viasat.decode = function(data, extra) {
                 Show = null;
 
             ImgLink = Viasat.fixThumb(data[k]._links.image.href);
+            Background = Viasat.fixThumb(data[k]._links.image.href, MAX_WIDTH/THUMB_WIDTH);
             if (!data[k]._links.stream && data[k]._links.seasons) {
                 Viasat.result.push({name:Name, link:data[k]._links.seasons.href, thumb:ImgLink});
                 continue;
@@ -426,7 +427,8 @@ Viasat.decode = function(data, extra) {
                                 season:Season,
                                 episode:Episode,
                                 link:Link, 
-                                thumb:ImgLink, 
+                                thumb:ImgLink,
+                                background:Background,
                                 duration:Duration, 
                                 description:Description,
                                 airDate:AirDate,
@@ -474,6 +476,7 @@ Viasat.decode = function(data, extra) {
                         link_prefix:Viasat.result[k].link_prefix,
                         description:Viasat.result[k].description,
                         thumb:Viasat.result[k].thumb,
+                        background:Viasat.result[k].background,
                         show:Viasat.result[k].show,
                         season:Viasat.result[k].season,
                         episode:Viasat.result[k].episode
@@ -673,7 +676,7 @@ Viasat.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
+	DetailsImgLink = Viasat.fixThumb(data._links.image.href, DETAILS_THUMB_FACTOR);
         AirDate = Viasat.getAirDate(data);
         if (data.unpublish_at || data.premium.time_left.days) {
             if (data.unpublish_at) {
@@ -749,7 +752,7 @@ Viasat.getShowData = function(url, data) {
             Name = data.title;
             Description = data.summary;
         }
-        DetailsImgLink = Viasat.fixThumb(data._links.image.href, VIASAT_DETAILS_IMG_SIZE);
+        DetailsImgLink = Viasat.fixThumb(data._links.image.href, DETAILS_THUMB_FACTOR);
     } catch(err) {
         Log("Viasat.getShowData exception:" + err.message);
         Log("Name:" + Name);
@@ -794,12 +797,13 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
                });
 }
 
-Viasat.fixThumb = function(thumb, size) {
+Viasat.fixThumb = function(thumb, factor) {
     if (!thumb)
         return thumb;
 
-    if (!size)
-        size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
+    if (!factor) factor = 1;
+    var size = Math.round(factor*THUMB_WIDTH) + "x" + Math.round(factor*THUMB_HEIGHT);
+
     thumb = thumb.replace(/(({size})|([0-9]+x[0-9]+))/, size);
     thumb = thumb.split(/(^.+\/)([^\/]+)$/);
     return thumb[1]+encodeURIComponent(thumb[2]);

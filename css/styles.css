@@ -1199,6 +1199,17 @@ small {
 
 /*video-overlay*/
 
+.video-background {
+    display:none;
+    top: 0;
+    position: absolute;
+    height:100%;
+    width:100%;
+    background-size:cover;
+    overflow:hidden;
+    z-index: -1;
+}
+
 .vo {
     letter-spacing: -1px;
     background: rgba(0, 0, 0, 0.7);

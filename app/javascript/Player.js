@@ -17,6 +17,7 @@ var videoData = {};
 var masterUrl;
 var detailsUrl;
 var requestedUrl = null;
+var backgroundLoading = false;
 var startup = true;
 var smute = 0;
 var hlsSubsState = null;
@@ -455,6 +456,7 @@ Player.stopVideo = function(keep_playing)
     Player.storeResumeInfo();
     widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
     $("#srtId").hide();
+    Player.setBackground(null);
     window.clearTimeout(delayedPlayTimer);
     loadingStop();
     Player.setFrontPanelText(Player.FRONT_DISPLAY_STOP);
@@ -744,6 +746,13 @@ Player.setClock = function() {
     clockTimer = setClock($('.topoverlayclock'), Player.setClock);
 }
 
+Player.playbackStarted = function() {
+    Player.setBackground(null);
+    loadingStop();
+    this.hideControls();
+    this.setFullscreen();
+};
+
 Player.hideControls = function(){
     if (Player.detailsActive)
         return;
@@ -840,6 +849,7 @@ Player.SetCurTime = function(time)
 
 	// work-around for samsung bug. Mute sound first after the player started.
 	if(startup) {
+            Player.playbackStarted();
 	    startup = false;
 	    Audio.setCurrentMode(smute);
             if (Player.isLive && +Player.startTime != 0 && +time < 30000) {
@@ -1317,6 +1327,7 @@ Player.decreaseZoom = function() {
 Player.startPlayer = function(url, isLive, startTime)
 {
     var oldKeyHandleID = Buttons.getKeyHandleID();
+    var Background = itemSelected.find('.ilink').attr("data-background");
     Buttons.setKeyHandleID(2);
 
     retries = 0;
@@ -1342,7 +1353,7 @@ Player.startPlayer = function(url, isLive, startTime)
     $('.currentTime').text("");
     $('.totalTime').text("");
     $('.progressfull').css("width", 0);
-
+    Player.setBackground(Background);
     $('#outer').hide();
     this.hideDetailedInfo();
     this.showControls();
@@ -1370,6 +1381,25 @@ Player.startPlayer = function(url, isLive, startTime)
     } else
         Log("INIT FAILED!!!!!");
 };
+
+Player.setBackground = function(img) {
+    if (img) {
+        alert("Background:" + img);
+        $('.video-background').css("background","url(" + img + ")");
+        backgroundLoading = true;
+        loadImage(img,
+                  function() {
+                      if (backgroundLoading) {
+                          $('.video-background').show();
+                      }
+                      backgroundLoading = false;
+                  });
+    } else {
+        backgroundLoading = false;
+        $('.video-background').hide();
+        $('.video-background').css({"background":"none"});
+    }
+}
 
 Player.refreshStartData = function(details) {
     if (Player.isLive && details && details.start_time != 0 && details.start_time != Player.startTime) {

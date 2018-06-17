@@ -1,4 +1,3 @@
-var TV4_DETAILS_IMG_SIZE="600x336";
 var Tv4 =
 {
     result:[],
@@ -368,6 +367,7 @@ Tv4.decode = function(data, extra) {
         var Link;
         var Description;
         var ImgLink;
+        var Background;
         var next = null;
         var AirDate;
         var Show=null;
@@ -397,7 +397,8 @@ Tv4.decode = function(data, extra) {
             if (extra.strip_show) {
                 Name = Tv4.determineEpisodeName(data[k])
             }
-            ImgLink = Tv4.fixThumb(data[k].image); 
+            ImgLink = Tv4.fixThumb(data[k].image);
+            Background = Tv4.fixThumb(data[k].image, MAX_WIDTH/THUMB_WIDTH);
             Duration = data[k].duration;
             Description = (data[k].description) ? data[k].description.trim() : "";
             Link = "http://webapi.tv4play.se/play/video_assets?id=" +  data[k].id;
@@ -409,7 +410,8 @@ Tv4.decode = function(data, extra) {
                              season:Season,
                              episode:Episode,
                              link:Link, 
-                             thumb:ImgLink, 
+                             thumb:ImgLink,
+                             background:Background,
                              duration:Duration, 
                              description:Description,
                              airDate:AirDate,
@@ -463,6 +465,7 @@ Tv4.decode = function(data, extra) {
                         link_prefix:Tv4.result[k].link_prefix,
                         description:Tv4.result[k].description,
                         thumb:Tv4.result[k].thumb,
+                        background:Tv4.result[k].background,
                         show:Tv4.result[k].show,
                         season:Tv4.result[k].season,
                         episode:Tv4.result[k].episode
@@ -573,7 +576,7 @@ Tv4.getDetailsData = function(url, data) {
 
         Name = data.title;
         Title = Name;
-	DetailsImgLink = Tv4.fixThumb(data.image, TV4_DETAILS_IMG_SIZE);
+	DetailsImgLink = Tv4.fixThumb(data.image, DETAILS_THUMB_FACTOR);
         Description  = (data.description) ? data.description.trim() : "";
         AirDate = timeToDate(data.broadcast_date_time);
         VideoLength = dataLengthToVideoLength(null, data.duration);
@@ -638,7 +641,7 @@ Tv4.getShowData = function(url, data) {
         data = JSON.parse(data.responseText).results[0];
         Name = data.name;
         Description = data.description.trim();
-	DetailsImgLink = Tv4.fixThumb(data.program_image, TV4_DETAILS_IMG_SIZE);
+	DetailsImgLink = Tv4.fixThumb(data.program_image, DETAILS_THUMB_FACTOR);
         for (var i=0; i < data.tags.length; i++) {
             Genre.push(Tv4.capitalize(data.tags[i].replace(/-/," & ")));
         }
@@ -680,7 +683,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
             Resolution.getCorrectStream(stream, srtUrl, {useBitrates:true});
         }}
 
-    requestUrl(reqUrl,
+    requestUrl(RedirectIfEmulator(reqUrl),
                function(status, data)
                {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
@@ -688,12 +691,12 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                        data = JSON.parse(data.responseText).playbackItem;
                        stream = data.manifestUrl;
                        if (!isLive)
-                           requestUrl(reqUrl.replace(/dash/,"hls"),
+                           requestUrl(RedirectIfEmulator(reqUrl.replace(/dash/,"hls")),
                                       function(status, data)
                                       {
                                           try {
                                               reqUrl = JSON.parse(data.responseText).playbackItem.manifestUrl;
-                                              data = httpRequest(reqUrl,{sync:true}).data;
+                                              data = httpRequest(RedirectIfEmulator(reqUrl),{sync:true}).data;
                                               srtUrl = data.match(/TYPE=SUBTITLES.+URI="([^"]+)/)[1]
                                               if (stream && !srtUrl.match(/https?:\//)) {
                                                   srtUrl = reqUrl.replace(/[^\/]+(\?.+)?$/,srtUrl);
@@ -710,12 +713,11 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                    }
                }
               );
-}
+};
 
-Tv4.fixThumb = function(thumb, size) {
-    if (!size) {
-        size = THUMB_WIDTH + "x" + THUMB_HEIGHT;
-    }
+Tv4.fixThumb = function(thumb, factor) {
+    if (!factor) factor = 1;
+    var size = Math.round(factor*THUMB_WIDTH) + "x" + Math.round(factor*THUMB_HEIGHT);
     return "https://img3.tv4cdn.se/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb;
 };
 

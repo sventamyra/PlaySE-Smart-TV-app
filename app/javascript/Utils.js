@@ -954,6 +954,7 @@ itemToHtml = function(Item, OnlyReturn) {
     var IsTop
     var html;
     var IsLiveText;
+    var Background="";
 
     if(itemCounter % 2 == 0){
 	if(itemCounter > 0 || htmlSection){
@@ -972,8 +973,11 @@ itemToHtml = function(Item, OnlyReturn) {
         IsLiveText = (Item.is_live) ? " not-yet-available" : "";
     }
 
+    if (Item.background)
+        Background = " data-background='" + Item.background + "'";
+
     html += '<div class="scroll-item-img">';
-    html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + IsLiveText + '/>';
+    html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + Background + IsLiveText + '/>';
     if (Item.thumb) {
         html += '<img class="image" src="' + Item.thumb + '" alt="' + Item.name + '"/>';
     }
@@ -1244,6 +1248,10 @@ loadImage = function (image, callback, timeout) {
     } else if (callback)
         callback();
 };
+
+RedirectIfEmulator = function(url) {
+    return url
+}
 
 Log = function (msg) 
 {

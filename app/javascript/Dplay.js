@@ -1,4 +1,3 @@
-var DETAILS_THUMB_FACTOR = 600/THUMB_WIDTH;
 var Dplay =
 {
     is_logged_in:false,
@@ -515,6 +514,7 @@ Dplay.decodeSearchHits = function(data, extra) {
         var NextPage = null;
         var Description;
         var ImgLink;
+        var Background;
         var next = null;
         var AirDate;
         var Show = null;
@@ -545,6 +545,7 @@ Dplay.decodeSearchHits = function(data, extra) {
             Description = data[k].attributes.description.trim();
             Duration = Dplay.getDuration(data[k]);
             ImgLink = Dplay.findImage(data[k], Includes);
+            Background = Dplay.findImage(data[k], Includes, MAX_WIDTH/THUMB_WIDTH);
             AirDate = Dplay.getAirDate(data[k]);
             Link = Dplay.makeApiUrl("/videos/" + data[k].id, "&include=genres%2Cimages%2Cshow%2Cshow.images");
             Season  = (data[k].attributes.seasonNumber) ? data[k].attributes.seasonNumber : null;
@@ -557,6 +558,7 @@ Dplay.decodeSearchHits = function(data, extra) {
                                duration:Duration,
                                link:Link,
                                thumb:ImgLink,
+                               background:Background,
                                description:Description,
                                airDate:AirDate,
                                isFollowUp:false
@@ -626,6 +628,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
     var Link;
     var Description="";
     var ImgLink;
+    var Background;
     var AirDate;
     var Show=null;
     var Season=null;
@@ -652,6 +655,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
         Description = "";
     Duration = Dplay.getDuration(data);
     ImgLink = Dplay.findImage(data, includes);
+    Background = Dplay.findImage(data, includes, MAX_WIDTH/THUMB_WIDTH);
     AirDate = Dplay.getAirDate(data);
     Link = Dplay.makeApiUrl("/videos/" + data.id, "&include=genres%2Cimages%2Cshow%2Cshow.images");
     Season  = (data.attributes.seasonNumber) ? data.attributes.seasonNumber : null;
@@ -664,6 +668,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
          episode:Episode,
          link:Link,
          thumb:ImgLink,
+         background:Background,
          duration:Duration,
          description:Description,
          airDate:AirDate,
@@ -943,8 +948,8 @@ Dplay.refreshPlayUrl = function(callback) {
 
 Dplay.fixThumb = function(thumb, factor) {
     if (thumb) {
-        var height = (factor) ? Math.floor(factor*THUMB_HEIGHT) : THUMB_HEIGHT;
-        var width  = (factor) ? Math.floor(factor*THUMB_WIDTH)  : THUMB_WIDTH;
+        var height = (factor) ? Math.round(factor*THUMB_HEIGHT) : THUMB_HEIGHT;
+        var width  = (factor) ? Math.round(factor*THUMB_WIDTH)  : THUMB_WIDTH;
         thumb = (thumb.match(/\?/)) ? thumb+"&" : thumb+"?";
         // thumb = thumb + "f=jpg&p=true&h=" + height;
         thumb = thumb + "f=jpg&p=true&w=" + width;

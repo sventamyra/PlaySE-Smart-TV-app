@@ -530,7 +530,8 @@ Oa.decode = function(data, extra, FilterShows) {
                         description:Description,
                         link:Link,
                         link_prefix: LinkPrefix,
-                        thumb:data[k].thumbnailSmall
+                        thumb:data[k].thumbnailSmall,
+                        background:data[k].thumbnailXL
                        });
                 break;
 
@@ -585,6 +586,7 @@ Oa.decode = function(data, extra, FilterShows) {
                         link_prefix: '<a href="details.html?ilink=',
                         description:Description,
                         thumb:data[k].thumbnailSmall,
+                        background:data[k].thumbnailXL,
                         season:data[k].seasonNumber,
                         episode:data[k].episodeNumber,
                         show:Show
