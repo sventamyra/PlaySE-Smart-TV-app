@@ -398,7 +398,7 @@ Viasat.decode = function(data, extra) {
                 Show = null;
 
             ImgLink = Viasat.fixThumb(data[k]._links.image.href);
-            Background = Viasat.fixThumb(data[k]._links.image.href, MAX_WIDTH/THUMB_WIDTH);
+            Background = Viasat.fixThumb(data[k]._links.image.href, BACKGROUND_THUMB_FACTOR);
             if (!data[k]._links.stream && data[k]._links.seasons) {
                 Viasat.result.push({name:Name, link:data[k]._links.seasons.href, thumb:ImgLink});
                 continue;
@@ -809,13 +809,13 @@ Viasat.fixThumb = function(thumb, factor) {
     return thumb[1]+encodeURIComponent(thumb[2]);
 }
 
-Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl) {
+Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl, extra) {
     if (hlsSubs && hlsSubs.length > subUrls.list.length) {
-        return Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl);
+        return Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, extra);
     } else if (subUrls.list.length == 0) {
         return;
     } else if (subUrls.list[0].match(/\.(web)?vtt/)) {
-        return Player.fetchSubtitles(subUrls, hlsSubs, usedRequestedUrl)
+        return Player.fetchSubtitles(subUrls, hlsSubs, usedRequestedUrl, extra)
     }
     var anyFailed = false
     httpLoop(subUrls.list,
@@ -833,7 +833,9 @@ Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl) {
                  if (data.length > 0)
                      Viasat.parseSubtitles(data);
                  if (anyFailed && hlsSubs)
-                     Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl)
+                     Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, extra)
+                 else
+                     extra.cb();
              }
             );
 };

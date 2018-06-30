@@ -128,7 +128,7 @@ Svt.getThumb = function(data, size) {
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
     if (Thumb.match(/\/wide\/[0-9]+/)) {
         if (size == "extralarge")
-            size = MAX_WIDTH;
+            size = BACKGROUND_THUMB_FACTOR*THUMB_WIDTH;
         else if (size == "large")
             size = DETAILS_THUMB_FACTOR*THUMB_WIDTH;
         else
@@ -300,7 +300,14 @@ Svt.getDetailsData = function(url, data) {
                     //     }
                     // }
                 } else if (data.video.clusters && data.video.clusters.length > 0) {
-                    Show = {name        : data.video.clusters[0].name.trim(),
+                    Show = data.video.clusters[0];
+                    for (var cluster in data.video.clusters) {
+                        if (data.video.clusters[cluster].clusterType == "main")
+                            continue;
+                        Show = data.video.clusters[cluster];
+                        break;
+                    }
+                    Show = {name        : Show.name.trim(),
                             url         : Svt.fixLink("/genre/" + data.video.clusters[0].slug),
                             thumb       : Svt.getThumb(ImgLink, "small"),
                             large_thumb : ImgLink,
@@ -886,11 +893,12 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                            }
 		       }
 		       if (video_url.match(/\.(m3u8|mpd)/)) {
-		           Resolution.getCorrectStream(video_url, srtUrl, extra, cb);
+                           extra.cb = cb;
+		           Resolution.getCorrectStream(video_url, srtUrl, extra);
 		       }
 		       else{
+                           extra.cb = function() {Player.playVideo()};
 		           Player.setVideoURL(video_url, video_url, srtUrl, extra);
-		           Player.playVideo();
 		       }
 	           }
                }
@@ -1069,7 +1077,9 @@ Svt.decodeChannels = function(data) {
             }
 	    Link = BaseUrl + '/' + Name;
             ImgLink = Svt.GetChannelThumb(Name);
-            Background = Svt.getThumb(data[k], "extralarge"); 
+            Background = Svt.getThumb(data[k], "extralarge");
+            if (!Background)
+                Background = Svt.getThumb(ImgLink, "extralarge");
             starttime = timeToDate(data[k].publishingTime);
             endtime = timeToDate(data[k].publishingEndTime);
             Duration  = Math.round((endtime-starttime)/1000);

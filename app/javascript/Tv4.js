@@ -398,7 +398,7 @@ Tv4.decode = function(data, extra) {
                 Name = Tv4.determineEpisodeName(data[k])
             }
             ImgLink = Tv4.fixThumb(data[k].image);
-            Background = Tv4.fixThumb(data[k].image, MAX_WIDTH/THUMB_WIDTH);
+            Background = Tv4.fixThumb(data[k].image, BACKGROUND_THUMB_FACTOR);
             Duration = data[k].duration;
             Description = (data[k].description) ? data[k].description.trim() : "";
             Link = "http://webapi.tv4play.se/play/video_assets?id=" +  data[k].id;
@@ -691,27 +691,31 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                        data = JSON.parse(data.responseText).playbackItem;
                        stream = data.manifestUrl;
                        if (!isLive)
-                           requestUrl(RedirectIfEmulator(reqUrl.replace(/dash/,"hls")),
-                                      function(status, data)
-                                      {
-                                          try {
-                                              reqUrl = JSON.parse(data.responseText).playbackItem.manifestUrl;
-                                              data = httpRequest(RedirectIfEmulator(reqUrl),{sync:true}).data;
-                                              srtUrl = data.match(/TYPE=SUBTITLES.+URI="([^"]+)/)[1]
-                                              if (stream && !srtUrl.match(/https?:\//)) {
-                                                  srtUrl = reqUrl.replace(/[^\/]+(\?.+)?$/,srtUrl);
-                                              }
-                                          } catch (err) {
-                                              Log("No subtitles: " + err + " reqUrl:" + reqUrl);
-                                              srtUrl = null;
-                                          }
-                                      },
-                                      {cbComplete: function() {cbComplete(stream,srtUrl)}}
-                                     );
+                           Tv4.getSrtUrl(stream.replace(/\.mpd/,".m3u8"),
+                                         function(srtUrl){
+                                             cbComplete(stream, srtUrl)
+                                         });
                        else
-                           cbComplete(stream, srtUrl)
+                           cbComplete(stream, srtUrl);
                    }
                }
+              );
+};
+
+Tv4.getSrtUrl = function (hlsUrl, cb) {
+    var srtUrl = null;
+    requestUrl(RedirectIfEmulator(hlsUrl),
+               function(status, data) {
+                   try {
+                       srtUrl = data.responseText.match(/TYPE=SUBTITLES.+URI="([^"]+)/)[1]
+                       if (!srtUrl.match(/https?:\//)) {
+                           srtUrl = hlsUrl.replace(/[^\/]+(\?.+)?$/,srtUrl);
+                       }
+                   } catch (err) {
+                       Log("No subtitles: " + err + " hlsUrl:" + hlsUrl);
+                   }
+               },
+               {cbComplete: function() {cb(srtUrl)}}
               );
 };
 

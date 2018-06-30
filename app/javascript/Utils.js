@@ -573,13 +573,12 @@ requestUrl = function(url, cbSucces, extra) {
         window.setTimeout(function(){callUrlCallBack(url, cbSucces, "success")},50)
         return
     }
-        
+
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:Channel.getName()};
     var retrying = false;
     var cache = (extra.no_cache) ? false : true;
 
     if (extra.cookie) {
-        
         extra.cookie = addCookiePath(extra.cookie, url);
         Log("Adding " + extra.cookie + " to " + document.cookie);
         document.cookie = extra.cookie;
@@ -755,12 +754,11 @@ handleHttpResult = function(url, timer, extra, result) {
 }
 
 httpLoop = function(urls, urlCallback, cbComplete, extra) {
-    runHttpLoop(urls, urlCallback, cbComplete, extra, "")
+    runHttpLoop(urls, urlCallback, cbComplete, extra, "", 1)
 };
 
-runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData) {
+runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData, i) {
     if (!extra) extra = {};
-    if (!extra.interval) extra.interval = 0;
     extra.cb =
         function(status,data) {
             try {
@@ -779,13 +777,7 @@ runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData) {
             totalData = totalData + data;
             if (urls.length > 1) {
                 var this_extra = extra;
-                window.setTimeout(
-                    function()
-                    {
-                        runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData)
-                    },
-                    extra.interval
-                )
+                runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData, i+1)
             } else {
                 cbComplete(totalData)
             }
@@ -1231,7 +1223,7 @@ loadImage = function (image, callback, timeout) {
             thisTimeout = window.setTimeout(function () {
                 img.onload=img.onerror=img.onabort = null;
                 if (isEmulator)
-                    alert("IMG TIMEOUT")
+                    alert("IMG TIMEOUT: " + image)
                 else
                     Log("IMG TIMEOUT")
                 callback()
@@ -1250,11 +1242,20 @@ loadImage = function (image, callback, timeout) {
 };
 
 RedirectIfEmulator = function(url) {
+    if (isEmulator) {
+        return Redirect(url)
+    }
     return url
 }
 
-Log = function (msg) 
+Redirect = function(url, no_log) {
+    var redirectUrl = url;
+    return redirectUrl
+}
+
+
+Log = function (msg, timeout) 
 {
-    // httpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, not_random:true, logging:true});
+    // httpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, logging:true, timeout:((timeout) ? 100: null)});
     // alert(msg);
 };

@@ -25,11 +25,10 @@ Resolution.getTarget = function(IsLive) {
     return bwidths[res];
 };
 
-Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
-    if (!callback)
-        callback = function() {Player.playVideo()};
-
+Resolution.getCorrectStream = function(videoUrl, srtUrl, extra) {
     if (!extra) extra  = {};
+    if (!extra.cb) extra.cb = function() {Player.playVideo()};
+
     var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,"");
     var target = Resolution.getTarget(extra.isLive);
     var master = videoUrl;
@@ -48,6 +47,7 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
                        streams = Resolution.getIsmStreams(videoUrl, data, prefix)
                    }
                    extra.audio_idx = streams.audio_idx;
+                   extra.subtitles_idx = streams.subtitles_idx;
                    extra.hls_subs = streams.hls_subs;
                    if (target != "Auto") {
                        streams = streams.streams;
@@ -74,7 +74,7 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
                        target = streams[currentId].bandwidth
                        if (!streams[currentId].url.match(/^http/))
                            streams[currentId].url = prefix + streams[currentId].url;
-                       // Log("Target url data:" + httpRequest(streams[currentId].url,{sync:true}).data.slice(0,600));
+
                        if (extra.useBitrates || !is_hls) {
                            videoUrl = videoUrl + "|STARTBITRATE=" + target +"|BITRATES=" + target + ":" + target
                        } else {
@@ -86,19 +86,29 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra, callback) {
                        // Log("current url: " + streams[currentId].url);
                        extra.bw = target;
 	           }
+
+                   if (target == "Auto")
+                       // videoUrl = videoUrl + "|STARTBITRATE=AVERAGE";
+                       videoUrl = videoUrl + "|STARTBITRATE=CHECK";
+
                    if (is_hls)
                        videoUrl = videoUrl + "|COMPONENT=HLS"
                    else if (videoUrl.match(/\.mpd/))
                        videoUrl = videoUrl + "|COMPONENT=HAS";
-                   else {
-                       if (target == "Auto")
-                           videoUrl = videoUrl + "|STARTBITRATE=CHECK";
-                       if (videoUrl.match(/\.ism/)) {
-                           videoUrl = videoUrl + "|COMPONENT=WMDRM";
-                       }
+                   else if (videoUrl.match(/\.ism/)) {
+                       videoUrl = videoUrl + "|COMPONENT=WMDRM";
                    }
-		   Player.setVideoURL(master, videoUrl, srtUrl, extra);
-		   callback();
+                   // Fetch subtitles before playback.
+                   // Seems http requests interfer with start of playback
+                   Channel.fetchSubtitles(
+                       srtUrl,
+                       extra.hls_subs,
+                       requestedUrl,
+                       function(){
+		           Player.setVideoURL(master, videoUrl, srtUrl, extra);
+                           extra.cb()
+                       }
+                   )
                },
                {headers:Channel.getHeaders()}
               );
@@ -145,9 +155,25 @@ Resolution.getIsmStreams = function (videoUrl, data, prefix) {
     data = data.responseText.replace(/StreamIndex[	 ]*\r?\n/gm,"StreamIndex");
     // Log("ISM content: " + data);
     data = data.split(/StreamIndex.+="video"/)
-    var languages = data[0].match(/Language="([^"]+)"/gm);
+    var language_streams = data[0].split(/<StreamIndex/i).slice(1);
+    var subtitles = [];
+    var languages = [];
+    for (var i = 0; i < language_streams.length; i++) {
+        if (language_streams[i].match(/audio/i)) {
+            languages.push(language_streams[i])
+        } else if (language_streams[i].match(/text/i)) {
+            subtitles.push(language_streams[i])
+        }
+    }
+    var swe_subtitles_idx = null;
+    for (var i = 0; i < subtitles.length; i++) {
+        if (subtitles[i].match(/swe/i)) {
+            swe_subtitles_idx = i
+            break;
+        }
+    }
     var swe_audio_idx = null;
-    for (var i = 1; languages && i < languages.length; i++) {
+    for (var i = 0; i < languages.length; i++) {
         if (languages[i].match(/swe/i)) {
             swe_audio_idx = i
             break;
@@ -164,7 +190,7 @@ Resolution.getIsmStreams = function (videoUrl, data, prefix) {
                     );
     }
 
-    return {streams:streams, audio_idx:swe_audio_idx}
+    return {streams:streams, audio_idx:swe_audio_idx, subtitles_idx:swe_subtitles_idx}
 }
 
 Resolution.getHasStreams = function (videoUrl, data, prefix) {

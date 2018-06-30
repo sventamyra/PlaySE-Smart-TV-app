@@ -161,7 +161,7 @@ Details.toHtml = function (programData) {
 	html = null;
         if (!detailsOnTop)
             fetchPriorLocation();
-    })
+    }, 1000)
 }
 
 Details.noCache = function() {

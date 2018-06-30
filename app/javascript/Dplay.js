@@ -545,7 +545,7 @@ Dplay.decodeSearchHits = function(data, extra) {
             Description = data[k].attributes.description.trim();
             Duration = Dplay.getDuration(data[k]);
             ImgLink = Dplay.findImage(data[k], Includes);
-            Background = Dplay.findImage(data[k], Includes, MAX_WIDTH/THUMB_WIDTH);
+            Background = Dplay.findImage(data[k], Includes, BACKGROUND_THUMB_FACTOR);
             AirDate = Dplay.getAirDate(data[k]);
             Link = Dplay.makeApiUrl("/videos/" + data[k].id, "&include=genres%2Cimages%2Cshow%2Cshow.images");
             Season  = (data[k].attributes.seasonNumber) ? data[k].attributes.seasonNumber : null;
@@ -655,7 +655,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
         Description = "";
     Duration = Dplay.getDuration(data);
     ImgLink = Dplay.findImage(data, includes);
-    Background = Dplay.findImage(data, includes, MAX_WIDTH/THUMB_WIDTH);
+    Background = Dplay.findImage(data, includes, BACKGROUND_THUMB_FACTOR);
     AirDate = Dplay.getAirDate(data);
     Link = Dplay.makeApiUrl("/videos/" + data.id, "&include=genres%2Cimages%2Cshow%2Cshow.images");
     Season  = (data.attributes.seasonNumber) ? data.attributes.seasonNumber : null;
@@ -932,7 +932,7 @@ Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        data = JSON.parse(data.responseText).data.attributes;
                        data = data.streaming.hls.url;
-                       Resolution.getCorrectStream(data, null, {useBitrates:true}, callback);
+                       Resolution.getCorrectStream(data, null, {useBitrates:true,cb:callback});
                    }
                },
                {headers:Dplay.getHeaders()}

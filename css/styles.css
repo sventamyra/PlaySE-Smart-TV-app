@@ -127,11 +127,6 @@ h1,
     background: url(../images/green_icon_check.png) 68px 4px no-repeat;
 }
 
-.loader {
-    display: none;
-    margin-top: 206px;
-}
-
 #flash-content {
     position: absolute;
     left: 0;
@@ -280,11 +275,13 @@ h4 {
     width: 100%;
     top: 0;
     position: absolute;
+    z-index:3;
 }
 
 #loading {
     top: 250px;
     left: 450px;
+    z-index:4;
 }
 
 .header {
@@ -1205,7 +1202,6 @@ small {
     position: absolute;
     height:100%;
     width:100%;
-    background-size:cover;
     overflow:hidden;
     z-index: -1;
 }

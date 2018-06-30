@@ -20,7 +20,7 @@ Channel.set = function(newChannel, newId) {
     if (this.main_ch_id != newId || 
         this.main_ch_id != this.ch_id ||
         Channel.isSubChannelSet()) {
-        Channel.setTmp(newChannel, newId)
+        Channel.setTmp(newChannel, newId, true)
         this.main_impl = this.impl;
         this.main_ch_id = this.ch_id;
         Channel.resetSubChannel()
@@ -30,8 +30,9 @@ Channel.set = function(newChannel, newId) {
     }
 }
 
-Channel.setTmp = function(newChannel, newId) {
-    // Log("Channel.setTmp: " + newId)
+Channel.setTmp = function(newChannel, newId, lib) {
+    if (!lib)
+        Log("Channel.setTmp: " + newId)
     this.impl  = newChannel;
     this.ch_id = newId;
 }
@@ -183,7 +184,7 @@ Channel.tryAltPlayUrl = function(failedUrl, cbComplete) {
     }
 }
 
-Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl) {
+Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl, cb) {
     hlsSubsState = null;
     if (typeof srtUrl == "string" && srtUrl.match(/\.m3u8/)) {
         hlsSubs = [srtUrl]
@@ -191,11 +192,13 @@ Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl) {
     }
     if (srtUrl && srtUrl != "") {
         if (this.impl.fetchSubtitles)
-            this.impl.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl)
+            this.impl.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl, {cb:cb})
         else
-            Player.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl)
+            Player.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl, {cb:cb})
     } else if (hlsSubs)
-        Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl)
+        Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, {cb:cb})
+    else
+        cb();
 }
 
 Channel.keyRed = function() {
