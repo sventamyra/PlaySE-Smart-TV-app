@@ -411,6 +411,10 @@ Viasat.decode = function(data, extra) {
                 Link = "http://playapi.mtgx.tv/v3/videos/stream/" + data[k].id;
 
             AirDate = Viasat.getAirDate(data[k]);
+            if  (AirDate > getCurrentDate())
+                // Not Aired yet
+                continue;
+
             if (data[k].format_position) {
                 Episode = data[k].format_position.episode;
                 Season  = data[k].format_position.season;

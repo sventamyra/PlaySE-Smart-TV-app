@@ -128,17 +128,24 @@ Dplay.getHeaders = function() {
 Dplay.decodeMain = function(data, extra) {
     Dplay.reset()
     data = JSON.parse(data.responseText);
-    var RecommendedShowIds = [];
+    var RecommendedCollection = [];
     var Recommended = [];
+    var RecommendedShowIds = [];
     if (data.data.relationships) {
         Recommended = data.data.relationships.items.data[0].id
 
         Recommended = Dplay.findIncludedId(data, Recommended).relationships.collection.data.id;
         Recommended = Dplay.findIncludedId(data, Recommended).relationships.items.data;
-        RecommendedShowIds = Dplay.decodeCollection(data, Recommended, [])
+        RecommendedCollection = Dplay.decodeCollection(data, Recommended, [])
         Recommended = [];
-        for (var i=0; i < RecommendedShowIds.length; i++) {
-            Recommended.push(Dplay.findIncludedId(data, RecommendedShowIds[i].id))
+        for (var i=0,showId=0; i < RecommendedCollection.length; i++) {
+            showId = RecommendedCollection[i].show_id;
+            if (!showId) showId = RecommendedCollection[i].id;
+            if (RecommendedShowIds.indexOf(showId) != -1)
+                // duplicate
+                continue;
+            Recommended.push(Dplay.findIncludedId(data, RecommendedCollection[i].id));
+            RecommendedShowIds.push(showId)
         }
         data.data = Recommended;
         Dplay.decodeShows(data,extra);
@@ -148,13 +155,7 @@ Dplay.decodeMain = function(data, extra) {
     data = null;
     extra.url = Dplay.getPopularUrl();
     extra.cbComplete = null;
-    extra.recommended_ids = [];
-    for (var i=0; i < RecommendedShowIds.length; i++) {
-        if (RecommendedShowIds[i].is_show)
-            extra.recommended_ids.push(RecommendedShowIds[i].id)
-        else if (RecommendedShowIds[i].show_id)
-            extra.recommended_ids.push(RecommendedShowIds[i].show_id)
-    }
+    extra.recommended_ids = RecommendedShowIds;
     requestUrl(extra.url,
                function(status, data)
                {
