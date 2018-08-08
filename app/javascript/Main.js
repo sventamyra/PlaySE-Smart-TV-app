@@ -26,6 +26,8 @@ Main.onLoad = function(refresh)
 	Header.display(document.title);
     }
     if (!this.loaded) {
+        // Cache Viasat since slow
+        httpRequest(Viasat.getMainUrl());
         $("#page-cover").hide();
         var model = document.getElementById("pluginObjectDEVICE").GetRealModel();
         isEmulator = (model === "VALENCIA" || model === "SDK" | !model);

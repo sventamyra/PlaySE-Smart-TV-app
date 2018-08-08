@@ -34,6 +34,10 @@ Viasat.getCategoryTitle = function() {
     }
 };
 
+Viasat.getMainUrl = function() {
+    return 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=50&order=-popularity'
+}
+
 Viasat.getUrl = function(tag, extra) {
 
     var url;
@@ -52,7 +56,7 @@ Viasat.getUrl = function(tag, extra) {
             // Force new channel name
             Header.display(document.title);
         }
-        url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=50&order=-popularity';
+        url = Viasat.getMainUrl();
         // url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.popular&device=mobile&premium=open&country=se';
         break;
 
@@ -796,7 +800,13 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
                        if (data.sami_path) srtUrls.push(data.sami_path); 
                        if (data.subtitles_for_hearing_impaired) srtUrls.push(data.subtitles_for_hearing_impaired);
                        if (data.subtitles_webvtt) srtUrls.push(data.subtitles_webvtt);
-                       Resolution.getCorrectStream(stream, {list:srtUrls}, {useBitrates:true});
+                       // Seems Samsung doesn't support the live/sports streams for some reason.
+                       // It seems the variant streams can be used directly here though.
+                       // Means those streams are unsupported in case of "Auto Bitrate".
+                       Resolution.getCorrectStream(stream,
+                                                   {list:srtUrls},
+                                                   {useBitrates:!stream.match("\.isml")}
+                                                  );
                    }
                });
 }
@@ -817,7 +827,7 @@ Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl, extra) {
     if (hlsSubs && hlsSubs.length > subUrls.list.length) {
         return Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, extra);
     } else if (subUrls.list.length == 0) {
-        return;
+        return extra.cb();
     } else if (subUrls.list[0].match(/\.(web)?vtt/)) {
         return Player.fetchSubtitles(subUrls, hlsSubs, usedRequestedUrl, extra)
     }

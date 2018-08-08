@@ -100,7 +100,7 @@ Player.init = function()
             var args=[];
             if (Name == "StartPlayback") {
                 Name = "ResumePlay";
-                args.push(videoUrl)
+                args.push('"' + videoUrl + '"')
             }
             Name = "Player.plugin." + Name
             if (eval(Name)) {
@@ -152,8 +152,8 @@ Player.init = function()
             mwPlugin.SetMediaSource();
         }
     }
-    
-  //  this.setWindow();
+
+    // this.setWindow();
     return success;
 };
 
@@ -943,7 +943,7 @@ Player.OnStreamInfoReady = function(forced)
     this.setTotalTime();
     if (videoData.audio_idx)
         Log("SetStreamID Audio: " + videoData.audio_idx + " res: " + Player.plugin.Execute("SetStreamID", 1, videoData.audio_idx));
-    if (videoData.subtitles_idx >= 0) {
+    if (subtitles.length == 0 && videoData.subtitles_idx >= 0) {
         Log("StartSubtitle res: " + Player.plugin.Execute("StartSubtitle", videoData.url.replace(/\|.+$/, "")));
         Log("Number of Subtitles:" + Player.plugin.Execute('GetTotalNumOfStreamID',5));
         Log("SetStreamID Subtitles: " + videoData.subtitles_idx + " res: " + Player.plugin.Execute("SetStreamID", 5, videoData.subtitles_idx));
