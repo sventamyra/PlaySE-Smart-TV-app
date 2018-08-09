@@ -382,8 +382,7 @@ Player.playVideo = function()
 
         // Player.plugin.Execute("SetInitialBuffer", 640*1024);
         // Player.plugin.Execute("SetPendingBuffer", 640*1024);
-        // Player.plugin.Execute("SetTotalBufferSize", 640*1024);        
-        startup = true;
+        // Player.plugin.Execute("SetTotalBufferSize", 640*1024);
         if(Audio.plugin.GetUserMute() == 1){
                 $('.muteoverlay').show();
         	smute = 1;
@@ -1347,6 +1346,7 @@ Player.startPlayer = function(url, isLive, startTime)
 
     Buttons.setKeyHandleID(2);
 
+    startup = true;
     retries = 0;
     window.clearTimeout(detailsTimer);
     Player.startTime = startTime;
