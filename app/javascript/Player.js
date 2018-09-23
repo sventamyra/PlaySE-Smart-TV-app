@@ -804,8 +804,9 @@ Player.startPlayback = function(time) {
     window.clearTimeout(delayedPlayTimer);
     // Stop in case delayedPlayTimer already expired...
     Player.plugin.Execute("Stop");
-    if (!videoUrl.match(/=WMDRM/))
+    if (!videoUrl.match(/=WMDRM/)) {
         Player.plugin.Execute("InitPlayer", videoUrl);
+    }
     Player.resumePlayback(time);
 };
 
@@ -1075,10 +1076,10 @@ Player.OnRenderError = function(number)
 {
     Log("Player.OnRenderError:" + number);
     var text = "Can't play this. Error: " + number;
-    Player.checkHls(function(){Player.PlaybackFailed(text)})
+    Player.checkHls(function(){Player.PlaybackFailed(text)}, text)
 };
 
-Player.checkHls = function(OtherCalback) {
+Player.checkHls = function(OtherCalback, text) {
     // Seems stop before OnBufferingStart gives e.g. OnRenderError
     // Can also happen in case "resume" is chosen too late...
     if (Player.state != Player.STOPPED && delayedPlayTimer != -1) {
@@ -1107,7 +1108,7 @@ Player.OnAuthenticationFailed = function()
 
 Player.PlaybackFailed = function(text)
 {
-    Log("Player.PlaybackFailed");
+    Log("Player.PlaybackFailed:" + text);
     Log(text); 
     loadingStop();
     Player.showControls();
@@ -1244,15 +1245,15 @@ Player.setAspectRatio = function(resolution) {
 };
 
 Player.scaleDisplay = function (resolution) {
-    var factor = (resolution.aspect >= 16/9) ? 
+    var factor = (resolution.aspect >= 16/9) ?
         // Wider than high - "extend/limit" based on width
-        GetMaxVideoWidth()/resolution.width : 
-        // Wider than high - "extend/limit" based on height
+        GetMaxVideoWidth()/resolution.width :
+        // Higher than wide - "extend/limit" based on height
         GetMaxVideoHeight()/resolution.height;
-        
+
     var width  = Math.min(GetMaxVideoWidth(),  resolution.width*factor);
     var height = Math.min(GetMaxVideoHeight(), resolution.height*factor);
-    
+
     var x = Math.floor((GetMaxVideoWidth()-width)/2);
     var y = Math.floor((GetMaxVideoHeight()-height)/2);
     // Log("scaleDisplay:"+x+","+y+","+width+","+height + " resolution:" + JSON.stringify(resolution));

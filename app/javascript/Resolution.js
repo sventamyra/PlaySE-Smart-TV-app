@@ -35,20 +35,25 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra) {
     requestUrl(videoUrl,
                function(status, data)
 	       {
-                   var streams, is_hls = videoUrl.match(/\.m3u8/);
-                   extra.cookies = data.getAllResponseHeaders().match(/Set-Cookie: ?.+$/igm);
-                   for (var i=0; extra.cookies && i < extra.cookies.length; i++)
-                       extra.cookies[i] = extra.cookies[i].replace(/.*Set-Cookie: ?/i, "")
-                   if (is_hls) {
-                       streams = Resolution.getHlsStreams(videoUrl, data, prefix)
-                   } else if (videoUrl.match(/\.mpd/)) {
-                       streams = Resolution.getHasStreams(videoUrl, data, prefix)
-                   } else if (videoUrl.match(/\.ism/)) {
-                       streams = Resolution.getIsmStreams(videoUrl, data, prefix)
+                   if (data.responseText.length == 0) {
+                       Log("No data, Status: " + status + " " + JSON.stringify(data))
+                       target = "Auto"
+                   } else {
+                       var streams, is_hls = videoUrl.match(/\.m3u8/);
+                       extra.cookies = data.getAllResponseHeaders().match(/Set-Cookie: ?.+$/igm);
+                       for (var i=0; extra.cookies && i < extra.cookies.length; i++)
+                           extra.cookies[i] = extra.cookies[i].replace(/.*Set-Cookie: ?/i, "")
+                       if (is_hls) {
+                           streams = Resolution.getHlsStreams(videoUrl, data, prefix)
+                       } else if (videoUrl.match(/\.mpd/)) {
+                           streams = Resolution.getHasStreams(videoUrl, data, prefix)
+                       } else if (videoUrl.match(/\.ism/)) {
+                           streams = Resolution.getIsmStreams(videoUrl, data, prefix)
+                       }
+                       extra.audio_idx = streams.audio_idx;
+                       extra.subtitles_idx = streams.subtitles_idx;
+                       extra.hls_subs = streams.hls_subs;
                    }
-                   extra.audio_idx = streams.audio_idx;
-                   extra.subtitles_idx = streams.subtitles_idx;
-                   extra.hls_subs = streams.hls_subs;
                    if (target != "Auto") {
                        streams = streams.streams;
                        streams.sort(function(a, b){

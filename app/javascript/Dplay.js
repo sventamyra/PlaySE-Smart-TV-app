@@ -675,7 +675,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
          airDate:AirDate,
          isFollowUp:data.attributes.videoType.match(/FOLLOWUP/),
          is_live : IsLive,
-         starttime : (IsLive) ? timeToDate(Dplay.getAirDate(data)) : null,
+         starttime : (IsLive) ? Dplay.getAirDate(data) : null,
          // Non-running live shows are skipped - so if here it's running...
          is_running : IsLive
         });
@@ -839,7 +839,7 @@ Dplay.getDetailsData = function(url, data) {
         if (Show)
             Title = Show.name + " - " + Title;
 	DetailsImgLink = Dplay.findImage(data, Includes, DETAILS_THUMB_FACTOR);
-        AirDate = timeToDate(Dplay.getAirDate(data));
+        AirDate = Dplay.getAirDate(data);
         VideoLength = dataLengthToVideoLength(null, Dplay.getDuration(data));
         if (data.attributes.description)
 	    Description = data.attributes.description.trim();
@@ -933,7 +933,7 @@ Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        data = JSON.parse(data.responseText).data.attributes;
                        data = data.streaming.hls.url;
-                       Resolution.getCorrectStream(data, null, {useBitrates:true,cb:callback});
+                       Resolution.getCorrectStream(data, null, {useBitrates:true,isLive:isLive,cb:callback});
                    }
                },
                {headers:Dplay.getHeaders()}
@@ -1194,18 +1194,26 @@ Dplay.getAvailDate = function(data) {
 }
 
 Dplay.getAirDate = function(data) {
-    if (!data.attributes.airDate) {
-        if (data.attributes.availabilityWindows) {
-            for (var i=0; i < data.attributes.availabilityWindows.length; i++)
-            {
-                if (data.attributes.availabilityWindows[i].package == "Free" &&
-                    data.attributes.availabilityWindows[i].playableStart)
-                    return data.attributes.availabilityWindows[i].playableStart;
+    var airDate = data.attributes.airDate;
+    if (data.attributes.availabilityWindows) {
+        for (var i=0; i < data.attributes.availabilityWindows.length; i++)
+        {
+            if (data.attributes.availabilityWindows[i].package == "Free" &&
+                data.attributes.availabilityWindows[i].playableStart) {
+                airDate = Dplay.getMinDate(airDate, data.attributes.availabilityWindows[i].playableStart);
+                break;
             }
         }
-        return data.attributes.publishStart
     }
-    return data.attributes.airDate;
+    return timeToDate(airDate);
+}
+
+Dplay.getMinDate = function (a, b) {
+    if (!a) return b;
+    if (!b) return a;
+    if (timeToDate(a) < timeToDate(b))
+        return a;
+    return b
 }
 
 Dplay.getNextPage = function(data, extra) {

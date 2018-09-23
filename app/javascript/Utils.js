@@ -623,7 +623,7 @@ requestUrl = function(url, cbSucces, extra) {
             {
                 retrying = false;
                 if (isRequestStillValid(requestedLocation)) {
-                    Log('Failure:' + this.url + " status:" + xhr.status + " " + textStatus + " error:" + errorThrown);
+                    Log('Failure:' + this.url + " status:" + textStatus + " error:" + errorThrown);
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
                         this.tryCount <= this.retryLimit) {

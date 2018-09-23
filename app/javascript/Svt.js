@@ -308,7 +308,7 @@ Svt.getDetailsData = function(url, data) {
                         break;
                     }
                     Show = {name        : Show.name.trim(),
-                            url         : Svt.fixLink("/genre/" + data.video.clusters[0].slug),
+                            url         : Svt.fixLink("/genre/" + Show.slug),
                             thumb       : Svt.getThumb(ImgLink, "small"),
                             large_thumb : ImgLink,
                             is_category : true

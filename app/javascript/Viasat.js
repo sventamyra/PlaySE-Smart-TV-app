@@ -353,6 +353,7 @@ Viasat.decode = function(data, extra) {
         var Season=null;
         var Show=null;
         var ShowId=null;
+        var IsLive=null;
 
         if (!extra.is_next)
             Viasat.result = [];
@@ -418,6 +419,7 @@ Viasat.decode = function(data, extra) {
             if  (AirDate > getCurrentDate())
                 // Not Aired yet
                 continue;
+            IsLive = (data[k].type == "live");
 
             if (data[k].format_position) {
                 Episode = data[k].format_position.episode;
@@ -440,6 +442,9 @@ Viasat.decode = function(data, extra) {
                                 duration:Duration, 
                                 description:Description,
                                 airDate:AirDate,
+                                is_live:IsLive,
+                                is_running:IsLive,
+                                starttime: (IsLive) ? AirDate : null,
                                 link_prefix:'<a href="details.html?ilink='
                                }
                               );
@@ -477,9 +482,10 @@ Viasat.decode = function(data, extra) {
                 
                 toHtml({name:Viasat.result[k].name,
                         duration:Viasat.result[k].duration,
-                        is_live:false,
+                        is_live:Viasat.result[k].is_live,
                         is_channel:false,
-                        is_running:null,
+                        is_running:Viasat.result[k].is_running,
+                        starttime:Viasat.result[k].starttime,
                         link:Viasat.result[k].link,
                         link_prefix:Viasat.result[k].link_prefix,
                         description:Viasat.result[k].description,
@@ -678,6 +684,7 @@ Viasat.getDetailsData = function(url, data) {
     var Show=null;
     var Season=null;
     var Episode=null;
+    var IsLive=false;
     try {
 
         data = JSON.parse(data.responseText);
@@ -718,6 +725,7 @@ Viasat.getDetailsData = function(url, data) {
             Episode = data.episode_number;
             Season  = +data.season_number;
         }
+        IsLive = (data.type == "live");
     } catch(err) {
         Log("Viasat.getDetailsData Exception:" + err.message);
         Log("Name:" + Name);
@@ -730,10 +738,10 @@ Viasat.getDetailsData = function(url, data) {
     data = null;
     return {name          : Name,
             title         : Title,
-            is_live       : false,
+            is_live       : IsLive,
             air_date      : AirDate,
             avail_date    : AvailDate,
-            start_time    : 0,
+            start_time    : AirDate,
             duration      : VideoLength,
             description   : Description,
             not_available : false,
@@ -780,7 +788,7 @@ Viasat.getDetailsUrl = function(streamUrl) {
     return streamUrl.replace(/\/stream/, "").replace(/(seasons|videos)\?format=([0-9]+).*/, "formats/$2");
 };
 
-Viasat.getPlayUrl = function(orgStreamUrl) {
+Viasat.getPlayUrl = function(orgStreamUrl, isLive) {
     var streamUrl = orgStreamUrl.replace(/videos\/([0-9]+)/, "videos/stream/$1");
 
     requestUrl(streamUrl,
@@ -805,7 +813,7 @@ Viasat.getPlayUrl = function(orgStreamUrl) {
                        // Means those streams are unsupported in case of "Auto Bitrate".
                        Resolution.getCorrectStream(stream,
                                                    {list:srtUrls},
-                                                   {useBitrates:!stream.match("\.isml")}
+                                                   {useBitrates:!stream.match("\.isml"), isLive:isLive}
                                                   );
                    }
                });
