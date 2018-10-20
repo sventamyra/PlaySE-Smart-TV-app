@@ -103,17 +103,8 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra) {
                    else if (videoUrl.match(/\.ism/)) {
                        videoUrl = videoUrl + "|COMPONENT=WMDRM";
                    }
-                   // Fetch subtitles before playback.
-                   // Seems http requests interfer with start of playback
-                   Channel.fetchSubtitles(
-                       srtUrl,
-                       extra.hls_subs,
-                       requestedUrl,
-                       function(){
-		           Player.setVideoURL(master, videoUrl, srtUrl, extra);
-                           extra.cb()
-                       }
-                   )
+                   Player.setVideoURL(master, videoUrl, srtUrl, extra);
+                   extra.cb()
                },
                {headers:Channel.getHeaders()}
               );

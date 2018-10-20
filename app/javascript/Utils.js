@@ -663,6 +663,7 @@ isRequestStillValid = function (request) {
 }
 
 addUrlParam = function(url, key, value) {
+    url = url.replace(/[?&]$/,"");
     url = (url.match(/\?/)) ? url+"&" : url+"?";
     return url + key + "=" + encodeURIComponent(value)
 };
@@ -924,6 +925,23 @@ makeShowLink = function(Name, Url) {
 }
 
 itemToLink = function(Item, UrlParams) {
+
+    var myTitle=null;
+    if (Item.link_prefix.match(/\?ilink/) && Item.show) {
+        var showRegexp = new RegExp(Item.show + "[\\-. 	]*","i");
+        if (Item.season && Item.episode) {
+            myTitle = Item.show + ".s" + Item.season + "e" + Item.episode + ".";
+            myTitle = myTitle + Item.name.replace(/s[0-9]+e[0-9]+[\-. 	]*/i,"").replace(showRegexp, "");
+            if (myTitle.match(/e[0-9]+\.$/i))
+                myTitle = myTitle + "Avsnitt " + Item.episode;
+        } else if (!Item.name.match(showRegexp))
+            myTitle = Item.show + " - " + Item.name;
+        if (myTitle) {
+            myTitle = myTitle.replace(/\bs[^.s]+song\b\s*[0-9]+\s*-\s*/i,"");
+            myTitle = "mytitle=" + escape(myTitle);
+            Item.link_prefix = Item.link_prefix.replace(/ilink/, myTitle + "&ilink"); 
+        }
+    }
 
     return makeLink(Item.link_prefix,Item.name,Item.link, UrlParams)
 };

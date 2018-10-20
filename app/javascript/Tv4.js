@@ -680,7 +680,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
         if (!stream) {
             $('.bottomoverlaybig').html('Not Available!');
         } else {
-            Resolution.getCorrectStream(stream, srtUrl, {useBitrates:!isLive,license:license,isLive:isLive});
+            Resolution.getCorrectStream(stream, srtUrl, {useBitrates:!isLive,isLive:isLive});
         }}
 
     requestUrl(RedirectIfEmulator(reqUrl),
@@ -696,7 +696,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                                              cbComplete(stream, srtUrl)
                                          });
                        else
-                           cbComplete(stream, srtUrl);
+                           cbComplete(stream, null);
                    }
                }
               );
