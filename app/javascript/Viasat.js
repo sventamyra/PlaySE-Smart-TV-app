@@ -833,11 +833,11 @@ Viasat.fixThumb = function(thumb, factor) {
 
 Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl, extra) {
     if (hlsSubs && hlsSubs.length > subUrls.list.length) {
-        return Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, extra);
+        return Subtitles.fetchHls(hlsSubs, usedRequestedUrl, extra);
     } else if (subUrls.list.length == 0) {
         return extra.cb();
     } else if (subUrls.list[0].match(/\.(web)?vtt/)) {
-        return Player.fetchSubtitles(subUrls, hlsSubs, usedRequestedUrl, extra)
+        return Subtitles.fetch(subUrls, hlsSubs, usedRequestedUrl, extra)
     }
     var anyFailed = false
     httpLoop(subUrls.list,
@@ -855,7 +855,7 @@ Viasat.fetchSubtitles = function (subUrls, hlsSubs, usedRequestedUrl, extra) {
                  if (data.length > 0)
                      Viasat.parseSubtitles(data);
                  if (anyFailed && hlsSubs)
-                     Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, extra)
+                     Subtitles.fetchHls(hlsSubs, usedRequestedUrl, extra)
                  else
                      extra.cb();
              }
@@ -867,9 +867,8 @@ Viasat.parseSubtitles = function (data) {
     var start,stop,text;
     data = data.split("SpotNumber");
     data.shift()
-    subtitles = [];
     for (var i=0; i<data.length; i++) {
-        
+
         start = data[i].match(/TimeIn="([^"]+)/)[1];
         stop  = data[i].match(/TimeOut="([^"]+)/)[1];
         text  = data[i].match(/">(.+)<\/Text/mg);
@@ -878,8 +877,8 @@ Viasat.parseSubtitles = function (data) {
         }
         subtitles.push(
             {
-                start: Player.srtTimeToMS(start.replace(/:([0-9]+)$/,",$1")),
-                stop:  Player.srtTimeToMS(stop.replace(/:([0-9]+)$/,",$1")),
+                start: Subtitles.srtTimeToMS(start.replace(/:([0-9]+)$/,",$1")),
+                stop:  Subtitles.srtTimeToMS(stop.replace(/:([0-9]+)$/,",$1")),
                 text:  text.join("<br />").replace(/<br \/>$/g, "").replace(/([^.?!\-] )I([a-\xf6]+)/g, "$1l$2").replace(/([a-\xf6]+)I/g, "$1l")
             }
         )

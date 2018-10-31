@@ -20,13 +20,6 @@ var requestedUrl = null;
 var backgroundLoading = false;
 var startup = true;
 var smute = 0;
-var hlsSubsState = null;
-var subtitles = [];
-var subtitlesEnabled = false;
-var lastSetSubtitleTime = 0;
-var currentSubtitle = -1;
-var clrSubtitleTimer = 0;
-var subtitleStatusPrinted = false;
 var retries = 0;
 var SEPARATOR = "&nbsp;&nbsp;&nbsp;&nbsp;"
 var useSef=true;
@@ -206,8 +199,7 @@ Player.OnEvent = function(EventType, param1, param2) {
         // I.e. it's updated before resolution... 
         break;
     case 19: // 'SUBTITLE'
-        if (subtitlesEnabled)
-            Player.setSubtitleText(param1.replace(/< *\/br>/g, "<br />").replace(/<br \/>$/, ""))
+        Subtitles.set(param1.replace(/< *\/br>/g, "<br />").replace(/<br \/>$/, ""))
         break;
     case 100: // LICENSE_FAILURE?'
         Player.OnRenderError("DRM License failed");
@@ -473,7 +465,7 @@ Player.pauseVideo = function()
 	}
 	$('.bottomoverlaybig').html(pp);
 
-    window.clearTimeout(clrSubtitleTimer);
+    Subtitles.pause();
     Player.enableScreenSaver();
     this.state = this.PAUSED;
     Player.setFrontPanelText(Player.FRONT_DISPLAY_PAUSE);
@@ -484,7 +476,7 @@ Player.stopVideo = function(keep_playing)
 {
     this.state = this.STOPPED;
     requestedUrl = null;
-    hlsSubsState = null;
+    Subtitles.stop();
     Player.storeResumeInfo();
     widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
     $("#srtId").hide();
@@ -626,9 +618,6 @@ Player.OnBufferingStart = function()
 {
     Log("OnBufferingStart");
     loadingStart();
-    currentSubtitle = 0;
-    subtitlesEnabled = this.getSubtitlesEnabled();
-    this.setSubtitleProperties();
     this.showControls();
     if ($('.bottomoverlaybig').html().match(/Press ENTER/)) {
         // No Resume
@@ -902,7 +891,7 @@ Player.SetCurTime = function(time)
 	}
 
 	if (this.state != this.PAUSED) { // because on 2010 device the device triggers this function even if video is paused
-	    this.setCurSubtitle(ccTime);
+	    Subtitles.setCur(ccTime);
         }
         Player.refreshStartData(Details.fetchedDetails);
         // Seem onStreamInfoReady isn't invoked in case new stream in playlist is chosen.
@@ -969,7 +958,7 @@ Player.OnStreamInfoReady = function(forced)
     this.setTotalTime();
     if (videoData.audio_idx)
         Log("SetStreamID Audio: " + videoData.audio_idx + " res: " + Player.plugin.Execute("SetStreamID", 1, videoData.audio_idx));
-    if (subtitles.length == 0 && videoData.subtitles_idx >= 0) {
+    if (Subtitles.exists()) {
         Log("StartSubtitle res: " + Player.plugin.Execute("StartSubtitle", videoData.url.replace(/\|.+$/, "")));
         Log("Number of Subtitles:" + Player.plugin.Execute('GetTotalNumOfStreamID',5));
         Log("SetStreamID Subtitles: " + videoData.subtitles_idx + " res: " + Player.plugin.Execute("SetStreamID", 5, videoData.subtitles_idx));
@@ -1383,7 +1372,6 @@ Player.startPlayer = function(url, isLive, startTime)
     Player.pluginDuration = 0;
 
     videoUrl = "";
-    subtitles = [];
     ccTime = 0;
     lastPos = 0;
     videoBw = null;
@@ -1513,399 +1501,6 @@ Player.checkPlayUrlStillValid = function(gurl) {
     return true;
 };
 
-// Subtitles support
-Player.hasSubtitles = function() {
-    return (subtitles.length > 0 || videoData.subtitles_idx >=0)
-}
-Player.toggleSubtitles = function () {
-
-    if (subtitleStatusPrinted) {
-        if (subtitlesEnabled && Player.hasSubtitles()) {
-            if (this.getSubtitleBackground()) {
-                // Toggle background
-                this.setSubtitleBackground(false)
-            } else {
-                this.setSubtitleBackground(true)
-                subtitlesEnabled = false;
-            }
-        } else {
-            subtitlesEnabled = true;
-        }
-        Config.save("subEnabled",subtitlesEnabled*1);
-    } else {
-        // Only show status the first time
-        subtitleStatusPrinted = true;
-    }
-
-    if (!subtitlesEnabled || $("#srtId").html() == "" || $("#srtId").html().match(/Subtitle/i)) {
-        this.printSubtitleStatus();
-    }
-};
-
-Player.printSubtitleStatus = function () {
-    if (subtitlesEnabled && Player.hasSubtitles()) {
-        this.setSubtitleText("Subtitles On", 2500);
-    } else if (!subtitlesEnabled && Player.hasSubtitles()) {
-        this.setSubtitleText("Subtitles Off", 2500);
-    } else {
-        this.setSubtitleText("Subtitles not available", 2500);
-    }
-};
-
-Player.getSubtitlesEnabled = function () {
-    var savedValue = Config.read("subEnabled");
-    if (savedValue) {
-        return savedValue == "1";
-    } else {
-        return false;
-    }
-};
-
-Player.fetchSubtitles = function (srtUrls, hlsSubs, usedRequestedUrl, extra) {
-    var anyFailed = false;
-    var offset = -1;
-    var delta  = 0;
-    if (srtUrls && srtUrls.list) {
-        srtUrls = srtUrls.list
-    } else if (srtUrls) {
-        srtUrls = [srtUrls]
-    }
-    if (!extra) extra = {};
-    if (extra.offset)
-        offset = extra.offset;
-    httpLoop(srtUrls,
-             function(url, data, status, totalData) {
-                 if (!Player.checkPlayUrlStillValid(usedRequestedUrl))
-                     return -1;
-
-                 if (status != 200)
-                     anyFailed = true;
-                 else if (data) {
-                     if (url.match(/\.(web)?vtt/)) {
-                         data   = Player.parseVttSubtitles(data, offset, delta, extra)
-                         offset = data.offset;
-                         delta  = data.delta;
-                         data   = data.data;
-                     }
-                     data = data + "\n\n";
-
-                     if (hlsSubsState) {
-                         if (!Player.updateHlsSubsState(data, offset, usedRequestedUrl, extra)) {
-                             if (extra.cb) extra.cb();
-                             return -1;
-                         }
-                     }
-                     // alert(data)
-                     return data
-                 }
-                 return ""
-             },
-             function(srtData) {
-                 if (Player.checkPlayUrlStillValid(usedRequestedUrl)) {
-                     if (anyFailed && hlsSubs) {
-                         Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, extra)
-                     } else {
-                         if (!hlsSubsState && srtData != "")
-                             Player.parseSubtitle(srtData);
-                         if (hlsSubsState) {
-                             extra.done = true;
-                             Player.updateHlsSubsState(null, offset, usedRequestedUrl, extra)
-                         }
-                         if (extra.cb) extra.cb();
-                     }
-                 }
-             },
-             {headers:Channel.getHeaders(),
-              max : extra.max
-             }
-            );
-};
-
-Player.parseVttSubtitles = function(data, offset, delta, extra) {
-    var newOffset = data.match(/TIMESTAMP-MAP=MPEGTS:([0-9]+)/)
-    if (newOffset) {
-        newOffset = newOffset[1]
-        if (offset != -1)
-            delta = delta + (newOffset - offset)/90000;
-        offset = newOffset;
-    }
-    data = data.slice(data.search(/^[0-9]/m));
-    data = data.replace(/^([0-9]+:[0-9]+\.[0-9]+ -->)/mg,"00:$1").replace(/--> ([0-9]+:[0-9]+\.[0-9]+)/mg,"--> 00:$1");
-    if (!data.match(/^[0-9]+[	 ]*(\r)?\n[0-9]+:/m))
-        data = data.replace(/(^[0-9:.]+ --> [0-9:.]+)/mg, "0\n$1")
-    if (delta > 0)
-        data = Player.addVttOffset(data, delta)
-    return {data:data, offset:offset, delta:delta}
-};
-
-Player.addVttOffset = function (data, delta) {
-    var timeStamps = data.match(/([0-9]+:[0-9]+:[0-9]+\.[0-9]+)/mg);
-    // Must add offset in reverse to avoid replacing an already updated ts.
-    if (timeStamps) timeStamps = timeStamps.reverse();
-    var ts, s;
-    for (var i=0; timeStamps && i < timeStamps.length; i++) {
-        ts = timeStamps[i].split(/[:.]/);
-        s  = +ts[0]*3600 + +ts[1]*60 + +ts[2] + delta;
-        ts[0] = Math.floor(s/3600);
-        s = s - ts[0]*3600;
-        ts[1] = Math.floor(s/60);
-        ts[2] = s - ts[1]*60;
-        for (var k=0; k < 3; k++)
-            if (ts[k] < 10)
-                ts[k] = "0" + ts[k]
-        ts = ts[0] + ":" + ts[1] + ":" + ts[2] + "." + ts[3];
-        data = data.replace(timeStamps[i],ts)
-    }
-    return data
-}
-
-Player.updateHlsSubsState = function(data, offset, usedRequestedUrl, extra) {
-    // Resume isn't considered at the moment...
-    var time = (skipTimeInProgress) ? skipTimeInProgress : ccTime;
-
-    if (extra.done) {
-        hlsSubsState.running = false;
-        // Log("HLS subtitles back to standby start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + time);
-        return true
-    }
-
-    Player.parseSubtitle(data, hlsSubsState.offset != -1);
-    if (hlsSubsState.offset == -1) {
-        hlsSubsState.offset = offset;
-    }
-    hlsSubsState.current = hlsSubsState.current + hlsSubsState.duration;
-
-    if (skipTime ||
-        (startup && startup != true) ||
-        time > hlsSubsState.end ||
-        time < hlsSubsState.start
-       ) {
-        Log("HLS subtitles aborted  start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + time + " skipTime:" + skipTime + " startup:" + startup);
-        hlsSubsState.end     = hlsSubsState.current;
-        hlsSubsState.running = false;
-        return false
-    }
-    return true
-};
-
-Player.checkHlsSubtitles = function(extra) {
-
-    if ((!hlsSubsState ||
-         skipTime ||
-         (startup && startup != true) ||
-         hlsSubsState.running ||
-         (ccTime >= hlsSubsState.start && hlsSubsState.end > (ccTime+(10*1000)))
-         // Must fetch first part one to get the offset
-        ) && (!hlsSubsState || hlsSubsState.offset !=-1))
-        return false
-
-    var segments = Math.round(10*1000/hlsSubsState.duration) + 1;
-    var urlIndex;
-    if (!extra) extra = {};
-
-    if (hlsSubsState.end == 0 || ccTime > hlsSubsState.end || ccTime < hlsSubsState.start) {
-        urlIndex = Math.floor(ccTime/hlsSubsState.duration);
-        // Log("checkHlsSubtitles - new period start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + ccTime);
-        hlsSubsState.start   = urlIndex*hlsSubsState.duration;
-        hlsSubsState.current = hlsSubsState.start;
-        hlsSubsState.end     = hlsSubsState.start;
-    } else {
-        urlIndex = Math.floor(hlsSubsState.end/hlsSubsState.duration);
-        // Log("checkHlsSubtitles - prolong period start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + ccTime);
-    }
-    if ((urlIndex+segments) > hlsSubsState.urls.length)
-        segments = hlsSubsState.urls.length-1-urlIndex;
-    if (segments < 1)
-        return false;
-
-    hlsSubsState.end = hlsSubsState.end + (segments*hlsSubsState.duration);
-    hlsSubsState.running = true;
-    extra.offset = hlsSubsState.offset;
-    // Log("Fecthing " + segments + " hls segments starting from " + urlIndex + " start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + ccTime);
-    Player.fetchSubtitles({list:hlsSubsState.urls.slice(urlIndex, urlIndex+segments)},
-                          null,
-                          hlsSubsState.req_url,
-                          extra
-                         );
-    return true;
-};
-
-Player.fetchHlsSubtitles = function (hlsSubs, usedRequestedUrl, extra) {
-    var duration = 0;
-    httpLoop(hlsSubs,
-             function(url, data) {
-                 duration = data.match(/EXT-X-TARGETDURATION: *([0-9]+)/);
-                 if (duration) {
-                     duration = (+duration[1])*1000;
-                 }
-
-                 var urls = data.match(/^([^#].+)$/mg)
-                 var prefix  = url.replace(/[^\/]+(\?.+)?$/,"");
-                 if (urls) {
-                     for (var i=0; i < urls.length; i++) {
-                         if (!urls[i].match(/http[s]?:/))
-                             urls[i] = prefix + urls[i]
-                     }
-                     return urls.join(" ") + " "
-                 }
-                 else
-                     return ""
-             },
-             function (urls) {
-                 urls = urls.trim().split(" ");
-                 if (Player.checkPlayUrlStillValid(usedRequestedUrl)) {
-                     // Doesn't necessarily work in case of multiple hlsSubs...
-                     hlsSubsState = {urls      : urls,
-                                     duration  : duration,
-                                     req_url   : usedRequestedUrl,
-                                     offset    : -1,
-                                     start     : 0,
-                                     current   : 0,
-                                     end       : 0,
-                                     running   : false
-                                    };
-                     Log("Starting main HLS subtitle fetching")
-                     Player.checkHlsSubtitles(extra);
-                 }
-             },
-             {headers:Channel.getHeaders()}
-            );
-};
-
-Player.parseSubtitle = function (data, append) {
-    try {
-        if (!append) subtitles = [];
-        var srtContent = this.strip(data.replace(/\r\n|\r|\n/g, '\n').replace(/\n\n*/g,"\n").replace(/(^([0-9]+\n)?[0-9:.,]+ --> [0-9:.,]+)(.+)?\n/mg,'\n$1\n').replace(/<\/*[0-9]+>/g, ""));
-        srtContent = srtContent.split('\n\n');
-        for (var i = 0; i < srtContent.length; i++) {
-            this.parseSrtRecord(srtContent[i]);
-        }
-        subtitles.sort(function(a, b){return a.start-b.start})
-        this.mergeSubtitles()
-        // for (var i = 0; !append && i < 10 && i < subtitles.length; i++) {
-        //     alert("start:" + subtitles[i].start + " stop:" + subtitles[i].stop + " text:" + subtitles[i].text);
-        //     // Log("srtContent[" + i + "]:" + srtContent[i]);
-        // }
-    } catch (err) {
-        Log("parseSubtitle failed:" + err);
-    }
-};
-
-Player.mergeSubtitles = function() {
-    if (subtitles.length) {
-        var tmpSubtitles = subtitles;
-        subtitles = []
-        for (var i = 0; i < tmpSubtitles.length; i++) {
-            if (tmpSubtitles[i+1] && tmpSubtitles[i+1].text.startsWith(tmpSubtitles[i].text))
-                tmpSubtitles[i+1].start = tmpSubtitles[i].start
-            else
-                subtitles.push(tmpSubtitles[i])
-        }
-    }
-};
-
-// Copied
-if (!String.prototype.startsWith) {
-    String.prototype.startsWith = function(search, pos) {
-	return this.substr(!pos || pos < 0 ? 0 : +pos, search.length) === search;
-    };
-}
-
-Player.strip = function (s) {
-    return s.replace(/^\s+|\s+$/g, "");
-};
-
-Player.srtTimeToMS = function (srtTime) {
-    var ts = srtTime.replace(',', '.').match('([0-9]+):([0-9]+):([0-9.]+)');
-    return Math.round((ts[1]*3600 + ts[2]*60 + ts[3]*1)*1000);
-};
-
-Player.parseSrtRecord = function (srtRecord) {
-    try {
-        srtRecord = srtRecord.split("\n");
-        var start = srtRecord[1].match(/([^ 	]+)[ 	]+-->[ 	]+/)[1];
-        var stop  = srtRecord[1].match(/[ 	]+-->[ 	]+([^ 	]+)/)[1];
-        subtitles.push(
-            {
-                start: this.srtTimeToMS(start),
-                stop:  this.srtTimeToMS(stop),
-                text:  srtRecord.slice(2).join("<br />").replace(/<br \/>$/, "")
-            }
-        );
-    } catch (err) {
-        Log("parseSrtRecord failed: " + err)
-    }
-};
-
-Player.setCurSubtitle = function (time) {
-    try {
-        Player.checkHlsSubtitles();
-        if (subtitlesEnabled && Player.state != Player.STOPPED) {
-            var now = Number(time);
-            if (now === lastSetSubtitleTime) {
-                // Seems we get multiple callback for same time...
-                now += 500;
-            }
-            lastSetSubtitleTime = now;
-
-            for (var i = currentSubtitle; i < subtitles.length; i++) {
-                var thisStart = subtitles[i].start;
-                var thisStop  = subtitles[i].stop;
-                // Log("i:" + i + " start:" + thisStart + " stop:" + thisStop + " now:" + now);
-                if ((thisStart <= now) && (now < thisStop)) {
-                    // This Sub should be shown (if not already shown...)
-                    if (currentSubtitle != i || currentSubtitle === 0) {
-                        this.setSubtitleText(subtitles[i].text, thisStop-now);
-                        currentSubtitle = i;
-                    }
-                    break;
-                } else if (now > subtitles[currentSubtitle].stop) {
-                    // Current sub is done.
-                    // Log("Clearing srt due to end");
-                    this.clearSrtUnlessConfiguring();
-                }
-                if (subtitles[i+1] && subtitles[i+1].start > now) {
-                    // Next isn't ready yet - we're done.
-                    break;
-                }
-            }
-        } else {
-            this.clearSrtUnlessConfiguring();
-        }
-    } catch (err) {
-        Log("setCurSubtitle failed: " + err);
-    }
-};
-
-Player.clearSrtUnlessConfiguring = function () {
-    if (!$("#srtId").html().match(/Subtitle/i)) {
-        widgetAPI.putInnerHTML(document.getElementById("srtId"), "");
-    }
-};
-
-Player.setSubtitleText = function (text, timeout) {
-    try {
-        if (!text.match(/<br \/>/g)) {
-            // If only one liner we want it at bottom
-            text  = "<br />" + text;
-        }
-        if (timeout >= 0)
-            this.refreshClrSubtitleTimer(timeout+100);
-        $("#srtId").html(text);
-        // Log("Showing sub:" + text);
-    } catch (err) {
-        Log("setSubtitleText failed:" + err);
-    }
-};
-
-Player.refreshClrSubtitleTimer = function(timeout) {
-    window.clearTimeout(clrSubtitleTimer);
-    clrSubtitleTimer = window.setTimeout(function () {
-        // Log("Clearing srt due to timer");
-        $("#srtId").html("");
-    }, timeout)
-};
-
 Player.refreshOsdTimer = function(value) {
     window.clearTimeout(osdTimer);
     if (!Player.detailsActive)
@@ -1919,128 +1514,6 @@ Player.refreshDetailsTimer = function() {
             Details.fetchData(detailsUrl, true);
             Player.refreshDetailsTimer();
         }, 1*60*1000);
-    }
-};
-
-Player.getSubtitleSize = function () {
-    var savedValue = Config.read("subSize");
-    if (savedValue) {
-        return Number(savedValue);
-    } else {
-        return 30;
-    }
-};
-
-Player.getSubtitlePos = function () {
-    var savedValue = Config.read("subPos");
-    if (savedValue) {
-        return Number(savedValue);
-    } else {
-        return 420;
-    }
-};
-
-Player.getSubtitleLineHeight = function () {
-    var savedValue = Config.read("subHeight");
-    if (savedValue) {
-        return Number(savedValue);
-    } else {
-        return 100;
-    }
-};
-
-Player.getSubtitleBackground = function () {
-    var savedValue = Config.read("subBack");
-    if (savedValue != null) {
-        return savedValue;
-    } else {
-        return true;
-    }
-};
-
-Player.setSubtitleBackground = function (value) {
-    Config.save("subBack", value); 
-    this.setSubtitleProperties();
-};
-
-Player.saveSubtitleSize = function (value) {
-    Config.save("subSize", value); 
-};
-
-Player.saveSubtitlePos = function (value) {
-    Config.save("subPos", value);
-};
-
-Player.saveSubtitleLineHeight = function (value) {
-    Config.save("subHeight", value);
-};
-
-Player.moveSubtitles = function (moveUp) {
-    if (!subtitlesEnabled) return;
-    var oldValue = this.getSubtitlePos();
-    var newValue = (moveUp) ? oldValue-2 : oldValue+2;
-    Log("moveSubtitles new:" + newValue);
-    if (newValue > 300 && newValue < 550) {
-        $("#srtId").css("top", newValue); // write value to CSS
-        this.saveSubtitlePos(newValue);
-        this.showTestSubtitle();
-    }
-};
-
-Player.sizeSubtitles = function(increase) {
-    if (!subtitlesEnabled) return;
-    var oldValue = this.getSubtitleSize();
-    var newValue = (increase) ? oldValue+1 : oldValue-1;
-    Log("sizeSubtitles new:" + newValue);
-    if (newValue > 15 && newValue < 51) {
-        $("#srtId").css("font-size", newValue); // write value to CSS
-        this.saveSubtitleSize(newValue);
-        this.showTestSubtitle();
-    }
-};
-
-Player.separateSubtitles = function(increase) {
-    if (!subtitlesEnabled) return;
-    var oldValue = this.getSubtitleLineHeight();
-    var newValue = (increase) ? oldValue+1 : oldValue-1;
-    Log("separateSubtitles new:" + newValue);
-    if (newValue >= 100 && newValue < 200) {
-        if (newValue == 100) {
-            $("#srtId").css("line-height", ""); // write value to CSS
-        } else {
-            $("#srtId").css("line-height", newValue + "%"); // write value to CSS
-        }
-        this.saveSubtitleLineHeight(newValue);
-        this.showTestSubtitle();
-    }
-};
-
-Player.showTestSubtitle = function () {
-    this.hideDetailedInfo();
-    var testText = "Test subtitle<br />Test subtitle";
-    if ($("#srtId").html() == "" || $("#srtId").html() == testText) 
-    {
-        this.setSubtitleText(testText, 2500);
-    }
-}
-
-Player.setSubtitleProperties = function() {
-    $("#srtId").show();
-    $("#srtId").css("font-size", this.getSubtitleSize());
-    $("#srtId").css("top", this.getSubtitlePos());
-    var subBack = this.getSubtitleBackground();
-    var lineHeight = this.getSubtitleLineHeight();
-    if (lineHeight > 100 && subBack)
-        $("#srtId").css("line-height", lineHeight + "%");
-    else
-        $("#srtId").css("line-height", "");
-    if (subBack) {
-        if (deviceYear >= 2014)
-            $("#srtId").css("background-color", "rgba(0, 0, 0, 0.7)");
-        else
-            $("#srtId").css("background-color", "rgba(0, 0, 0, 0.5)");
-    } else {
-        $("#srtId").css("background-color", "");
     }
 };
 

@@ -678,7 +678,7 @@ Buttons.keyHandleForPlayer = function() {
     case tvKey.KEY_YELLOW:
     case tvKey.KEY_SUBTITLE:     
     case tvKey.KEY_SUB_TITLE:
-	Player.toggleSubtitles();
+	Subtitles.toggle();
 	break;
 
     case tvKey.KEY_UP:
@@ -686,18 +686,18 @@ Buttons.keyHandleForPlayer = function() {
         if (Player.aspectMode == Player.ASPECT_ZOOM) {
             Player.changeZoom(keyCode == tvKey.KEY_UP);
         } else {
-	    Player.moveSubtitles(keyCode == tvKey.KEY_UP);
+	    Subtitles.move(keyCode == tvKey.KEY_UP);
         }
 	break;
 
     case tvKey.KEY_2:
     case tvKey.KEY_8:
-	Player.sizeSubtitles(keyCode == tvKey.KEY_2);
+	Subtitles.size(keyCode == tvKey.KEY_2);
 	break;
 
     case tvKey.KEY_4:
     case tvKey.KEY_6:
-	Player.separateSubtitles(keyCode == tvKey.KEY_6);
+	Subtitles.separate(keyCode == tvKey.KEY_6);
 	break;
     default:
         Log("Unhandled key:" + keyCode);

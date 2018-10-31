@@ -185,7 +185,7 @@ Channel.tryAltPlayUrl = function(failedUrl, cbComplete) {
 }
 
 Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl, cb) {
-    hlsSubsState = null;
+    Subtitles.init();
     if (typeof srtUrl == "string" && srtUrl.match(/\.m3u8/)) {
         hlsSubs = [srtUrl]
         srtUrl = null;
@@ -194,9 +194,9 @@ Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl, cb) {
         if (this.impl.fetchSubtitles)
             this.impl.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl, {cb:cb})
         else
-            Player.fetchSubtitles(srtUrl, hlsSubs, usedRequestedUrl, {cb:cb})
+            Subtitles.fetch(srtUrl, hlsSubs, usedRequestedUrl, {cb:cb})
     } else if (hlsSubs)
-        Player.fetchHlsSubtitles(hlsSubs, usedRequestedUrl, {cb:cb})
+        Subtitles.fetchHls(hlsSubs, usedRequestedUrl, {cb:cb})
     else
         cb();
 }
