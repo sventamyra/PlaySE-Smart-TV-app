@@ -516,7 +516,7 @@ Subtitles.separate = function(increase) {
 };
 
 Subtitles.showTest = function () {
-    this.hideDetailedInfo();
+    Player.hideDetailedInfo();
     var testText = "Test subtitle<br />Test subtitle";
     if ($("#srtId").html() == "" || $("#srtId").html() == testText) 
     {
