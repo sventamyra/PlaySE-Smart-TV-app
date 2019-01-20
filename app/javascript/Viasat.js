@@ -555,6 +555,9 @@ Viasat.decodeShows = function(data, extra) {
         var LinkPrefix = null;
         var query = null;
         var json = null;
+        var NonShow=false;
+        var Description;
+        var Background;
 
         if (!extra.is_next) {
             Viasat.result = [];
@@ -585,9 +588,14 @@ Viasat.decodeShows = function(data, extra) {
         }
 
         for (var k=0; k < json.length; k++) {
-            LinkPrefix = null;
+            LinkPrefix = Description = Background = null;
             Name = json[k].title;
-            if (json[k]._links.videos && 
+            NonShow = json[k].one_off;
+            if (NonShow && json[k].latest_video) {
+                Link = Link = "http://playapi.mtgx.tv/v3/videos/stream/" + json[k].latest_video.id;
+                LinkPrefix = '<a href="details.html?ilink=';
+                Description = json[k].summary;
+            } else if (json[k]._links.videos && 
                 (!json[k]._links.seasons ||
                  (json[k].latest_video && 
                   json[k].latest_video.format_position && 
@@ -602,6 +610,8 @@ Viasat.decodeShows = function(data, extra) {
                 Link = "http://playapi.mtgx.tv/v3/seasons?format=" + json[k].id;
             if (json[k]._links.image) {
                 ImgLink = Viasat.fixThumb(json[k]._links.image.href);
+                if (NonShow)
+                    Background = Viasat.fixThumb(ImgLink, BACKGROUND_THUMB_FACTOR);
             } else {
                 ImgLink = null;
             }
@@ -612,7 +622,14 @@ Viasat.decodeShows = function(data, extra) {
             }
             if (extra.query)
                 Viasat.show_ids.push(json[k].id);
-            Viasat.result.push({name:Name, link:Link, thumb:ImgLink, link_prefix:LinkPrefix});
+            Viasat.result.push({name:Name,
+                                link:Link,                                
+                                link_prefix:LinkPrefix,
+                                thumb:ImgLink,
+                                non_show:NonShow,
+                                description:Description,
+                                background:Background
+                               });
         }
         json = null;
         if (next) {
@@ -652,11 +669,14 @@ Viasat.decodeShows = function(data, extra) {
             if (query && !query.test(Viasat.result[k].name))
                 continue;
 
-            showToHtml(Viasat.result[k].name,
-                       Viasat.result[k].thumb,
-                       Viasat.result[k].link,
-                       Viasat.result[k].link_prefix
-                      );
+            if (Viasat.result[k].non_show)
+                toHtml(Viasat.result[k]);
+            else
+                showToHtml(Viasat.result[k].name,
+                           Viasat.result[k].thumb,
+                           Viasat.result[k].link,
+                           Viasat.result[k].link_prefix
+                          );
         }
         Viasat.result = [];
     } catch(err) {
@@ -717,6 +737,12 @@ Viasat.getDetailsData = function(url, data) {
                     url   : data._embedded.format._links.seasons.href.replace("https", "http"),
                     thumb : Viasat.fixThumb(data._embedded.format._links.image.href)
                    }
+            if (data.one_off && data.format_categories && data.format_categories.length) {
+                Show.name = data.format_categories[0].name.trim();
+                Show.large_thumb = Viasat.fixThumb(Show.thumb, DETAILS_THUMB_FACTOR);
+                Show.url = "http://playapi.mtgx.tv/v3/formats?category=" + data.format_categories[0].id;
+                Show.is_category = true;
+            }
         }
         if (data.format_position) {
             Episode = data.format_position.episode;
@@ -758,6 +784,7 @@ Viasat.getShowData = function(url, data) {
     var Name="";
     var DetailsImgLink="";
     var Description="";
+    var Genre = [];
 
     try {
         data = JSON.parse(data.responseText);
@@ -769,6 +796,10 @@ Viasat.getShowData = function(url, data) {
             Description = data.summary;
         }
         DetailsImgLink = Viasat.fixThumb(data._links.image.href, DETAILS_THUMB_FACTOR);
+        if (data.category_name)
+            Genre.push(data.category_name.trim())
+        if (data.subcategory_name)
+            Genre.push(data.subcategory_name.trim())
     } catch(err) {
         Log("Viasat.getShowData exception:" + err.message);
         Log("Name:" + Name);
@@ -779,7 +810,7 @@ Viasat.getShowData = function(url, data) {
     return {show          : true,
             name          : Name,
             description   : Description,
-            genre         : "",
+            genre         : Genre,
             thumb         : DetailsImgLink
            };
 };

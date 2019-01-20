@@ -59,11 +59,13 @@ Details.getUrl=function(detailsUrl){
 Details.loadXml = function(isBackground) {
     $('#projdetails').html("");
     if (myLocation.match(/categoryDetail\.html/)) {
+        var catThumb = myLocation.match(/catThumb=([^&]+)/);
+        if (catThumb) catThumb = catThumb[1];
         Details.toHtml({category    : true,
                         link        : this.getUrl(),
                         description : "",
                         name        : decodeURIComponent(myLocation.match(/catName=([^&]+)/)[1]),
-                        thumb       : decodeURIComponent(myLocation.match(/catThumb=([^&]+)/)[1]),
+                        thumb       : decodeURIComponent(catThumb),
                        });
         window.setTimeout(loadingStop, 0);
         return;
