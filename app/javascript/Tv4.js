@@ -722,7 +722,7 @@ Tv4.getSrtUrl = function (hlsUrl, cb) {
 Tv4.fixThumb = function(thumb, factor) {
     if (!factor) factor = 1;
     var size = Math.round(factor*THUMB_WIDTH) + "x" + Math.round(factor*THUMB_HEIGHT);
-    return "https://img3.tv4cdn.se/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb;
+    return "https://imageproxy.b17g.services/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb;
 };
 
 Tv4.isViewable = function (data, isLive, currentDate) {
