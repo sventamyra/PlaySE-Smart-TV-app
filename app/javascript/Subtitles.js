@@ -219,29 +219,33 @@ Subtitles.checkHls = function(extra) {
 
     if (hlsSubsState.end == 0 || ccTime > hlsSubsState.end || ccTime < hlsSubsState.start) {
         urlIndex = Math.floor(ccTime/hlsSubsState.duration);
-        // Log("checkHlsSubtitles - new period start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + ccTime);
+        // Log("checkHlsSubtitles - new period start. OldState:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + ccTime);
         hlsSubsState.start   = urlIndex*hlsSubsState.duration;
         hlsSubsState.current = hlsSubsState.start;
         hlsSubsState.end     = hlsSubsState.start;
         hlsSubsState.adjust  = 0;
     } else {
         urlIndex = Math.floor(hlsSubsState.end/hlsSubsState.duration);
-        // Log("checkHlsSubtitles - prolong period start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " offset:" + hlsSubsState.offset + " time:" + ccTime);
+        // Log("checkHlsSubtitles - prolong period start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " adjust:" + hlsSubsState.adjust + " offset:" + hlsSubsState.offset + " time:" + ccTime);
     }
     if ((urlIndex+segments) > hlsSubsState.urls.length)
         segments = hlsSubsState.urls.length-urlIndex;
-    if (segments < 1)
+    if (segments < 1) {
+        // We probably reached the end, i.e. no more subtitles.
+        // Prolong end to avoid lots of loggings
+        hlsSubsState.end += 60*1000;
         return false;
+    }
 
     hlsSubsState.end = hlsSubsState.end + (segments*hlsSubsState.duration);
     hlsSubsState.running = true;
     extra.offset = hlsSubsState.offset;
     // Log("Fetching " + segments + " hls segments starting from " + urlIndex + " New state-> start:" + hlsSubsState.start + " current:" + hlsSubsState.current + " end:" + hlsSubsState.end + " adjust:" + hlsSubsState.adjust + " offset:" + hlsSubsState.offset + " time:" + ccTime);
     Subtitles.fetch({list:hlsSubsState.urls.slice(urlIndex, urlIndex+segments)},
-                          null,
-                          hlsSubsState.req_url,
-                          extra
-                         );
+                    null,
+                    hlsSubsState.req_url,
+                    extra
+                   );
     return true;
 };
 

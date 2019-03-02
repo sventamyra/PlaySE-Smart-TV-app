@@ -352,7 +352,7 @@ Tv4.determineEpisodeName = function(data) {
     var Show = (data.program) ? data.program.name : null;
     if (Show && Name != Show) {
         Name = Name.replace(Show,"").replace(/^[,. :\-]*/,"").trim();
-        Name = Tv4.capitalize(Name);
+        Name = Name.capitalize();
     }
     return Name
 }
@@ -643,7 +643,7 @@ Tv4.getShowData = function(url, data) {
         Description = data.description.trim();
 	DetailsImgLink = Tv4.fixThumb(data.program_image, DETAILS_THUMB_FACTOR);
         for (var i=0; i < data.tags.length; i++) {
-            Genre.push(Tv4.capitalize(data.tags[i].replace(/-/," & ")));
+            Genre.push(data.tags[i].replace(/-/," & ").capitalize());
         }
         Genre = Genre.join('/');
     } catch(err) {
@@ -745,6 +745,3 @@ Tv4.requestNextPage = function(url, callback) {
     requestUrl(url,callback,callback);
 }
 
-Tv4.capitalize = function(String) {
-    return String.replace(/^./,String[0].toUpperCase())
-}

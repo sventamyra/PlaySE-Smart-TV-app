@@ -98,12 +98,26 @@ Oa.getDetailsData = function(url, data) {
         data = JSON.parse(data.responseText);
         switch (data.contentType) {
         case "video":
-            if (data.programTitle) {
+            if (data.programTitle && data.programTitle.length > 0) {
                 Show = {name  : data.programTitle.trim(),
                         url   : Oa.makeTagLink(data),
                         thumb : data.thumbnailSmall
                        }
-            }
+            }//  else if (data.tagList) {
+            //     for (var i=0; i < data.tagList.length; i++) {
+            //         alert("data.tagList.facet:" + data.tagList[i].facet)
+            //         if (data.tagList[i].facet == "genreFacet") {
+            //             alert("Genre");
+            //             Show = {name        : data.tagList[i].term.trim(),
+            //                     url         : Oa.makeTagLink({tagList:[data.tagList[i]]}),
+            //                     thumb       : data.thumbnailSmall,
+            //                     large_thumb : data.thumbnailLarge,
+            //                     is_category : true
+            //                    }
+            //             break;
+            //         };
+            //     }
+            // }
             if (data.programTitle == data.title || !data.programTitle) {
                 Name = data.title;
                 if (Show && Show.name != data.title)
@@ -166,7 +180,9 @@ Oa.getShowData = function(data) {
     try {
         data = data.entries.sort(function(a, b){return (a.episodeNumber > b.episodeNumber) ? 1 : -1});
         data = data[0];
-        Name  = data.programTitle.trim();
+        Name = data.programTitle;
+        if (!Name || Name.length == 0)
+            Name  = data.title;
         ImgLink = data.thumbnailLarge;
 	Description = data.summary.trim()
         Genre = [];
@@ -193,7 +209,7 @@ Oa.getShowData = function(data) {
     }
     data = null;
     return {show          : true,
-            name          : Name,
+            name          : Name.trim(),
             description   : Description,
             genre         : Genre,
             thumb         : ImgLink

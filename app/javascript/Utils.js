@@ -119,6 +119,10 @@ String.prototype.trim = function () {
     return this.replace(/^\s*/, "").replace(/\s*$/, "");
 };
 
+String.prototype.capitalize = function() {
+    return this.replace(/^./,this[0].toUpperCase())
+}
+
 // Copied
 if (!String.prototype.startsWith) {
     String.prototype.startsWith = function(search, pos) {

@@ -278,7 +278,7 @@ Player.setVideoURL = function(master, url, srtUrl, extra)
     } else {
         // Happens when Show Info is missing.
         Log("No myTitle in link!!")
-        myTitle = encodeURIComponent($('.topoverlaybig').html().replace(/[^:]+: /, ""));
+        myTitle = escape($('.topoverlaybig').html().replace(/[^:]+: /, ""));
         myTitle = "mytitle=" + myTitle;
     }
 

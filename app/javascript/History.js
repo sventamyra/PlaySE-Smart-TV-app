@@ -123,10 +123,22 @@ History.getUrl = function(tag, extra) {
 History.decodeMain = function(data, extra) {
     var LinkPrefix;
     var UrlParams;
-    Shows = Config.read("History")
+    var Names = [];
+    Shows = Config.read("History");
+
+    // Check for duplicate names
+    for (var i=0; Shows && i < Shows.length; i++) {
+        if (Names[Shows[i].name])
+            Names[Shows[i].name] += 1;
+        else
+            Names[Shows[i].name] = 1
+    }
     for (var i=0; Shows && i < Shows.length; i++) {
         UrlParams = "show_name=" + encodeURIComponent(Shows[i].name) +
             "&tmp_channel_id=" + Shows[i].channel_id;
+        if (Names[Shows[i].name] > 1)
+            // Add Channel to duplicates
+            Shows[i].name += " (" + $(".channel-content").find("#"+Shows[i].channel_id).text() + ")";
         if (Shows[i].is_category)
             categoryToHtml(Shows[i].name,
                            Shows[i].thumb,
