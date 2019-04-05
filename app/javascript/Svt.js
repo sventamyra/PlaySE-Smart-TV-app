@@ -315,7 +315,6 @@ Svt.getDetailsData = function(url, data) {
                 Name = data.title;
                 if (Show && Show.name != data.title)
                     Name = Show.name + " - " + Name
-
             } else {
                 Name = data.programTitle + " - " + data.title;
             }
@@ -592,6 +591,18 @@ Svt.decodeCategoryDetail = function (data, extra) {
     Svt.category_details = [];
     Svt.category_detail_max_index = 0;
 
+    if (data.clusterPage && !data.clusterPage.titlesAndEpisodes) {
+        // Seems old API is getting obsolete
+        extra.url =
+            extra.url.replace(/\/\/.+\/([^\/]+$)/, "//www.svtplay.se/api/cluster_titles_and_episodes?cluster=$1");
+        return httpRequest(extra.url, {cb:function(status,data) {
+            Svt.decodeCategoryDetail(data,extra)
+        }});
+    } else if (!data.clusterPage) {
+        Svt.decode(data);
+        return extra.cbComplete()
+    }
+
     var main_name = data.clusterPage.meta.name.trim()
     var popular   = {};
     var current;
@@ -663,7 +674,7 @@ Svt.decodeCategoryDetail = function (data, extra) {
     } else if (current.related) {
         Svt.decode(data.clusterPage.relatedClusters);
     }
-        
+
     if (current.tab_index >= 0)
         Svt.decode(data.clusterPage.tabs[current.tab_index].content, {recommended_links:recommendedLinks});
 
@@ -911,15 +922,17 @@ Svt.tryAltPlayUrl = function(failedUrl, cb)
 }
 
 Svt.decodeJson = function(data) {
-    data = data.responseText.split("root\['__svtplay']")
-    if (data.length > 1 && !data[1].match(/"stores":{}/)) {
-        data = data[1]
-    } else {
-        data = data.join("").split("root\['__reduxStore']")[1]
+    if (data.responseText) {
+        data = data.responseText.split("root\['__svtplay']")
+        if (data.length > 1 && !data[1].match(/"stores":{}/)) {
+            data = data[1]
+        } else {
+            data = data.join("").split("root\['__reduxStore']")[1]
+        }
+        data = data.split('};')[0] + '}'
+        data = data.replace(/^[^{]*{/, "{");
+        data = data.replace(/;$/, "");
     }
-    data = data.split('};')[0] + '}'
-    data = data.replace(/^[^{]*{/, "{");
-    data = data.replace(/;$/, "");
     return JSON.parse(data)
 }
 
@@ -1040,7 +1053,8 @@ Svt.getNextCategoryDetailText = function() {
             else
                 return text
         }
-    }
+    } else if (Svt.category_details.length == 0)
+        return null
     // Wrong category - keep unchanged
     return 0;
 }
