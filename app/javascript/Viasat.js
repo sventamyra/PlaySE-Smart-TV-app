@@ -3,11 +3,23 @@ var Viasat =
     channel_idx:null,
     channels:[],
     result:[],
-    show_ids:[]
+    show_ids:[],
+    fallback_url:"https://viafree-content.mtg-api.com/viafree-content/v1/se/path/program"
 };
+
+Viasat.getMainTitle = function () {
+    if (Viasat.isSubChannelSet())
+        return "Populärt";
+    else
+        return "Rekommenderat"
+}
 
 Viasat.isSubChannelSet = function() {
     return Viasat.channel_idx != null;
+}
+
+Viasat.getChannelId = function() {
+    return Viasat.channels[Viasat.channel_idx].id;
 }
 
 Viasat.resetSubChannel = function() {
@@ -17,7 +29,9 @@ Viasat.resetSubChannel = function() {
 }
 
 Viasat.getSectionTitle = function(location) {
-    if (location.match(/Latest.html/))
+    if (location.match(/Popular.html/))
+        return 'Populärt';
+    else if (location.match(/Latest.html/))
         return 'Senaste';
     else if (location.match(/LatestClips.html/))
         return 'Senaste Klipp';
@@ -35,10 +49,16 @@ Viasat.getCategoryTitle = function() {
 };
 
 Viasat.getMainUrl = function() {
+    return Viasat.getPopularUrl()
+}
+Viasat.getPopularUrl = function() {
     return 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=50&order=-popularity'
 }
 
 Viasat.getUrl = function(tag, extra) {
+
+    // Keep this slow url in cache
+    httpRequest(Viasat.addChannel(Viasat.getMainUrl()));
 
     var url;
 
@@ -54,14 +74,21 @@ Viasat.getUrl = function(tag, extra) {
             if (newChannel != "reset")
                 Viasat.channel_idx = newChannel;
             // Force new channel name
+            document.title = Viasat.getMainTitle();
             Header.display(document.title);
+            Language.fixAButton()
         }
         url = Viasat.getMainUrl();
+        if (!Viasat.isSubChannelSet())
+            url = "http://viafree-content.mtg-api.com/viafree-content/v1/se/path";
         // url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.popular&device=mobile&premium=open&country=se';
         break;
 
     case "section":
         switch (extra.location) {
+        case "Popular.html":
+            url = Viasat.getMainUrl();
+            break;
         case "Latest.html":
             url = 'http://playapi.mtgx.tv/v3/sections?sections=videos.latest&device=mobile&premium=open&country=se'
             break;
@@ -82,10 +109,10 @@ Viasat.getUrl = function(tag, extra) {
             url = 'http://playapi.mtgx.tv/v3/categories?device=mobile&premium=open&country=se&order=name'
             break;
         case 1:
-            url = 'http://playapi.mtgx.tv/v3/collections?device=mobile&premium=open&country=se'
+            url = 'http://viafree-content.mtg-api.com/viafree-content/v1/se/page/start?_=collections'
             break;
         case 2:
-            url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=500';
+            url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=500&fromIndex=1';
             break;
         }
         break;
@@ -106,11 +133,28 @@ Viasat.getUrl = function(tag, extra) {
 };
 
 Viasat.decodeMain = function(data, extra) {
-    Viasat.decodeShows(data, extra);
+
+    if (Viasat.isSubChannelSet())
+        Viasat.decodeShows(data,extra)
+    else {
+        data = JSON.parse(data.responseText)._embedded.viafreeBlocks;
+        for (var k=0; k < data.length; k++) {
+            if(data[k].componentName == "feature-box") {
+                extra.url = data[k]._links.content.href;
+                requestUrl(extra.url,  function(status, data) {
+                    Viasat.decodeShows(data,extra)
+                });
+                return
+            }
+        }
+    }
 }
 
 Viasat.decodeSection = function(data, extra) {
-    Viasat.decode(data, extra);
+    if (extra.url.match(/-popularity/))
+        Viasat.decodeShows(data,extra)
+    else
+        Viasat.decode(data, extra);
 }
 
 Viasat.decodeCategories = function(data, extra) {
@@ -120,36 +164,73 @@ Viasat.decodeCategories = function(data, extra) {
 	var ImgLink;
 
         if (!extra.url.match(/(categories|collections)/)) {
+            if (extra.url.match("/v3/") && !JSON.parse(data.responseText)._embedded) {
+                extra.url = Viasat.fallback_url;
+                return requestUrl(extra.url, function(status, data) {
+                    Viasat.decodeCategories(data, extra);
+                })
+            }
             return Viasat.decodeShows(data,extra);
         }
 
         data = JSON.parse(data.responseText);
         if (data._embedded.categories)
             data = data._embedded.categories;
-        else 
-            data = data._embedded.collections;
+        else
+            data = data._embedded.viafreeBlocks;
 
         for (var k=0; k < data.length; k++) {
+            ImgLink = null;
+            // Collections - skip non-interested
+            if (data[k].dataType && data[k].dataType=="userContent")
+                continue;
+            if (data[k].componentName) {
+                if(data[k].componentName == "feature-box" ||
+                   data[k].componentName == "latest-episodes")
+                    continue;
+            }
 
             if (data[k].name) {
                 Name = data[k].name;
 	        Link = data[k]._links.formats.href
-                if (!Link.match(/device=mobile/))
-                    Link = Link + "&device=mobile";
+                if (!Link.match(/fromIndex/))
+                    Link = addUrlParam(Link, "fromIndex", "1");
+            } else if (data[k].mediaFeed) {
+                Name = data[k].mediaFeed.title;
+                Link = data[k]._links.content.href;
+            } else if (data[k].theme) {
+                Name = data[k].theme.title;
+                Link = data[k]._links.content.href;
+                ImgLink = data[k].theme.logoLight;
             } else {
                 Name = data[k].title;
 	        Link = data[k]._links.self.href
             }
             if (Viasat.isSubChannelSet()) {
-                if (JSON.parse(httpRequest(Viasat.addChannel(Link),{sync:true}).data).count.total_items == 0)
-                    continue;
+                var channelData = JSON.parse(httpRequest(Viasat.addChannel(Link),{sync:true}).data);
+                if (!channelData._embedded) {
+                    var guid = Link.match(/[?&]category=([0-9]+)/)[1]
+                    channelData = JSON.parse(httpRequest(Viasat.fallback_url,{sync:true}).data);
+                    channelData = channelData._embedded.viafreeBlocks[0]._embedded.programs
+                    for (var i=0; i < channelData.length; i++) {
+                        if (Viasat.isCorrectChannel(channelData[i]) &&
+                            Viasat.isCorrectCategory(channelData[i], guid))
+                            break;
+                    }
+                    if (i >= channelData.length)
+                        continue
+                } else {
+                    if (!channelData.count || channelData.count.total_items == 0)
+                        continue;
+                }
             }
-	    ImgLink  = Viasat.fixThumb(data[k]._links.image.href);
-
+            if (!ImgLink && data[k]._links.image)
+                ImgLink = data[k]._links.image.href
+	    ImgLink  = Viasat.fixThumb(ImgLink);
             categoryToHtml(Name,
                            ImgLink,
                            Viasat.fixThumb(ImgLink, DETAILS_THUMB_FACTOR),
-                           Link + "&limit=500"
+                           addUrlParam(Link, "limit", "500")
                           );
 	}
 	data = null;
@@ -161,6 +242,14 @@ Viasat.decodeCategories = function(data, extra) {
 };
 
 Viasat.decodeCategoryDetail = function(data, extra) {
+
+    if (extra.url.match(/\/v3\//) && !JSON.parse(data.responseText)._embedded) {
+        extra.category = extra.url.match(/[?&]category=([0-9]+)/)[1];
+        extra.url = Viasat.fallback_url;
+        return requestUrl(extra.url, function(status, data) {
+            Viasat.decodeCategoryDetail(data, extra);
+        })
+    }
     Viasat.decodeShows(data, extra);
 }
 
@@ -195,7 +284,7 @@ Viasat.decodeLive = function(data, extra) {
                 return 1
             }
         });
-        
+
         for (var k=0; k < Viasat.channels.length; k++) {
             if (oldId != null) {
                 if (getItemCounter() == 0)
@@ -223,6 +312,12 @@ Viasat.decodeShowList = function(data, extra) {
 }
 
 Viasat.decodeSearchList = function(data, extra) {
+    if (extra.url.match(/\/v3\//) && !JSON.parse(data.responseText)._embedded) {
+        extra.url = "http://viafree-content.mtg-api.com/viafree-content/v1/se/search/" + extra.query;
+        return requestUrl(extra.url, function(status, data) {
+            Viasat.decodeSearchList(data, extra)
+        });
+    }
     if (extra.query.length > 1) {
         var orgCbComplete = extra.cbComplete
         var newCbComplete = function() {
@@ -241,7 +336,7 @@ Viasat.decodeSearchList = function(data, extra) {
 
 Viasat.addChannel = function(url) {
     if (Viasat.isSubChannelSet())
-        return url + "&channel=" + Viasat.channels[Viasat.channel_idx].id;
+        return addUrlParam(url, "channel", Viasat.getChannelId());
     return url;
 };
 
@@ -270,9 +365,14 @@ Viasat.getLiveTitle = function() {
 }
 
 Viasat.keyRed = function() {
-    if ($("#a-button").text().indexOf("Pop") != -1) {
+    if ($("#a-button").text().match(/^Re/)) {
 	setLocation('index.html');
-    } else if ($("#a-button").text().indexOf("lip") != -1) {
+    } else if ($("#a-button").text().match(/^Pop/)) {
+        if (Viasat.isSubChannelSet())
+            setLocation('index.html');
+        else
+            setLocation('Popular.html');
+    } else if ($("#a-button").text().match(/lip/)) {
 	setLocation('LatestClips.html');
     } else {
 	setLocation('Latest.html');
@@ -289,7 +389,14 @@ Viasat.keyGreen = function() {
 Viasat.getAButtonText = function(language) 
 {
     var loc = getIndexLocation();
-    if (loc.match(/index\.html/)){
+    if (!Viasat.isSubChannelSet() && loc.match(/index\.html/)){
+        if(language == 'English'){
+	    return 'Popular';
+        } else {
+	    return 'Populärt';
+        }
+    } else if ((Viasat.isSubChannelSet() && loc.match(/index\.html/)) ||
+               loc.match(/Popular\.html/)){
         if(language == 'English'){
 	    return 'Latest';
         } else {
@@ -301,9 +408,14 @@ Viasat.getAButtonText = function(language)
         } else {
 	    return 'Senaste Klipp';
         }
-    } else {
-        // Use Default
-        return null;
+    } else if (Viasat.isSubChannelSet())
+        return null
+    else {
+        if(language == 'English'){
+	    return 'Recommended';
+        } else {
+	    return 'Rekommenderat';
+        }
     }
 };
 
@@ -364,9 +476,9 @@ Viasat.decode = function(data, extra) {
         if (data.responseText)
             data = data.responseText
         data = JSON.parse(data);
-        if (data._links && data._links.next)
-            next = data._links.next.href
-        else 
+        if (data._links && data._links.next) {
+            next = data._links.next.href;
+        } else
             next = null;
 
         if (extra.strip_show && !extra.is_clips && data._links && data._links.self) {
@@ -381,7 +493,7 @@ Viasat.decode = function(data, extra) {
             data = data._embedded.episodes;
         else if (extra.is_clips && data._embedded.clips)
             data = data._embedded.clips;
-        else
+        else if (data._embedded.items)
             data = data._embedded.items;
         for (var k=0; data && k < data.length; k++) {
             Name = data[k].title.trim();
@@ -394,7 +506,7 @@ Viasat.decode = function(data, extra) {
             }
             if (ShowId && extra.show_filter && extra.show_filter.indexOf(ShowId)!=-1)
                 continue;
-            
+
             if (extra.strip_show && Show != Name) {
                 Name = Name.replace(Show,"").replace(/^[,. :\-]*/,"").replace(/[,. :\-]+$/,"").trim();
                 Name = Name.replace(/^./,Name[0].toUpperCase());
@@ -568,33 +680,66 @@ Viasat.decodeShows = function(data, extra) {
             data = data.responseText;
 
         json = JSON.parse(data);
-        if (!extra.url.match(/\-popularity/) && json._links && json._links.next)
+        if (!extra.url.match(/\-popularity/) && json._links && json._links.next) {
             next = json._links.next.href
-        else
+        } else
             next = null;
 
         if (json.data && json.data.formats) {
             json = json.data.formats;
-        } else if (json._embedded.formats) {
-            json = json._embedded.formats;
-        } else if (json._embedded.seasons) {
-            json = json._embedded.seasons;
-            checkSeasons = true;
-        } else {
-            if (json._embedded.items[0].type && json._embedded.items[0].type == "program") {
-                return Viasat.decode(data,extra);
-            }
-            json = json._embedded.items;
+        } else if (json._embedded) {
+            if (json._embedded.formats) {
+                json = json._embedded.formats;
+            } else if (json._embedded.seasons) {
+                json = json._embedded.seasons;
+                checkSeasons = true;
+            } else if (json._embedded.viafreeBlocks) {
+                json = json._embedded.viafreeBlocks[0]._embedded.programs;
+            } else if (json._embedded.programs) {
+                json = json._embedded.programs
+            } else if (json._embedded.items) {
+                if (json._embedded.items[0].type && json._embedded.items[0].type == "program") {
+                    return Viasat.decode(data,extra);
+                }
+                json = json._embedded.items;
+            } else
+                alert(JSON.stringify(json))
         }
+        else
+            alert(JSON.stringify(json))
 
         for (var k=0; k < json.length; k++) {
+            if (Viasat.isSubChannelSet()) {
+                if (!Viasat.isCorrectChannel(json[k]))
+                    continue
+            }
+            if (extra.category) {
+                if (!Viasat.isCorrectCategory(json[k], extra.category)) {
+                    continue
+                }
+            }
             LinkPrefix = Description = Background = null;
             Name = json[k].title;
-            NonShow = json[k].one_off;
-            if (NonShow && json[k].latest_video) {
-                Link = Link = "http://playapi.mtgx.tv/v3/videos/stream/" + json[k].latest_video.id;
+            if (extra.url.match("/v3/") && extra.query &&
+                json[k].one_off && extra.query.length > 1)
+                // Keep the episode instead
+                continue;
+            NonShow = json[k].one_off ||
+                (json[k].flags && json[k].flags.indexOf("one_off")!=-1);
+            if (NonShow) {
                 LinkPrefix = '<a href="details.html?ilink=';
                 Description = json[k].summary;
+                if (json[k].latest_video)
+                    Link = "http://playapi.mtgx.tv/v3/videos/stream/" + json[k].latest_video.id;
+                else {
+                    Link = "http://playapi.mtgx.tv/v3/videos?format=";
+                    if (json[k].id)
+                        Link += json[k].id;
+                    else
+                        Link += json[k].guid;
+                    Link += "&_=my_one_off";
+                    if (!Description) Description = Name;
+                }
             } else if (json[k]._links.videos && 
                 (!json[k]._links.seasons ||
                  (json[k].latest_video && 
@@ -606,15 +751,19 @@ Viasat.decodeShows = function(data, extra) {
                 Link = json[k]._links.videos.href + "&type=program"; 
             } else if (json[k]._links.seasons)
 	        Link = json[k]._links.seasons.href;
+            else if (json[k]._links.series)
+                Link = "http://playapi.mtgx.tv/v3/seasons?format=" + json[k].guid;
             else
                 Link = "http://playapi.mtgx.tv/v3/seasons?format=" + json[k].id;
             if (json[k]._links.image) {
                 ImgLink = Viasat.fixThumb(json[k]._links.image.href);
                 if (NonShow)
                     Background = Viasat.fixThumb(ImgLink, BACKGROUND_THUMB_FACTOR);
-            } else {
-                ImgLink = null;
-            }
+            } else if (json[k].images && json[k].images.landscape) {
+                ImgLink = Viasat.fixThumb(json[k].images.landscape.href);
+            } else
+                Images = null;
+
             if (checkSeasons) {
                 if (JSON.parse(httpRequest(Link,{sync:true}).data).count.total_items == 0)
                     continue;
@@ -643,7 +792,7 @@ Viasat.decodeShows = function(data, extra) {
                                          );
         }
 
-        if (!extra.url.match(/\-popularity/))
+        if (!extra.url.match(/\-popularity/) && !extra.url.match(/collections/))
             Viasat.result.sort(function(a, b) {
                 var name_a = (checkSeasons) ? Number(a.name.replace(/[^0-9]+/, "")) : a.name.toLowerCase();
                 var name_b = (checkSeasons) ? Number(b.name.replace(/[^0-9]+/, "")) : b.name.toLowerCase();
@@ -740,7 +889,7 @@ Viasat.getDetailsData = function(url, data) {
             if (data.one_off && data.format_categories && data.format_categories.length) {
                 Show.name = data.format_categories[0].name.trim();
                 Show.large_thumb = Viasat.fixThumb(Show.thumb, DETAILS_THUMB_FACTOR);
-                Show.url = "http://playapi.mtgx.tv/v3/formats?category=" + data.format_categories[0].id;
+                Show.url = "http://playapi.mtgx.tv/v3/formats?category=" + data.format_categories[0].id + "&fromIndex=1&limit=500";
                 Show.is_category = true;
             }
         }
@@ -815,11 +964,22 @@ Viasat.getShowData = function(url, data) {
            };
 };
 
+Viasat.redirectOneOff = function(url) {
+    if (url.match("=my_one_off")) {
+        url = url.replace("&_=my_one_off", "");
+        url = JSON.parse(httpRequest(url,{sync:true}).data)._embedded.videos[0].id;
+        return "http://playapi.mtgx.tv/v3/videos/stream/" + url
+    }
+    return url
+}
+
 Viasat.getDetailsUrl = function(streamUrl) {
+    streamUrl = Viasat.redirectOneOff(streamUrl);
     return streamUrl.replace(/\/stream/, "").replace(/(seasons|videos)\?format=([0-9]+).*/, "formats/$2");
 };
 
 Viasat.getPlayUrl = function(orgStreamUrl, isLive) {
+    orgStreamUrl = Viasat.redirectOneOff(orgStreamUrl);
     var streamUrl = orgStreamUrl.replace(/videos\/([0-9]+)/, "videos/stream/$1");
 
     requestUrl(streamUrl,
@@ -844,7 +1004,7 @@ Viasat.getPlayUrl = function(orgStreamUrl, isLive) {
                        // Means those streams are unsupported in case of "Auto Bitrate".
                        Resolution.getCorrectStream(stream,
                                                    {list:srtUrls},
-                                                   {useBitrates:!stream.match("\.isml"), isLive:isLive}
+                                                   {useBitrates:!stream.match(/\.isml/), isLive:isLive}
                                                   );
                    }
                });
@@ -925,4 +1085,25 @@ Viasat.requestNextPage = function(url, callback, noAbort) {
         httpRequest(url, {cb:callback})
     else
         requestUrl(url,callback,{cbError:callback});
+}
+
+Viasat.isCorrectChannel = function(json) {
+    if (json.channel_id)
+        return json.channel_id == Viasat.getChannelId()
+    if (json.channels) {
+        for (var i=0; i < json.channels.length; i++) {
+            if (json.channels[i].guid == Viasat.getChannelId())
+                break;
+        }
+        return (i < json.channels.length)
+    }
+    return true
+}
+
+Viasat.isCorrectCategory = function(json, guid) {
+    for (var i=0; i < json.categories.length; i++) {
+        if (+json.categories[i].guid == +guid)
+            break;
+    }
+    return (i < json.categories.length)
 }

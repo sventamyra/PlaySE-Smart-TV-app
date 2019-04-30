@@ -180,8 +180,9 @@ Channel.refreshPlayUrl = function(cbComplete) {
 Channel.tryAltPlayUrl = function(failedUrl, cbComplete) {
     if (this.impl.tryAltPlayUrl) {
         Log("tryAltPlayUrl");
-        this.impl.tryAltPlayUrl(failedUrl, cbComplete);
+        return this.impl.tryAltPlayUrl(failedUrl, cbComplete);
     }
+    return false
 }
 
 Channel.fetchSubtitles = function(srtUrl, hlsSubs, usedRequestedUrl, cb) {

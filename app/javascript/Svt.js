@@ -129,9 +129,9 @@ Svt.getThumb = function(data, size) {
     Thumb = Svt.fixLink(Thumb, data.publication).replace("_imax", "");
     if (Thumb.match(/\/wide\/[0-9]+/)) {
         if (size == "extralarge")
-            size = BACKGROUND_THUMB_FACTOR*THUMB_WIDTH;
+            size = Math.round(BACKGROUND_THUMB_FACTOR*THUMB_WIDTH);
         else if (size == "large")
-            size = DETAILS_THUMB_FACTOR*THUMB_WIDTH;
+            size = Math.round(DETAILS_THUMB_FACTOR*THUMB_WIDTH);
         else
             size = THUMB_WIDTH;
         Thumb = Thumb.replace(/\/wide\/[0-9]+/, "/wide/" + size);
@@ -595,9 +595,9 @@ Svt.decodeCategoryDetail = function (data, extra) {
         // Seems old API is getting obsolete
         extra.url =
             extra.url.replace(/\/\/.+\/([^\/]+$)/, "//www.svtplay.se/api/cluster_titles_and_episodes?cluster=$1");
-        return httpRequest(extra.url, {cb:function(status,data) {
-            Svt.decodeCategoryDetail(data,extra)
-        }});
+        return requestUrl(extra.url, function(status,data) {
+            Svt.decodeCategoryDetail(data.responseText,extra)
+        });
     } else if (!data.clusterPage) {
         Svt.decode(data);
         return extra.cbComplete()
@@ -826,10 +826,9 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
     if (url.match("oppet-arkiv-api"))
         return Oa.getPlayUrl(url, isLive);
 
-    Svt.play_args = {url:url, is_live:isLive, stream_url:streamUrl};
     // url = Svt.fixLink(url);
     // Log("url:" + url);
-    var video_url, extra = {isLive:isLive};
+    var video_urls=[], extra = {isLive:isLive};
 
     if (url.indexOf("/kanaler/") != -1)
         streamUrl = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
@@ -842,6 +841,7 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                {
                    if (Player.checkPlayUrlStillValid(url)) {
                        var videoReferences, subtitleReferences=[], srtUrl=null;
+                       var hls_url=null, dash_hbbtv_url=null, other_url=null;
                        if (url.indexOf("/kanaler/") != -1) {
                            data = JSON.parse(data.responseText);
                            // No subtitles
@@ -861,25 +861,27 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
 
 		       for (var i = 0; i < videoReferences.length; i++) {
 		           Log("videoReferences:" + videoReferences[i].url);
-                           if (cb) {
-                               if (failedUrl && failedUrl.match(/[?&]alt=/)) {
-                                   video_url = decodeURIComponent(failedUrl.match(/[?&]alt=([^|]+)/)[1])
-                                   break;
-                               }
-                               if (videoReferences[i].url.match(/\.mpd/)) {
-                                   video_url = videoReferences[i].url
-                                   break;
-                               }
-                           } else {
-                               if (!video_url || !video_url.match(/\.m3u8/))
-		                   video_url = videoReferences[i].url;
-                               if (videoReferences[i].format &&
-                                   videoReferences[i].format.match(/vtt/)) {
-		                   video_url = videoReferences[i].url;
-                                   break
-                               }
-                           }
+                           if (videoReferences[i].format.match("cmaf"))
+                               continue;
+                           if (videoReferences[i].url.match(/\.m3u8/)) {
+                               if (!hls_url ||
+                                   (videoReferences[i].format &&
+                                    videoReferences[i].format.match(/vtt/))
+                                  )
+		                   hls_url = videoReferences[i].url;
+                           } else if (videoReferences[i].format &&
+                                      videoReferences[i].format.match("dash-hbbtv")) {
+                               dash_hbbtv_url = videoReferences[i].url
+                           } else if (!other_url && videoReferences[i].url.match(/\.mpd/))
+                               other_url = videoReferences[i].url
 		       }
+                       if (hls_url)
+                           video_urls.push(hls_url)
+                       if (dash_hbbtv_url)
+                           video_urls.push(dash_hbbtv_url)
+                       if (other_url)
+                           video_urls.push(other_url)
+                       alert("video_urls:" + video_urls);
                        if (data.video && data.video.subtitleReferences)
                            subtitleReferences = data.video.subtitleReferences
                        else if (data.video && data.video.subtitles)
@@ -896,30 +898,59 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                                break;
                            }
 		       }
-		       if (video_url.match(/\.(m3u8|mpd)/)) {
-                           extra.cb = cb;
-		           Resolution.getCorrectStream(video_url, srtUrl, extra);
-		       }
-		       else{
-                           extra.cb = function() {Player.playVideo()};
-		           Player.setVideoURL(video_url, video_url, srtUrl, extra);
-		       }
-	           }
-               }
-              );
+                       Svt.play_args = {urls:video_urls, srt_url:srtUrl, extra:extra};
+                       Svt.playUrl();
+                   }
+               })
+};
+
+Svt.playUrl = function() {
+    if (Svt.play_args.urls[0].match(/\.(m3u8|mpd)/)) {
+	Resolution.getCorrectStream(Svt.play_args.urls[0],
+                                    Svt.play_args.srt_url,
+                                    Svt.play_args.extra
+                                   );
+    } else{
+        Svt.play_args.extra.cb = function() {Player.playVideo()};
+	Player.setVideoURL(Svt.play_args.urls[0],
+                           Svt.play_args.urls[0],
+                           Svt.play_args.srt_url,
+                           Svt.play_args.extra
+                          );
+	// Player.stopCallback();
+
+	// 	url = url + '?type=embed';
+	// 	Log(url);
+	// 	widgetAPI.runSearchWidget('29_fullbrowser', url);
+	// //	$('#outer').css("display", "none");
+	// //	$('.video-wrapper').css("display", "none");
+
+	// //	$('.video-footer').css("display", "none");
+
+	// //	$('#flash-content').css("display", "block");
+	// //	$('#iframe').attr('src', url);
+    }
 };
 
 Svt.tryAltPlayUrl = function(failedUrl, cb)
 {
-    if (failedUrl.match(/\.m3u8/) || failedUrl.match(/[?&]alt=/)) {
-        Svt.getPlayUrl(Svt.play_args.url,
-                       Svt.play_args.is_live,
-                       Svt.play_args.stream_url,
-                       cb,
-                       failedUrl
-                      );
+    if (Svt.play_args.urls[0].match(/[?&]alt=/)) {
+        Svt.play_args.urls[0] = Svt.play_args.urls[0].match(/[?&]alt=([^|]+)/)[1];
+        Svt.play_args.urls[0] = decodeURIComponent(Svt.play_args.urls[0])
+        if (Svt.play_args.urls[0].match(/^[^?]+&/))
+            Svt.play_args.urls[0] = Svt.play_args.urls[0].replace(/&/,"?");
+    } else {
+        Svt.play_args.urls.shift();
     }
-}
+
+    if (Svt.play_args.urls.length > 0) {
+        Svt.play_args.extra.cb = cb
+        Svt.playUrl();
+        return true
+    }
+    else
+        return false
+};
 
 Svt.decodeJson = function(data) {
     if (data.responseText) {

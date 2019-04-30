@@ -1124,18 +1124,27 @@ Player.OnAuthenticationFailed = function()
 Player.PlaybackFailed = function(text)
 {
     Log("Player.PlaybackFailed:" + text);
-    Log(text); 
-    loadingStop();
-    Player.showControls();
-    Player.enableScreenSaver();
+    Log(text);
     $('.bottomoverlaybig').html(text);
-    Channel.tryAltPlayUrl(videoUrl, 
-                          function(){
-                              Log("Trying alternative");
-                              $('.bottomoverlaybig').html("Trying alternative stream");
-                              Player.reloadVideo()
-                          }
-                         );
+    if (!Channel.tryAltPlayUrl(videoUrl,
+                               function(){
+                                   Log("Trying alternative");
+                                   $('.bottomoverlaybig').html("Trying alternative stream");
+                                   if (startup && startup != true) {
+                                       var altResumeTime = Player.getStoredResumeTime();
+                                       if (altResumeTime && altResumeTime != resumeTime) {
+                                           resumeTime = altResumeTime;
+                                           startup = resumeTime-10;
+                                       }
+                                       Player.reloadVideo(startup*1000);
+                                   } else
+                                       Player.reloadVideo()
+                               }
+                              )) {
+        loadingStop();
+        Player.showControls();
+        Player.enableScreenSaver();
+    }
 };
 
 Player.GetDuration = function()
