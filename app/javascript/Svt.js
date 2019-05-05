@@ -875,10 +875,10 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                            } else if (!other_url && videoReferences[i].url.match(/\.mpd/))
                                other_url = videoReferences[i].url
 		       }
-                       if (hls_url)
-                           video_urls.push(hls_url)
                        if (dash_hbbtv_url)
                            video_urls.push(dash_hbbtv_url)
+                       if (hls_url)
+                           video_urls.push(hls_url)
                        if (other_url)
                            video_urls.push(other_url)
                        alert("video_urls:" + video_urls);
