@@ -979,8 +979,8 @@ Viasat.getDetailsUrl = function(streamUrl) {
 };
 
 Viasat.getPlayUrl = function(orgStreamUrl, isLive) {
-    orgStreamUrl = Viasat.redirectOneOff(orgStreamUrl);
-    var streamUrl = orgStreamUrl.replace(/videos\/([0-9]+)/, "videos/stream/$1");
+    var streamUrl = Viasat.redirectOneOff(orgStreamUrl)
+    streamUrl = streamUrl.replace(/videos\/([0-9]+)/, "videos/stream/$1");
 
     requestUrl(streamUrl,
                function(status, data)
