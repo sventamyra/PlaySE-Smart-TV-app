@@ -16,6 +16,7 @@ var Svt =
     section_max_index:0,
     category_details:[],
     category_detail_max_index:0,
+    category_detail_ref:null,
     thumbs_index:null,
     play_args:{},
     live_url:'http://www.svtplay.se/live'
@@ -104,6 +105,10 @@ Svt.makeGenreLink = function (genre)
 
 Svt.makeShowLink = function (data)
 {
+    var Slug = Svt.getGenre(data);
+    if (Slug)
+        return Svt.makeGenreLink(Slug);
+
     var Id = data.titleArticleId;
     if (!Id && data.articleId)
         Id = data.articleId;
@@ -121,6 +126,10 @@ Svt.fixOldShowLink = function(url)
 
 Svt.makeEpisodeLink = function (data)
 {
+    var Slug = Svt.getGenre(data);
+    if (Slug)
+        return Svt.makeGenreLink(Slug);
+
     var Id = data.articleId;
     if (!Id && data.url)
         Id = data.url.replace(/^.+\/([0-9]+)\/.+/, "$1");
@@ -131,6 +140,27 @@ Svt.makeEpisodeLink = function (data)
     else
         return Svt.fixLink(data.contentUrl);
 }
+
+Svt.makeLink = function (data)
+{
+    var Slug = Svt.getGenre(data);
+    if (Slug)
+        return Svt.makeGenreLink(Slug);
+
+    if (data.type == "EPISODE")
+        return Svt.makeEpisodeLink(data);
+
+   return Svt.makeShowLink(data);
+};
+
+Svt.getGenre = function (data) {
+    var url = data.contentUrl;
+    if (!url) url = data.url;
+    if (url) {
+        url = url.match(/\/genre\/([^\/]+)$/);
+        return url ? url[1] : null;
+    }
+};
 
 Svt.checkThumbIndex = function(index, data) {
     if (data && Svt.getThumbIndex(+index)!=data) {
@@ -193,29 +223,6 @@ Svt.getThumb = function(data, size) {
 Svt.isPlayable = function (url) {
     return url.match(/\/video|klipp\//) || url.match(/api\/episode\?/);
 }
-
-Svt.redirectUrl = function(url) {
-    if (Svt.isPlayable(url))
-        // No need to check re-direct for an already playable url.
-        return url;
-    var new_url = url;
-    var result = httpRequest(url,{sync:true})
-    if (result.location) {
-        new_url = result.location;
-    } else if (result.success) {
-        try {
-            new_url = Svt.decodeJson({responseText:result.data}).metaData.canonical;
-        } catch(err) {
-            Log("Svt.redirectUrl exception:" + err.message);
-            result = result.data.match(/og:url"[^"]+"(http[^"]+)/)
-            if (result && result.length > 0)
-                new_url = result[1]
-        }
-    }
-    if (new_url != url)
-        Log("URL redirected:" + new_url)
-    return new_url
-};
 
 Svt.addSections = function(data) {
     Svt.sections = [];
@@ -452,8 +459,8 @@ Svt.getShowData = function(url, data) {
         else
             Description = data.description.trim();
         Genre = [];
-        for (var i=0; i < data.tagList.length; i++) {
-            Genre.push(data.tagList[i].name.trim());
+        for (var i=0; i < data.clusters.length; i++) {
+            Genre.push(data.clusters[i].name.trim());
         }
         Genre.sort();
         Genre = Genre.join('/');
@@ -489,7 +496,7 @@ Svt.getUrl = function(tag, extra) {
         return Svt.getCategoryUrl();
 
     case "categoryDetail":
-        return extra.location;
+        return Svt.getCategoryDetailsUrl(extra.location);
 
     case "live":
         return "http://www.svtplay.se/kanaler";
@@ -516,11 +523,19 @@ Svt.getSectionUrl = function(location) {
 Svt.getCategoryUrl = function() {
     switch (Svt.getCategoryIndex().current) {
     case 0:
-        return 'http://www.svtplay.se/api/clusters_main';
     case 1:
         return 'http://www.svtplay.se/api/clusters';
     case 2:
         return 'http://www.svtplay.se/program'
+    }
+};
+
+Svt.getCategoryDetailsUrl = function(location) {
+    switch (Svt.getCategoryDetailIndex().current) {
+    case 0:
+        return location;
+    default:
+        return Svt.category_details[Svt.getCategoryDetailIndex().current].url
     }
 };
 
@@ -572,13 +587,23 @@ Svt.decodeCategories = function (data, extra) {
         var Name;
         var Link;
         var ImgLink;
+        var Index = Svt.getCategoryIndex().current;
 
-        switch (Svt.getCategoryIndex().current) {
+        switch (Index) {
         case 0:
         case 1:
             data = JSON.parse(data.responseText);
+            if (Index == 0) {
+                // Filter main categories
+                data.main = [];
+                for (var k=0; k < data.length; k++) {
+                    if (data[k].type == "main")
+                        data.main.push(data[k])
+                }
+                data = data.main;
+            }
             data.sort(function(a, b) {
-                if (b.name > a.name)
+                if (b.name.toLowerCase() > a.name.toLowerCase())
                     return -1
                 return 1
             })
@@ -622,9 +647,6 @@ Svt.decodeCategories = function (data, extra) {
 };
 
 Svt.decodeCategoryDetail = function (data, extra) {
-    Svt.category_details = [];
-    Svt.category_detail_max_index = 0;
-
     if (extra.url.match(/\/genre\//)) {
         // Still try to use old API...
         Log("OLD API:" + extra.url);
@@ -633,94 +655,115 @@ Svt.decodeCategoryDetail = function (data, extra) {
         return requestUrl(extra.url, function(status,data) {
             Svt.decodeCategoryDetail(data,extra)
         });
-    } else {
-        Svt.decode(JSON.parse(data.responseText));
-        return extra.cbComplete()
     }
-// cluster_recommended
-// cluster_popular?cluster="
-// cluster_latest
-// cluster_last_chance
-// cluster_clips
-    // Probably dead code from here
-    var main_name = data.clusterPage.meta.name.trim()
-    var popular   = {};
-    var current;
+    data = JSON.parse(data.responseText);
 
-    for (var key in data.displayWindow) {
-        if (data.displayWindow[key].length > 0) {
-            popular.name = main_name + " - Rekommenderat";
-            popular.section = "Rekommenderat";
-            popular.recommended = true;
-            break;
-        }
-    };
+    var Slug     = extra.url.match(/\?cluster=([^&]+)/)[1]
+    var MainName = Slug.capitalize();
 
-    if (data.clusterPage.tabs) {
-        for (var k=0; k < data.clusterPage.tabs.length; k++) {
-            if (data.clusterPage.tabs[k].name.match(/^Popul/)) {
-                // Popular is special and merged with recommended
-                popular.name = main_name + " - " + data.clusterPage.tabs[k].name.trim();
-                popular.section = data.clusterPage.tabs[k].name.trim();
-                popular.tab_index = k;
-            } else {
-                Svt.category_details.push({name:      main_name + " - " + data.clusterPage.tabs[k].name.trim(),
-                                           section: data.clusterPage.tabs[k].name.trim(),
-                                           tab_index: k
-                                          });
+    if (Svt.getCategoryDetailIndex().current == 0 || extra.out_of_sync) {
+        Svt.category_details = [];
+        Svt.category_detail_max_index = 0;
+        Svt.category_detail_ref = Slug + new Date().getTime();
+        for (var k=0; k < data[0].clusters.length; k++) {
+            if (data[0].clusters[k].slug == Slug) {
+                MainName = data[0].clusters[k].name
+                break;
             }
         }
-    };
-    if (data.clusterPage.relatedClusters.length > 0) {
-        Svt.category_details.push({name   : main_name + " - Relaterat",
-                                   section: "Relaterat",
-                                   related: true
-                                  });
+        // Add main view
+        Svt.category_details.push({name:MainName, main:true, section:"none"})
+        // For "larger" Categories add the category sections
+        if (data.length > 5) {
+            // Add recommended
+            Svt.category_details.push({name:MainName + " - Rekommenderat",
+                                       recommended: true,
+                                       section: "Rekommenderat",
+                                       tab_index: 1,
+                                       url: SVT_API_BASE + "cluster_recommended?cluster=" + Slug,
+                                       popular_url: SVT_API_BASE + "cluster_popular?cluster=" + Slug,
+                                      })
+
+            var Tabs = [{tag:"cluster_latest", name: "Senaste"},
+                        {tag:"cluster_last_chance", name: "Sista Chansen"},
+                        {tag:"cluster_related", name: "Relaterat"},
+                        {tag:"cluster_clips", name: "Klipp"}
+                       ];
+
+            var OptionalTabs = [];
+            for (var k=0; k < Tabs.length; k++) {
+                OptionalTabs.push(
+                    {name:      MainName + " - " + Tabs[k].name,
+                     section:   Tabs[k].name,
+                     tab_index: k,
+                     url:  SVT_API_BASE + Tabs[k].tag + "?cluster=" + Slug
+                    });
+            }
+            var Ref = Svt.category_detail_ref;
+            Svt.addCategoryIndexSections(Ref, extra, OptionalTabs, 0);
+            if (extra.out_of_sync) {
+                extra.out_of_sync = false;
+                extra.url = Svt.getCategoryDetailsUrl();
+                return requestUrl(extra.url, function(status,data) {
+                    Svt.decodeCategoryDetail(data,extra)
+                });
+            }
+        };
+        Svt.category_detail_max_index = Svt.category_details.length-1;
+
+    } else {
+        var ExpectedSlug = getLocation(extra.refresh).match(/\?cluster=([^&]+)/)[1];
+        if (ExpectedSlug != Slug) {
+            extra.url = extra.url.replace(/cluster.+\?cluster.+/, "cluster_titles_and_episodes?cluster=" + ExpectedSlug);
+            extra.out_of_sync = true;
+            // alert("OUT OF SYNC, ExpectedSlug: " + ExpectedSlug + " Actual: " + Slug + " New:" + extra.url);
+            return requestUrl(extra.url, function(status,data) {
+                Svt.decodeCategoryDetail(data,extra)
+            })
+        }
     }
-
-    if (popular.name)
-        Svt.category_details.unshift(popular)
-
-    // Add main view as well
-    Svt.category_details.unshift({name:main_name, main:true, section:"none"})
-    Svt.category_detail_max_index = Svt.category_details.length-1;
-
-    current = Svt.category_details[Svt.getCategoryDetailIndex().current];
-    var recommendedLinks = []
-    if (current.main) {
-        if (data.clusterPage.content.contents) {
-            alert("CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!CONTENT!!!")
-            Svt.decode(data.clusterPage.content.contents)
-        }
-        if (data.clusterPage.titlesAndEpisodes) {
-            Svt.decode(data.clusterPage.titlesAndEpisodes)
-            // var shows = [];
-            // for (var i=0; i<data.clusterPage.titlesAndEpisodes.length; i++) {
-                // if (data.clusterPage.titlesAndEpisodes[i].episodic) {
-                //     alert("Skipping:" + data.clusterPage.titlesAndEpisodes[i].programTitle)
-                //     continue;
-                // }
-            //     shows.push(data.clusterPage.titlesAndEpisodes[i])
-            // };
-            // Svt.decode(shows);
-            // shows = [];
-        }
-        if (Svt.category_detail_max_index == 0 && data.clusterPage.content.clips)
-            Svt.decode(data.clusterPage.content.clips)
-    } else if (current.recommended) {
-        for (var key in data.displayWindow) {
-            recommendedLinks = recommendedLinks.concat(Svt.decodeRecommended(data.displayWindow[key], {json:true}));
-        }
-    } else if (current.related) {
-        Svt.decode(data.clusterPage.relatedClusters);
-    }
-
-    if (current.tab_index >= 0)
-        Svt.decode(data.clusterPage.tabs[current.tab_index].content, {recommended_links:recommendedLinks});
 
     Language.fixBButton();
-    if (extra.cbComplete)
-        extra.cbComplete()
+    var current = Svt.category_details[Svt.getCategoryDetailIndex().current];
+
+    if (current.recommended) {
+        var recommendedLinks = Svt.decodeRecommended(data, {json:true});
+        return requestUrl(current.popular_url,
+                          function(status, data)
+                          {
+                              extra.recommended_links = recommendedLinks
+                              extra.cbComplete = null;
+                              Svt.decode(JSON.parse(data.responseText), extra);
+                          },
+                          {callLoadFinished:true,
+                           refresh:extra.refresh
+                          }
+                         );
+    } else {
+        Svt.decode(data);
+        if (extra.cbComplete)
+            extra.cbComplete()
+    }
+
+};
+
+Svt.addCategoryIndexSections = function(Ref, extra, OptionalTabs, Index) {
+    if (Ref != Svt.category_detail_ref)
+        return;
+    if (Index < OptionalTabs.length) {
+        httpRequest(OptionalTabs[Index].url,
+                    {cb:function(status, data) {
+                        if (Ref == Svt.category_detail_ref) {
+                            if (status==200 && JSON.parse(data).length > 0) {
+                                Svt.category_details.push(OptionalTabs[Index]);
+                                Svt.category_detail_max_index = Svt.category_details.length-1;
+                            }
+                            Svt.addCategoryIndexSections(Ref, extra, OptionalTabs, Index+1)
+                        }
+                    },
+                     sync:extra.out_of_sync
+                    });
+    }
 };
 
 Svt.decodeLive = function(data, extra) {
@@ -759,7 +802,6 @@ Svt.decodeShowList = function(data, extra) {
     var clipsUrl = extra.url.replace("episodes_by_article", "clips_by_title_article"); 
     var hasClips = false;
     var hasZeroSeason = false
-    alert("extra.season" + extra.season);
     if (!extra.is_clips && !extra.season && !extra.variant) {
         hasClips = (JSON.parse(httpRequest(clipsUrl, {sync:true}).data)).length > 0;
         for (var i=0; i < data.length; i++) {
@@ -885,7 +927,13 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                            } else {
                                data = JSON.parse(data.responseText)
                                if (data.versions && data.versions.length > 0) {
-                                   data = data.versions[0].id
+                                   var articleId = streamUrl.match(/\?id=([0-9]+)/)[1];
+		                   for (var i=0; i < data.versions.length; i++) {
+                                       if (data.versions[i].articleId == articleId) {
+                                           data = data.versions[i].id
+                                           break
+                                       }
+                                   }
                                } else {
                                    data = data.id;
                                }
@@ -1034,23 +1082,24 @@ Svt.decodeRecommended = function (data, extra) {
 
         for (var k=0; k < data.length; k++) {
             Name = data[k].title.trim();
-            Link = Svt.redirectUrl(Svt.makeEpisodeLink(data[k]));
+            Link = Svt.makeLink(data[k]);
             Description = data[k].description;
             ImgLink = Svt.getThumb(data[k]);
             Background = Svt.getThumb(data[k], "extralarge");
             if (Svt.isPlayable(Link)) {
-                recommendedLinks.push(Link.replace(/.+\/video\/([0-9]+).*/, "$1"));
+                recommendedLinks.push(Link.replace(/.+d=([0-9]+).*/, "$1"));
                 LinkPrefix = '<a href="details.html?ilink=';
             } else {
                 LinkPrefix = makeShowLinkPrefix();
-                if (Link.match(/\/genre\//)) {
+                if (Link.match(/\?cluster=/)) {
                     LinkPrefix = makeCategoryLinkPrefix();
                     Link = fixCategoryLink(Name,
                                            Svt.getThumb(ImgLink, "large"),
                                            Link
                                           )
                 } else {
-                    recommendedLinks.push(Link.replace(/.+\/([^\/]+)$/, "$1"))
+                    // Can show and episodes share ID?
+                    recommendedLinks.push(Link.replace(/.+d=([0-9]+).*/, "$1"));
                 }
             }
             toHtml({name:Name,
@@ -1271,17 +1320,17 @@ Svt.decode = function(data, extra) {
                     Link = Svt.makeGenreLink(Link);
                 Link = Svt.fixLink(Link); // This will not work?
             } else if (data[k].url)
-                Link = Svt.fixLink(data[k].url);
+                Link = Svt.makeEpisodeLink(data[k]); // Is this ok? I.e. perhaps not Episodes?
             else if (data[k].slug)
                 Link = Svt.makeGenreLink(data[k].slug)
             else
                 Link = Svt.makeShowLink(data[k])
 
             if (extra.recommended_links) {
-                if (extra.recommended_links.indexOf(Link.replace(/.+\/(video|klipp)\/([0-9]+).*/, "$2")) != -1)
+                if (extra.recommended_links.indexOf(Link.replace(/.+d=([0-9]+).*/, "$1")) != -1) {
+                    alert(Name + " found in recommended_links")
                     continue;
-                else if (extra.recommended_links.indexOf(Link.replace(/.+\/(video|klipp)\/[0-9]+\/([^\/]+)\/.+$/, "$2")) != -1)
-                    continue;
+                }
             }
             ImgLink = Svt.getThumb(data[k]);
             Background = Svt.getThumb(data[k], "extralarge");
@@ -1293,7 +1342,7 @@ Svt.decode = function(data, extra) {
                 Duration = (Duration) ? Duration : 0;
                 LinkPrefix = '<a href="details.html?ilink=';
             }
-            else if (data[k].urlPart || Link.match(/\/genre\//)) {
+            else if (data[k].urlPart || Link.match(/\?cluster=/)) {
                 LinkPrefix = makeCategoryLinkPrefix();
                 Link = fixCategoryLink(Name,
                                        Svt.getThumb(ImgLink, "large"),
