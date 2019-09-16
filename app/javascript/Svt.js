@@ -951,7 +951,8 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
 
 		       for (var i = 0; i < videoReferences.length; i++) {
 		           Log("videoReferences:" + videoReferences[i].url);
-                           if (videoReferences[i].format.match("cmaf"))
+                           if ((videoReferences[i].format.match("cmaf")) ||
+                               (videoReferences[i].format.match("\-lb")))
                                continue;
                            if (videoReferences[i].url.match(/\.m3u8/)) {
                                if (!hls_url ||
