@@ -101,7 +101,7 @@ Details.toHtml = function (programData) {
         if (programData.show) {
 	    html+='<div class="project-meta"><a id="genre" type="text"></a><a>'+programData.genre+'</a></div>';
         } else if (!programData.category) {
-            // Ignore extra if inside show
+            // Ignore extra if inside show/category
             if (getOldLocation() && !getOldLocation().match(/showList\.html/) &&
                 programData.parent_show && !programData.parent_show.is_category) {
                 extra = {loc: makeShowLink(programData.parent_show.name,
@@ -110,8 +110,8 @@ Details.toHtml = function (programData) {
                          name: "Till Programmet"
                         }
             } else if (getOldLocation() && !getOldLocation().match(/categoryDetail\.html/) &&
-                       programData.parent_show && programData.parent_show.is_category) {
-
+                       !getOldLocation().match(/showList\.html/) && programData.parent_show &&
+                       programData.parent_show.is_category) {
                 extra = {loc: makeCategoryLink(programData.parent_show.name,
                                                programData.parent_show.large_thumb,
                                                programData.parent_show.url

@@ -130,6 +130,9 @@ Svt.makeEpisodeLink = function (data)
     if (Slug)
         return Svt.makeGenreLink(Slug);
 
+    if (data.titleType && data.titleType=="CLIP" && data.titleArticleId)
+        return Svt.makeClipLink(data);
+
     var Id = data.articleId;
     if (!Id && data.url)
         Id = data.url.replace(/^.+\/([0-9]+)\/.+/, "$1");
@@ -139,6 +142,11 @@ Svt.makeEpisodeLink = function (data)
         return Svt.fixLink(SVT_API_BASE + "episode?id=" + Id);
     else
         return Svt.fixLink(data.contentUrl);
+}
+
+Svt.makeClipLink = function (data)
+{
+    return Svt.fixLink(SVT_API_BASE + "title_clips_by_title_article_id?articleId=" + data.titleArticleId + "&id=" + data.id)
 }
 
 Svt.makeLink = function (data)
@@ -221,7 +229,7 @@ Svt.getThumb = function(data, size) {
 }
 
 Svt.isPlayable = function (url) {
-    return url.match(/\/video|klipp\//) || url.match(/api\/episode\?/);
+    return url.match(/\/video|klipp\//) || url.match(/api\/episode\?/) || Svt.IsClip({link:url});
 }
 
 Svt.addSections = function(data) {
@@ -277,7 +285,7 @@ Svt.setNextSection = function() {
 Svt.getDetailsUrl = function(streamUrl) {
     if (streamUrl.match(/www.svtplay.se\/[^\/]+$/))
         return Svt.getDetailsUrl(Svt.fixOldShowLink(streamUrl))
-    return Svt.fixLink(streamUrl.replace(/title_.+_article_id/, "title_by_article_id"));
+    return Svt.fixLink(streamUrl.replace(/title_episodes_by_article_id/, "title_by_article_id"));
 };
 
 Svt.getDetailsData = function(url, data) {
@@ -331,6 +339,15 @@ Svt.getDetailsData = function(url, data) {
             NotAvailable = (startTime - getCurrentDate()) > 60*1000;
         } else {
             data = JSON.parse(data.responseText);
+            if (url.match(/title_clips_by_title_article_id/))
+            {
+                for (var i=0; i < data.length; i++) {
+                    if (data[i].id == url.match(/&id=([0-9]+)/)[1]) {
+                        data = data[i];
+                        break
+                    }
+                }
+            }
             ImgLink = Svt.getThumb(data, "large");
             if (data.programTitle && data.titleType != "MOVIE") {
                 Show = {name : data.programTitle.trim(),
@@ -903,8 +920,10 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
 
     var video_urls=[], extra = {isLive:isLive};
 
-    if (url.indexOf("/kanaler/") != -1)
+    if (url.match("/kanaler/"))
         streamUrl = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
+    else if (url.match(/\/title_clips_by_title_article_id/))
+        streamUrl = SVT_ALT_API_URL + url.match(/&id=([0-9]+)/)[1];
     else if(!streamUrl) {
         streamUrl = url;
     }
@@ -1491,5 +1510,5 @@ Svt.IsNewer = function(a,b) {
 }
 
 Svt.IsClip = function(a) {
-    return a.link.match(/\/klipp\//)
+    return a.link.match(/\/klipp\/|articleId=[0-9]+&id=/)
 }
