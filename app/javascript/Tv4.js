@@ -98,7 +98,7 @@ Tv4.getUrl = function(tag, extra) {
     {
     case "main":
         Tv4.fetchUnavailableShows();
-        return "http://webapi.tv4play.se/play/programs?per_page=50&page=1&is_premium=false&recommended=true";
+        return "http://api.tv4play.se/play/programs?per_page=50&page=1&is_premium=false&recommended=true";
 
     case "section":
         switch(extra.location) {
@@ -109,7 +109,7 @@ Tv4.getUrl = function(tag, extra) {
             endDate.setDate(endDate.getDate() + 1)
             var startDate = getCurrentDate();
             startDate.setDate(startDate.getDate() - 7);
-            return 'http://webapi.tv4play.se/play/video_assets?is_live=false&platform=web&is_premium=false&premium=false&sort=broadcast_date_time&sort_order=desc&per_page=100&broadcast_from=' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&type=' + type + drm;
+            return 'http://api.tv4play.se/play/video_assets?is_live=false&platform=web&is_premium=false&premium=false&sort=broadcast_date_time&sort_order=desc&per_page=100&broadcast_from=' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&type=' + type + drm;
 
         case "PopularClips.html":
             type = "clip"
@@ -117,17 +117,17 @@ Tv4.getUrl = function(tag, extra) {
         default:
             break;
         }
-        return 'http://webapi.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
+        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
 
     case "live":
         var startDate = getCurrentDate();
         var endDate   = getCurrentDate();
         endDate.setDate(startDate.getDate() + 4);
-        return 'http://webapi.tv4play.se/play/video_assets?broadcast_from' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&is_live=true&platform=web&sort=broadcast_date_time&sort_order=asc&per_page=100'
+        return 'http://api.tv4play.se/play/video_assets?broadcast_from' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&is_live=true&platform=web&sort=broadcast_date_time&sort_order=asc&per_page=100'
         break;
 
     case "categories":
-        return 'http://webapi.tv4play.se/play/categories'
+        return 'http://api.tv4play.se/play/categories'
         break;
 
     case "categoryDetail":
@@ -135,27 +135,27 @@ Tv4.getUrl = function(tag, extra) {
         break;
 
     case "categoryUrl":
-        return 'http://webapi.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false&category='
+        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false&category='
         break;
 
     case "allShows":
-        return 'http://webapi.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false'
+        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false'
         break;
 
     case "clips":
         type = "clip"
     case "episodes":
-        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=' + type + drm + '&node_nids='
+        return 'http://api.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=' + type + drm + '&node_nids='
         break;
 
     case "searchList":
-        return 'http://webapi.tv4play.se/play/programs?per_page=100&platform=web&is_premium=false&q=' + extra.query
+        return 'http://api.tv4play.se/play/programs?per_page=100&platform=web&is_premium=false&q=' + extra.query
 
     case "searchVideos":
-        return 'http://webapi.tv4play.se/play/video_assets?is_live=false&per_page=200&is_premium=false&platform=web' + drm + '&q=' + extra.query
+        return 'http://api.tv4play.se/play/video_assets?is_live=false&per_page=200&is_premium=false&platform=web' + drm + '&q=' + extra.query
 
     case "popular":
-        return 'http://webapi.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
+        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
 
     default:
         return tag;
@@ -401,7 +401,7 @@ Tv4.decode = function(data, extra) {
             Background = Tv4.fixThumb(data[k].image, BACKGROUND_THUMB_FACTOR);
             Duration = data[k].duration;
             Description = (data[k].description) ? data[k].description.trim() : "";
-            Link = "http://webapi.tv4play.se/play/video_assets?id=" +  data[k].id;
+            Link = "http://api.tv4play.se/play/video_assets?id=" +  data[k].id;
             AirDate = data[k].broadcast_date_time;
             Season = (data[k].season) ? data[k].season : null;
             Episode = (data[k].episode) ? data[k].episode : null;
@@ -665,7 +665,7 @@ Tv4.getShowData = function(url, data) {
 
 Tv4.getDetailsUrl = function(streamUrl) {
     if (streamUrl.match(/&node_nids=/))
-        return 'http://webapi.tv4play.se/play/programs?nids=' + streamUrl.replace(/.+&node_nids=([^&]+).*/, "$1");
+        return 'http://api.tv4play.se/play/programs?nids=' + streamUrl.replace(/.+&node_nids=([^&]+).*/, "$1");
     else
         return streamUrl;
 };
