@@ -322,3 +322,10 @@ Channel.getDButtonText = function(language) {
     else
         return 'Sök';
 }
+
+Channel.upgradeUrl = function(channelId, url) {
+    channelId = eval($(".channel-content").find("#"+channelId).attr("channel"));
+    if (channelId.upgradeUrl)
+        return channelId.upgradeUrl(url)
+    return url
+}

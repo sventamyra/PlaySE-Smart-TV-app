@@ -163,6 +163,10 @@ Tv4.getUrl = function(tag, extra) {
     }
 };
 
+Tv4.upgradeUrl = function(url) {
+    return url.replace("webapi.tv4play","api.tv4play")
+}
+
 Tv4.decodeMain = function(data, extra) {
     var cbComplete = extra.cbComplete;
     extra.cbComplete = null;

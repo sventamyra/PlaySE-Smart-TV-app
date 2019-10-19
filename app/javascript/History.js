@@ -134,6 +134,7 @@ History.decodeMain = function(data, extra) {
             Names[Shows[i].name] = 1
     }
     for (var i=0; Shows && i < Shows.length; i++) {
+        Shows[i].url = Channel.upgradeUrl(Shows[i].channel_id, Shows[i].url);
         UrlParams = "show_name=" + encodeURIComponent(Shows[i].name) +
             "&tmp_channel_id=" + Shows[i].channel_id;
         if (Names[Shows[i].name] > 1)
