@@ -116,6 +116,13 @@ Channel.getUrl = function(tag, extra) {
     return this.impl.getUrl(tag, extra);
 }
 
+Channel.upgradeUrl = function(channelId, url) {
+    channelId = eval($(".channel-content").find("#"+channelId).attr("channel"));
+    if (channelId.upgradeUrl)
+        return channelId.upgradeUrl(url)
+    return url
+};
+
 Channel.login = function(callback) {
     if (this.impl.login)
         this.impl.login(callback);
@@ -321,11 +328,4 @@ Channel.getDButtonText = function(language) {
 	return 'Search';
     else
         return 'Sök';
-}
-
-Channel.upgradeUrl = function(channelId, url) {
-    channelId = eval($(".channel-content").find("#"+channelId).attr("channel"));
-    if (channelId.upgradeUrl)
-        return channelId.upgradeUrl(url)
-    return url
-}
+};

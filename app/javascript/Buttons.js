@@ -241,7 +241,7 @@ Buttons.keyHandleForList = function()
 	var ilink = itemSelected.find('.ilink').attr("href");
         if (ilink != undefined)
         {
-            if (keyCode != tvKey.KEY_INFO && ilink.search("details.html\\?") != -1) {
+            if (keyCode != tvKey.KEY_INFO && Buttons.isPlayable(ilink)) {
                 Buttons.playItem();
                 return;
             }
@@ -251,7 +251,7 @@ Buttons.keyHandleForList = function()
                 // Info of show.
                 ilink = "details.html?" + ilink;
             }
-            else if (keyCode == tvKey.KEY_INFO && ilink.search("details.html\\?") == -1) {
+            else if (keyCode == tvKey.KEY_INFO && !Buttons.isPlayable(ilink)) {
                 // Info of non-episode/show, not relevant.
                 return;
             }
@@ -857,7 +857,7 @@ Buttons.playItem = function() {
     }
     Player.setDuration(duration);
     Player.setNowPlaying(itemSelected.find('a').text());
-    Player.startPlayer(itemLink.match(/ilink=(.+)&history/)[1], isLive, starttime);
+    Player.startPlayer(Buttons.getLinkUrl(itemLink), isLive, starttime);
     return 0;
 };
 
@@ -908,7 +908,7 @@ Buttons.findNextItem = function(play) {
             tmpItem = topItems.eq(0); 
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
-            (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
+            (Buttons.isPlayable(tmpItem.find('.ilink').attr("href")) ||
              (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('not-yet-available') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
@@ -958,7 +958,7 @@ Buttons.findPriorItem = function(play) {
             tmpItem = bottomItems.eq(tmpColumnCounter);
         }
         if (tmpItem.find('.ilink').attr("href") != undefined && 
-            (tmpItem.find('.ilink').attr("href").search("details.html\\?") != -1 ||
+            (Buttons.isPlayable(tmpItem.find('.ilink').attr("href")) ||
              (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('not-yet-available') === -1)) {
             return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
@@ -1015,3 +1015,11 @@ Buttons.showNextItem = function(direction) {
     if (this.runNextItem(direction, false) != -1)
         loadingStart();
 };
+
+Buttons.isPlayable = function(Link) {
+    return Link.search("details.html\\?") != -1
+}
+
+Buttons.getLinkUrl = function(Link) {
+    return Link.match(/ilink=(.+)&history/)[1]
+}

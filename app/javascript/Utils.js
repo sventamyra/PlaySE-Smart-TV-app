@@ -745,7 +745,7 @@ handleHttpResult = function(url, timer, extra, result) {
 
     if (extra.params)
         alert(result.xhr.getAllResponseHeaders())
-    if (result.status == 200) {
+    if (result.status == 200 || result.status == 206) {
         if (!extra.no_log)
             Log('Success:' + url);
     } else {

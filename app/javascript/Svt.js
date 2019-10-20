@@ -1,4 +1,6 @@
 // all_titles_and_singles
+// https://api.svt.se/program-guide/programs?channel=svt1&startHourOfProgramGuideDay=5&from=2019-10-20&to=2019-10-20
+// https://www.svtplay.se/api/server_time
 // search?q=
 // channel_page?now=
 // recommendations_from_titles
@@ -10,6 +12,9 @@
 // latest
 // last_chance
 // live
+var SVT_API_BASE = "https://www.svtplay.se/api/"
+var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
+
 var Svt =
 {
     sections:[],
@@ -19,11 +24,8 @@ var Svt =
     category_detail_ref:null,
     thumbs_index:null,
     play_args:{},
-    live_url:'http://www.svtplay.se/live'
+    live_url:SVT_API_BASE + "live?includeEnded=true"
 };
-
-var SVT_API_BASE = "https://www.svtplay.se/api/"
-var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
 
 Svt.getHeaderPrefix = function() {
     return "SVT";
@@ -229,7 +231,7 @@ Svt.getThumb = function(data, size) {
 }
 
 Svt.isPlayable = function (url) {
-    return url.match(/\/video|klipp\//) || url.match(/api\/episode\?/) || Svt.IsClip({link:url});
+    return url.match(/\/video\//) || url.match(/api\/episode\?/) || Svt.IsClip({link:url});
 }
 
 Svt.addSections = function(data) {
@@ -283,7 +285,9 @@ Svt.setNextSection = function() {
 };
 
 Svt.getDetailsUrl = function(streamUrl) {
-    if (streamUrl.match(/www.svtplay.se\/[^\/]+$/))
+    if (streamUrl.match("Barnkanalen"))
+        return streamUrl.replace("Barnkanalen", "svtbarn");
+    else if (streamUrl.match(/www.svtplay.se\/[^\/]+$/))
         return Svt.getDetailsUrl(Svt.fixOldShowLink(streamUrl))
     return Svt.fixLink(streamUrl.replace(/title_episodes_by_article_id/, "title_by_article_id"));
 };
@@ -320,13 +324,14 @@ Svt.getDetailsData = function(url, data) {
             data = Svt.decodeJson(data);
             data = data.channelsPage
 	    for (var i in data.schedule) {
-                if (data.schedule[i].channelName == data.activeChannelId) {
+                if (data.schedule[i].channel == data.activeChannelId.toLowerCase()) {
                     data = data.schedule[i];
                     break;
                 }
             }
             Name = data.channelName.trim() + " - " + data.programmeTitle.trim();
-	    Description = data.description.trim();
+            if (data.description)
+	        Description = data.description.trim();
             ImgLink = Svt.getThumb(data, "large")
             if (!ImgLink)
 	        ImgLink = Svt.GetChannelThumb(data.channel);
@@ -467,11 +472,15 @@ Svt.getShowData = function(url, data) {
 
     try {
         data = JSON.parse(data.responseText);
+        if (url.match(/title_clips_by_title_article_id/)) {
+            data = data[0];
+            Name = "Klipp";
+        } else
+            Name = data.programTitle.trim();
 
-        Name = data.programTitle.trim();
         ImgLink = Svt.getThumb(data, "large");
-	Description = data.shortDescription.trim()
-        if (Description && data.description.indexOf(Description) == -1)
+	Description = data.shortDescription;
+        if (Description && data.description.indexOf(Description.trim()) == -1)
             Description = "<p>" + Description + "</p>" + data.description.trim();
         else
             Description = data.description.trim();
@@ -504,7 +513,7 @@ Svt.getUrl = function(tag, extra) {
     switch (tag.replace(/\.html.+/,".html"))
     {
     case "main":
-        return "http://www.svtplay.se";
+        return SVT_API_BASE + "popular";
 
     case "section":
         return Svt.getSectionUrl(extra.location);
@@ -516,10 +525,10 @@ Svt.getUrl = function(tag, extra) {
         return Svt.getCategoryDetailsUrl(extra.location);
 
     case "live":
-        return "http://www.svtplay.se/kanaler";
+        return "https://api.svt.se/program-guide/programs?channel=svt1,svt2,svt24,svtb,svtk&includePartiallyOverlapping=true&from=" + getCurrentDate().toISOString()+ "&to=" + getCurrentDate().toISOString();
 
     case "searchList":
-        return 'http://www.svtplay.se/sok?q=' + extra.query;
+        return SVT_API_BASE + "search?q=" + extra.query;
 
     default:
         alert("Default:" + tag)
@@ -556,8 +565,32 @@ Svt.getCategoryDetailsUrl = function(location) {
     }
 };
 
+Svt.upgradeUrl = function(url) {
+    if (url.match(/\/genre\//))
+        return Svt.makeGenreLink(url.match(/\/\/.+\/([^\/]+$)/)[1]);
+    if (!url.match(/api\//)) {
+        try {
+            return Svt.fixOldShowLink(url);
+        } catch(err) {
+            return Svt.makeGenreLink(url.match(/\/\/.+\/([^\/]+$)/)[1])
+        }
+    }
+    return url
+}
+
 Svt.decodeMain = function(data, extra) {
-    var recommendedLinks = Svt.decodeRecommended(data, {add_sections:true});
+
+    Svt.sections = [];
+    Svt.sections.push({name:"Populärt", url:SVT_API_BASE + "popular?pageSize=50"});
+    Svt.sections.push({name:"Senaste", url:SVT_API_BASE + "latest?pageSize=50"});
+    Svt.sections.push({name:"Sista Chansen", url:SVT_API_BASE + "last_chance?pageSize=50"});
+
+    Svt.section_max_index = Svt.sections.length-1;
+    $("#a-button").text(Svt.getNextSectionText());
+
+    var recommendedLinks = [];
+
+    // var recommendedLinks = Svt.decodeRecommended(data, {add_sections:true, json:true});
 
     requestUrl(Svt.sections[0].url,
                function(status, data)
@@ -573,19 +606,8 @@ Svt.decodeMain = function(data, extra) {
 };
 
 Svt.decodeSection = function(data, extra) {
-    data = Svt.decodeJson(data);
-    if (data.gridPage && data.gridPage.content && data.gridPage.content.length > 0) {
-        data = data.gridPage.content
-    } else if (data.clusterPage) {
-        // Nyheter - why is there a category in start page?
-        data  = data.clusterPage.tabs
-        for (var i=0; i < data.length; i++) {
-            if (data[i].name.match(/senast/i)) {
-                data = data[i].content
-                break
-            }
-        }
-    }
+
+    data = JSON.parse(data.responseText).data;
     Svt.decode(data, extra);
     // Svt.decode(Svt.decodeJson(data).gridPage.content, extra.recommended_links);
     // data = Svt.decodeJson(data);
@@ -870,7 +892,7 @@ Svt.decodeShowList = function(data, extra) {
 Svt.decodeSearchList = function (data, extra) {
     try {
         var keys = [];
-        data = Svt.decodeJson(data).searchPage;
+        data = JSON.parse(data.responseText);
         for (var key in data){
             if (data[key].sort && data[key].length > 0) {
                 keys.push(key)
@@ -1206,7 +1228,7 @@ Svt.getNextCategoryDetailText = function() {
 
 Svt.GetChannelThumb = function (Name)
 {
-    return Svt.fixLink("/assets/images/channels/posters/" + Name.toLowerCase() + ".png");
+    return Svt.fixLink("/assets/images/channels/posters/" + Name.toLowerCase().replace(" ","") + ".png");
 };
 
 Svt.decodeChannels = function(data) {
@@ -1219,15 +1241,24 @@ Svt.decodeChannels = function(data) {
         var starttime;
         var endtime;
         var BaseUrl = 'http://www.svtplay.se/kanaler';
+        var FoundChannels = [];
 
-        data = Svt.decodeJson(data).channelsPage.schedule;
+        data = JSON.parse(data.responseText).hits;
+        data.sort(function(a, b) {
+                if (b.channel.toLowerCase() > a.channel.toLowerCase())
+                    return -1
+                return 1
+            })
         for (var k in data) {
-            Name = data[k].channelName.trim();
-            if (!data[k].publishingTime) {
-                alert(Name + " isn't broadcasting.")
-                continue
-            }
-	    Link = BaseUrl + '/' + Name;
+            Name = data[k].channel.trim();
+            if (FoundChannels.indexOf(Name) != -1)
+                continue;
+            FoundChannels.push(Name);
+            if (Name == "SVTB")
+                Name = "Barnkanalen";
+            else if (Name == "SVTK")
+                Name = "Kunskapskanalen"
+            Link = BaseUrl + '/' + Name;
             ImgLink = Svt.GetChannelThumb(Name);
             Background = Svt.getThumb(data[k], "extralarge");
             if (!Background)
@@ -1357,6 +1388,8 @@ Svt.decode = function(data, extra) {
             IsLive = data[k].live && !data[k].broadcastEnded;
             IsRunning = data[k].broadcastedNow;
             starttime = (IsLive) ? Svt.getAirDate(data[k]) : null;
+            if (!IsLive && getCurrentDate() < Svt.getAirDate(data[k]))
+                continue;
             LinkPrefix = makeShowLinkPrefix();
             if (Svt.isPlayable(Link)) {
                 Duration = (Duration) ? Duration : 0;

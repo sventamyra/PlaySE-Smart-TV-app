@@ -1048,7 +1048,11 @@ Player.OnNetworkDisconnected = function(text)
         Log("OnNetworkDisconnected"); 
         text = "Network Error!";
     }
-    Player.retryVideo(text)
+    // Avoid reload loop in case constant failure in the end....
+    if ((Player.GetDuration()-ccTime) < 500)
+        Player.OnRenderingComplete();
+    else
+        Player.retryVideo(text)
 };
 
 Player.retryVideo = function (text, max) {
@@ -1089,9 +1093,14 @@ Player.OnStreamNotFound = function()
 
 Player.OnRenderError = function(number)
 {
-    Log("Player.OnRenderError:" + number);
-    var text = "Can't play this. Error: " + number;
-    Player.checkHls(function(){Player.PlaybackFailed(text)}, text)
+    // Avoid reload loop in case constant failure in the end....
+    if ((Player.GetDuration()-ccTime) < 500)
+        Player.OnRenderingComplete();
+    else {
+        Log("Player.OnRenderError:" + number);
+        var text = "Can't play this. Error: " + number;
+        Player.checkHls(function(){Player.PlaybackFailed(text)}, text)
+    }
 };
 
 Player.checkHls = function(OtherCalback, text) {
