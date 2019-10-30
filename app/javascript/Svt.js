@@ -1,17 +1,9 @@
-// all_titles_and_singles
-// https://api.svt.se/program-guide/programs?channel=svt1&startHourOfProgramGuideDay=5&from=2019-10-20&to=2019-10-20
-// https://www.svtplay.se/api/server_time
-// search?q=
 // channel_page?now=
 // recommendations_from_titles
 // next_episodes?
 // search_autocomplete_list
 // recommended
 // xx?page={0}
-// popular
-// latest
-// last_chance
-// live
 var SVT_API_BASE = "https://www.svtplay.se/api/"
 var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
 
@@ -140,6 +132,8 @@ Svt.makeEpisodeLink = function (data)
         Id = data.url.replace(/^.+\/([0-9]+)\/.+/, "$1");
     if (!Id && data.versions && data.versions.length > 0)
         return Svt.makeEpisodeLink(data.versions[0]);
+    if (!Id && data.contentUrl && data.contentUrl.match(/\/video\/([0-9]+)/))
+        Id = data.contentUrl.match(/\/video\/([0-9]+)/)[1];
     if (Id)
         return Svt.fixLink(SVT_API_BASE + "episode?id=" + Id);
     else
@@ -513,7 +507,7 @@ Svt.getUrl = function(tag, extra) {
     switch (tag.replace(/\.html.+/,".html"))
     {
     case "main":
-        return SVT_API_BASE + "popular";
+        return "https://www.svtplay.se";
 
     case "section":
         return Svt.getSectionUrl(extra.location);
@@ -550,9 +544,9 @@ Svt.getCategoryUrl = function() {
     switch (Svt.getCategoryIndex().current) {
     case 0:
     case 1:
-        return 'http://www.svtplay.se/api/clusters';
+        return SVT_API_BASE + 'clusters';
     case 2:
-        return 'http://www.svtplay.se/program'
+        return SVT_API_BASE + 'all_titles_and_singles'
     }
 };
 
@@ -588,14 +582,14 @@ Svt.decodeMain = function(data, extra) {
     Svt.section_max_index = Svt.sections.length-1;
     $("#a-button").text(Svt.getNextSectionText());
 
-    var recommendedLinks = [];
-
     // var recommendedLinks = Svt.decodeRecommended(data, {add_sections:true, json:true});
 
+    var RecommendedData = data.responseText;
+    data = null;
     requestUrl(Svt.sections[0].url,
                function(status, data)
                {
-                   extra.recommended_links = recommendedLinks
+                   extra.recommended_links = Svt.decodeXmlRecommended(RecommendedData)
                    extra.cbComplete = null;
                    Svt.decodeSection(data, extra);
                },
@@ -628,10 +622,11 @@ Svt.decodeCategories = function (data, extra) {
         var ImgLink;
         var Index = Svt.getCategoryIndex().current;
 
+        data = JSON.parse(data.responseText);
+
         switch (Index) {
         case 0:
         case 1:
-            data = JSON.parse(data.responseText);
             if (Index == 0) {
                 // Filter main categories
                 data.main = [];
@@ -661,19 +656,23 @@ Svt.decodeCategories = function (data, extra) {
             break;
 
         case 2:
-            data = Svt.decodeJson(data).programsPage.alphabeticList;
             data.sort(function(a, b) {
-                if (b.letter > a.letter)
+                if (b.programTitle.toLowerCase() > a.programTitle.toLowerCase())
                     return -1
                 return 1
             })
             ImgLink = null;
-            for (var key in data) {
-                for (var k=0; k < data[key].titles.length; k++) {
-                    Name    = data[key].titles[k].programTitle.trim();
-                    Link    = data[key].titles[k].contentUrl;
-                    showToHtml(Name, ImgLink, Svt.fixLink(Link));
-                };
+            for (var k=0; k < data.length; k++) {
+                Name = data[k].programTitle.trim();
+                if (data[k].contentUrl.match(/\/video\//)) {
+                    toHtml({name: Name,
+                            link: Svt.makeEpisodeLink(data[k]),
+                            link_prefix: '<a href="details.html?ilink=',
+                           });
+                } else {
+                    Link = Svt.makeShowLink(data[k]);
+                    showToHtml(Name, ImgLink, Link);
+                }
             };
             break;
         };
@@ -806,11 +805,13 @@ Svt.addCategoryIndexSections = function(Ref, extra, OptionalTabs, Index) {
 };
 
 Svt.decodeLive = function(data, extra) {
-    Svt.decodeChannels(data);
+    var ChannelsData = JSON.parse(data.responseText);
+    data = null;
     extra.url = Svt.live_url; 
     requestUrl(extra.url,
                function(status, data)
                {
+                   Svt.decodeChannels(ChannelsData)
                    extra.cbComplete = null;
                    Svt.decodeSection(data, extra);
                    data = null
@@ -1100,7 +1101,58 @@ Svt.decodeJson = function(data) {
             data = data.responseText;
     }
     return JSON.parse(data)
-}
+};
+
+Svt.decodeXmlRecommended = function(data) {
+    var recommendedLinks = [];
+    try {
+        var Name;
+        var Link;
+        var LinkPrefix;
+        var Description;
+        var ImgLink;
+        var IsLive;
+
+        data = data.split('<section');
+        data.shift();
+        data = "<section" + data.join("");
+        data = data.split('</section')[0] + "</section>";
+
+        data = data.split("</article>");
+        data.pop();
+        for (var k=0; k < data.length; k++) {
+            data[k] = "<article" + data[k].split("<article")[1];
+	    Name = $(data[k]).find('.play_display-window__title').text().trim();
+            Name = Name + " - " + $(data[k]).find('.play_display-window__prefix').text().trim();
+            Name = Name.replace(/Live just nu /, "").trim();
+            Description = $(data[k]).find('[class^="play_display-window__text-"]').text(),
+            ImgLink = Svt.fixLink($(data[k]).find('img').attr('src'));
+            Link = data[k].match(/href="([^#][^#"]+)"/)[1]
+            Link = (Link.match(/\/video\//))
+                ? Svt.makeEpisodeLink({contentUrl:Link})
+                : Svt.makeShowLink({contentUrl:Link});
+            if (Svt.isPlayable(Link)) {
+                recommendedLinks.push(Link.replace(/.+d=([0-9]+).*/, "$1"));
+                LinkPrefix = '<a href="details.html?ilink=';
+            } else {
+                LinkPrefix = '<a href="showList.html?name=';
+            }
+            IsLive = data[k].match('play_display-window__live');
+            toHtml({name:Name,
+                    is_live:IsLive,
+                    is_running:IsLive,
+                    link:Link,
+                    link_prefix:LinkPrefix,
+                    description:Description.trim(),
+                    thumb:ImgLink
+                   })
+            data[k] = "";
+	};
+    } catch(err) {
+        Log("decodeXmlRecommended Exception:" + err.message + " data[" + k + "]:" + data[k]);
+    }
+    return recommendedLinks
+};
 
 Svt.decodeRecommended = function (data, extra) {
     try {
@@ -1243,7 +1295,7 @@ Svt.decodeChannels = function(data) {
         var BaseUrl = 'http://www.svtplay.se/kanaler';
         var FoundChannels = [];
 
-        data = JSON.parse(data.responseText).hits;
+        data = data.hits;
         data.sort(function(a, b) {
                 if (b.channel.toLowerCase() > a.channel.toLowerCase())
                     return -1

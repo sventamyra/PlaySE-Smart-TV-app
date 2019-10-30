@@ -13,7 +13,8 @@ Config.init = function() {
     this.data.saveFile = function() {
 	if (typeof JSON == 'object') {
 	    // var $this = this.id;
-	    fileObj = fileSysObj.openCommonFile(Config.fileName, "w");
+            var fileSysObj = new FileSystem();
+	    var fileObj = fileSysObj.openCommonFile(Config.fileName, "w");
 	    fileObj.writeAll(JSON.stringify(this.items));
 	    fileSysObj.closeCommonFile(fileObj);
 	};
@@ -103,11 +104,12 @@ Config.init = function() {
 	}
     };
 
-    var fileSysObj = new FileSystem();
-    var commonDir = fileSysObj.isValidCommonPath(curWidget.id);
-    if(!commonDir) {
-	fileSysObj.createCommonDir(curWidget.id);
-    }
+    // This was meaningless since file isn't placed in the dir...
+    // var fileSysObj = new FileSystem();
+    // var commonDir = fileSysObj.isValidCommonPath(curWidget.id);
+    // if(!commonDir) {
+    //     fileSysObj.createCommonDir(curWidget.id);
+    // }
     this.initData();
     this.upgrade();
     this.test();

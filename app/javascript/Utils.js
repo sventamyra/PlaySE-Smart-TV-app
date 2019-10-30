@@ -463,16 +463,10 @@ setDateOffset = function () {
     // Retry once a minute in case of failure
     window.clearTimeout(setDateOffsetTimer);
     setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
-    httpRequest("http://www.svtplay.se/kanaler",
+    httpRequest("https://www.svtplay.se/api/server_time",
                 {cb:function(status,data) {
                     dateOffset = 0;
-                    data = Svt.decodeJson({responseText:data}).channelsPage.schedule;
-                    for (var key in data) {
-                        if (data[key].publishingTime) {
-                            data = data[key].publishingTime;
-                            break;
-                        }
-                    }
+                    data = JSON.parse(data).time;
                     var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
                     var actualSeconds = actualData[2]*3600 + actualData[3]*60;
                     var actualDateString = actualData[1].replace(/-/g, "")
