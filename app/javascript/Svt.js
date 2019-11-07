@@ -130,12 +130,13 @@ Svt.makeEpisodeLink = function (data)
     var Id = data.articleId;
     if (!Id && data.url)
         Id = data.url.replace(/^.+\/([0-9]+)\/.+/, "$1");
-    if (!Id && data.versions && data.versions.length > 0)
-        return Svt.makeEpisodeLink(data.versions[0]);
     if (!Id && data.contentUrl && data.contentUrl.match(/\/video\/([0-9]+)/))
         Id = data.contentUrl.match(/\/video\/([0-9]+)/)[1];
-    if (Id)
-        return Svt.fixLink(SVT_API_BASE + "episode?id=" + Id);
+    if (!Id && data.versions && data.versions.length > 0)
+        Id = data.versions[0].articleId;
+    if (Id && data.id)
+        return Svt.fixLink(SVT_API_BASE + "episodes?ids=" + data.id + "&articleId=" + Id);
+        // return Svt.fixLink(SVT_API_BASE + "episode?id=" + Id);
     else
         return Svt.fixLink(data.contentUrl);
 }
@@ -225,7 +226,7 @@ Svt.getThumb = function(data, size) {
 }
 
 Svt.isPlayable = function (url) {
-    return url.match(/\/video\//) || url.match(/api\/episode\?/) || Svt.IsClip({link:url});
+    return url.match(/\/video\//) || url.match(/api\/episodes\?/) || Svt.IsClip({link:url});
 }
 
 Svt.addSections = function(data) {
@@ -338,6 +339,8 @@ Svt.getDetailsData = function(url, data) {
             NotAvailable = (startTime - getCurrentDate()) > 60*1000;
         } else {
             data = JSON.parse(data.responseText);
+            if (data.length)
+                data = data[0];
             if (url.match(/title_clips_by_title_article_id/))
             {
                 for (var i=0; i < data.length; i++) {
@@ -968,8 +971,10 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                                data = streamUrl.replace(/^[^0-9]+/, "")
                            } else {
                                data = JSON.parse(data.responseText)
+                               if (data.length)
+                                   data = data[0]
                                if (data.versions && data.versions.length > 0) {
-                                   var articleId = streamUrl.match(/\?id=([0-9]+)/)[1];
+                                   var articleId = streamUrl.match(/[?&](articleId|id)=([0-9]+)/)[2];
 		                   for (var i=0; i < data.versions.length; i++) {
                                        if (data.versions[i].articleId == articleId) {
                                            data = data.versions[i].id
