@@ -673,6 +673,13 @@ addUrlParam = function(url, key, value) {
     return url + key + "=" + encodeURIComponent(value)
 };
 
+getUrlParam = function(url, key) {
+    var Value = new RegExp("[?&]" + key + "=([^?&]+)");
+    Value = url.match(Value);
+    if (Value)
+        return decodeURIComponent(Value[1])
+};
+
 httpRequest = function(url, extra) {
     if (!extra) extra = {};
     var xhr = new XMLHttpRequest();
