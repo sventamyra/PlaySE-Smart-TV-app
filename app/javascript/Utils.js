@@ -309,6 +309,7 @@ restorePosition = function()
     }
     if (myRefreshLocation) {
         detailsOnTop = true;
+        myRefreshLocation = null;
     } else {
         loadingStop();
     }
@@ -673,11 +674,16 @@ addUrlParam = function(url, key, value) {
     return url + key + "=" + encodeURIComponent(value)
 };
 
-getUrlParam = function(url, key) {
+getUrlParam = function(url, key, raw) {
     var Value = new RegExp("[?&]" + key + "=([^?&]+)");
     Value = url.match(Value);
-    if (Value)
-        return decodeURIComponent(Value[1])
+    Value = Value && Value[1];
+    if (Value) {
+        if (raw)
+            return Value
+        else
+            return decodeURIComponent(Value)
+    }
 };
 
 httpRequest = function(url, extra) {
@@ -798,14 +804,16 @@ runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData, i) {
     httpRequest(urls[0], extra);
 }
 
-getHistory = function(Name) {
+getHistory = function(Name,LinkPrefix) {
     var Prefix = document.title ;
     if (myRefreshLocation) {
-        if (myRefreshLocation.match(/.+&history=/))
-            Prefix = myRefreshLocation.replace(/.+&history=/, "");
-        else
+        if (myRefreshLocation.match(/.+&history=/)) {
+            Prefix = getUrlParam(myRefreshLocation, "history", true);
+        } else {
             Prefix = Prefix.replace(/\/[^\/]+\/$/, "");
-    } else if (htmlSection && detailsOnTop) {
+        }
+    } else if ((detailsOnTop || myLocation.match(/details.html/)) &&
+               (!LinkPrefix || !LinkPrefix.match(/categoryDetail.html/))) {
         Prefix = Prefix.replace(/\/[^\/]+\/$/, "")
     }
     return Prefix.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/';
@@ -861,12 +869,13 @@ seasonToHtml = function(Name, Thumb, Link, Season, Variant) {
 };
 
 makeSeasonLinkPrefix = function(Name, Season, Variant) {
-    LinkPrefix = '<a href="showList.html?'
+    var LinkPrefix = '<a href="showList.html'
     if (!Season && Season != 0)
         Season="1";
-    LinkPrefix += 'season=' + Season + "&title=" + encodeURIComponent(Name)
+    LinkPrefix = addUrlParam(LinkPrefix, "season", Season);
+    LinkPrefix = addUrlParam(LinkPrefix, "title", Name);
     if (Variant)
-        LinkPrefix += "&variant=" + Variant;
+        LinkPrefix = addUrlParam(LinkPrefix, "variant", Variant);
     return LinkPrefix + "&name="
 }
 
@@ -962,7 +971,7 @@ makeLink = function(LinkPrefix, Name, Url, UrlParams) {
     if (UrlParams)
         LinkPrefix = LinkPrefix.replace(/\?/, "?" + UrlParams + "&")
 
-    return LinkPrefix + Url + '&history=' + getHistory(Name);
+    return LinkPrefix + Url + '&history=' + getHistory(Name,LinkPrefix);
 };
 
 toHtml = function(Item) {

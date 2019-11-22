@@ -135,9 +135,8 @@ Details.toHtml = function (programData) {
             html+='<a href="#" id="enterShowButton" class="link-button selected">Till Kategorin</a>';
         }
         else if (programData.show) {
-            var title = myLocation.match(/title=([^&]+)/);
-            title = (title) ? title[1] : "Programmet"
-            html+='<a href="#" id="enterShowButton" class="link-button selected">Till ' + decodeURIComponent(title) + '</a>';
+            var title = getUrlParam(myLocation,"title") || "Programmet";
+            html+='<a href="#" id="enterShowButton" class="link-button selected">Till ' + title + '</a>';
         } else if (programData.not_available) {
             html+='<a href="#" id="notStartedButton" class="link-button">Ej Startat</a>';
         } else {
