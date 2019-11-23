@@ -237,7 +237,7 @@ Svt.oldGetThumb = function(data, size) {
 }
 
 Svt.isPlayable = function (url) {
-    return url.match(/\/video\//) || url.match(/VideoPage/) || Svt.IsClip({link:url});
+    return url.match(/VideoPage/);
 }
 
 Svt.getSectionIndex = function() {
@@ -1525,7 +1525,7 @@ Svt.IsNewer = function(a,b) {
         return a.season
 }
 
-// Todo - this doesn't work I believe
+// Is this needed any longer? We don't know if a clip or not anylonger
 Svt.IsClip = function(a) {
-    return a.link.match(/\/klipp\/|articleId=[0-9]+&id=/)
+    return false
 }

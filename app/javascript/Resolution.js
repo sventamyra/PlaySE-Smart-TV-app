@@ -190,7 +190,7 @@ Resolution.getIsmStreams = function (videoUrl, data, prefix) {
 }
 
 Resolution.getHasStreams = function (videoUrl, data, prefix) {
-    data = data.responseText.split(/contentType/mg);
+    data = data.responseText.split(/(content|mime)Type/mg);
     for (var i = 0; i < data.length; i++) {
         if (data[i].match(/^[^=]?=.*video/i)) {
             data = data[i]
