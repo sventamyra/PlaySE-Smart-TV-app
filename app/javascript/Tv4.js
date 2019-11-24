@@ -674,17 +674,28 @@ Tv4.getDetailsUrl = function(streamUrl) {
         return streamUrl;
 };
 
-Tv4.getPlayUrl = function(streamUrl, isLive) {
+Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
+
     var asset = streamUrl.replace(/.*\?id=([^&]+).*/, "$1");
-    var reqUrl = "https://playback-api.b17g.net/media/" + asset + "?service=tv4&device=browser&protocol=dash&drm=playready";
+    var protocol = (drm) ? "&device=samsung-orsay&protocol=mss" : "&device=browser&protocol=dash"
+    var reqUrl = "https://playback-api.b17g.net/media/" + asset + "?service=tv4&drm=playready" + protocol;
+    hlsUrl = hlsUrl || reqUrl.replace(/dash/,"hls")
+
     if (isLive)
         reqUrl = reqUrl + "&is_live=true"
 
-    var cbComplete = function(stream, srtUrl) {
+    var cbComplete = function(stream, srtUrl, license) {
         if (!stream) {
             $('.bottomoverlaybig').html('Not Available!');
         } else {
-            Resolution.getCorrectStream(stream, srtUrl, {useBitrates:!isLive,isLive:isLive});
+            Resolution.getCorrectStream(stream,
+                                        srtUrl,
+                                        {useBitrates:!isLive,
+                                         license:license,
+                                         isLive:isLive,
+                                         // Seems we get 304 response which ajax doesn't like?
+                                         no_cache:true
+                                        });
         }}
 
     requestUrl(RedirectIfEmulator(reqUrl),
@@ -694,13 +705,24 @@ Tv4.getPlayUrl = function(streamUrl, isLive) {
                        var stream=null, srtUrl=null;
                        data = JSON.parse(data.responseText).playbackItem;
                        stream = data.manifestUrl;
-                       if (!isLive)
-                           Tv4.getSrtUrl(stream.replace(/\.mpd/,".m3u8"),
+                       if (data.license && reqUrl != hlsUrl) {
+                           if (!drm) {
+                               hlsUrl = stream.replace(/\.mpd/,".m3u8");
+                               return Tv4.getPlayUrl(streamUrl, isLive, true, hlsUrl)
+                           }
+                           Tv4.getSrtUrl(hlsUrl,
                                          function(srtUrl){
-                                             cbComplete(stream, srtUrl)
+                                             cbComplete(stream, srtUrl, data.license.url)
                                          });
-                       else
-                           cbComplete(stream, null);
+                       } else {
+                           if (!isLive)
+                               Tv4.getSrtUrl(stream.replace(/\.mpd/,".m3u8"),
+                                             function(srtUrl){
+                                                 cbComplete(stream, srtUrl)
+                                             });
+                           else
+                               cbComplete(stream);
+                       }
                    }
                }
               );
@@ -730,15 +752,14 @@ Tv4.fixThumb = function(thumb, factor) {
 };
 
 Tv4.isViewable = function (data, isLive, currentDate) {
-    // Can't get drm protected stream to work at the moment...
-    if (data.is_drm_protected || data.is_premium || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free || (data.is_drm_protected && deviceYear < 2012)))
+    if (data.is_premium || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free || (data.is_drm_protected && deviceYear < 2012)))
         return false;
     else {
         if (isLive) {
             // We want to see what's ahead...
             return true;
         } else {
-            if (!currentDate) 
+            if (!currentDate)
                 currentDate = getCurrentDate();
             return currentDate > timeToDate(data.broadcast_date_time);
         }

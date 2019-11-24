@@ -959,9 +959,10 @@ Player.OnStreamInfoReady = function(forced)
     if (videoData.audio_idx)
         Log("SetStreamID Audio: " + videoData.audio_idx + " res: " + Player.plugin.Execute("SetStreamID", 1, videoData.audio_idx));
     if (Subtitles.exists()) {
-        Log("StartSubtitle res: " + Player.plugin.Execute("StartSubtitle", videoData.url.replace(/\|.+$/, "")));
+        // Log("StartSubtitle res: " + Player.plugin.Execute("StartSubtitle", videoData.url.replace(/\|.+$/, "")));
         Log("Number of Subtitles:" + Player.plugin.Execute('GetTotalNumOfStreamID',5));
-        Log("SetStreamID Subtitles: " + videoData.subtitles_idx + " res: " + Player.plugin.Execute("SetStreamID", 5, videoData.subtitles_idx));
+        if (videoData.subtitles_idx != null && subtitles.length == 0)
+            Log("SetStreamID Subtitles: " + videoData.subtitles_idx + " res: " + Player.plugin.Execute("SetStreamID", 5, videoData.subtitles_idx));
     }
 };
 

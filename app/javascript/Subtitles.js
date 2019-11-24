@@ -408,7 +408,7 @@ Subtitles.set = function (text, timeout) {
             // If only one liner we want it at bottom
             text  = "<br />" + text;
         }
-        if (timeout >= 0)
+        if (timeout > 0 || timeout===0)
             this.refreshClearTimer(timeout+100);
         $("#srtId").html(text);
         // Log("Showing sub:" + text);

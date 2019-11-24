@@ -106,7 +106,7 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra) {
                    Player.setVideoURL(master, videoUrl, srtUrl, extra);
                    extra.cb()
                },
-               {headers:Channel.getHeaders()}
+               {headers:Channel.getHeaders(), no_cache:extra.no_cache}
               );
 };
 
