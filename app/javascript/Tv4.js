@@ -664,7 +664,6 @@ Tv4.getShowData = function(url, data) {
             genre         : Genre,
             thumb         : DetailsImgLink
            };
-    
 };
 
 Tv4.getDetailsUrl = function(streamUrl) {
@@ -705,23 +704,18 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                        var stream=null, srtUrl=null;
                        data = JSON.parse(data.responseText).playbackItem;
                        stream = data.manifestUrl;
-                       if (data.license && reqUrl != hlsUrl) {
-                           if (!drm) {
-                               hlsUrl = stream.replace(/\.mpd/,".m3u8");
-                               return Tv4.getPlayUrl(streamUrl, isLive, true, hlsUrl)
-                           }
+                       license = data.license && data.license.url;
+                       if (!drm && license && reqUrl != hlsUrl) {
+                           hlsUrl = stream.replace(/\.mpd/,".m3u8");
+                           return Tv4.getPlayUrl(streamUrl, isLive, true, hlsUrl)
+                       } else if (!isLive) {
+                           hlsUrl = (drm) ? hlsUrl : stream.replace(/\.mpd/,".m3u8");
                            Tv4.getSrtUrl(hlsUrl,
                                          function(srtUrl){
-                                             cbComplete(stream, srtUrl, data.license.url)
+                                             cbComplete(stream, srtUrl, license)
                                          });
                        } else {
-                           if (!isLive)
-                               Tv4.getSrtUrl(stream.replace(/\.mpd/,".m3u8"),
-                                             function(srtUrl){
-                                                 cbComplete(stream, srtUrl)
-                                             });
-                           else
-                               cbComplete(stream);
+                           cbComplete(stream, null, license);
                        }
                    }
                }

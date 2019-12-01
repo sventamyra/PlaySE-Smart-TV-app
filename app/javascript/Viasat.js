@@ -112,7 +112,7 @@ Viasat.getUrl = function(tag, extra) {
             url = 'http://viafree-content.mtg-api.com/viafree-content/v1/se/page/start?_=collections'
             break;
         case 2:
-            url = 'http://playapi.mtgx.tv/v3/formats?device=mobile&premium=open&country=se&limit=500&fromIndex=1';
+            url = "http://viafree-content.mtg-api.com/viafree-content/v1/se/path/program"
             break;
         }
         break;
@@ -182,7 +182,7 @@ Viasat.decodeCategories = function(data, extra) {
         for (var k=0; k < data.length; k++) {
             ImgLink = null;
             // Collections - skip non-interested
-            if (data[k].dataType && data[k].dataType=="userContent")
+            if (data[k].dataType && data[k].dataType!="mediaFeed" && data[k].dataType!="theme")
                 continue;
             if (data[k].componentName) {
                 if(data[k].componentName == "feature-box" ||
@@ -226,7 +226,9 @@ Viasat.decodeCategories = function(data, extra) {
             }
             if (!ImgLink && data[k]._links.image)
                 ImgLink = data[k]._links.image.href
-	    ImgLink  = Viasat.fixThumb(ImgLink);
+            if (extra.url.match(/collections/))
+                ImgLink  = data[k]._embedded.programs[0].images.landscape.href;
+            ImgLink  = Viasat.fixThumb(ImgLink);
             categoryToHtml(Name,
                            ImgLink,
                            Viasat.fixThumb(ImgLink, DETAILS_THUMB_FACTOR),
@@ -771,8 +773,9 @@ Viasat.decodeShows = function(data, extra) {
             }
             if (extra.query)
                 Viasat.show_ids.push(json[k].id);
+
             Viasat.result.push({name:Name,
-                                link:Link,                                
+                                link:Link,
                                 link_prefix:LinkPrefix,
                                 thumb:ImgLink,
                                 non_show:NonShow,
