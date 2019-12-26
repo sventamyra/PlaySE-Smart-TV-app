@@ -45,7 +45,7 @@ History.checkResume = function(location) {
 
 History.findSeason = function(show, meta) {
     alert("Resume Season " + meta.season);
-    if (History.findLinkPrefix(show, new RegExp("[?&]season=" + meta.season + "(&.+)?$")))
+    if (History.findLinkPrefix(show, new RegExp("[?&]season=" + encodeURIComponent(meta.season) + "(&.+)?$","i")))
         return true;
     else
         return History.findVariant(show, meta);
@@ -53,7 +53,7 @@ History.findSeason = function(show, meta) {
 
 History.findVariant = function(show, meta) {
     alert("Resume Variant " + meta.variant + " season:" + meta.season);
-    if (History.findLinkPrefix(show, new RegExp("[?&]variant=" + meta.variant + "(&.+)?$")))
+    if (History.findLinkPrefix(show, new RegExp("[?&]variant=" + meta.variant + "(&.+)?$","i")))
         return true;
     else
         return History.findEpisode(show, meta);

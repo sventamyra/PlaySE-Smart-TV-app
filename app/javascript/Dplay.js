@@ -543,7 +543,9 @@ Dplay.decodeSearchHits = function(data, extra) {
                 Name = Show + " - " + Name;
             }
 
-            Description = data[k].attributes.description.trim();
+            Description = data[k].attributes.description;
+            if (Description)
+                Description.trim();
             Duration = Dplay.getDuration(data[k]);
             ImgLink = Dplay.findImage(data[k], Includes);
             Background = Dplay.findImage(data[k], Includes, BACKGROUND_THUMB_FACTOR);
@@ -1101,7 +1103,7 @@ Dplay.decodeIncludes = function(data) {
     for (var k=0; k < data.included.length; k++) {
         if (data.included[k].type == 'image' &&
             data.included[k].attributes.kind == 'default') {
-            Includes.images[data.included[k].id] = data.included[k].attributes.src
+            Includes.images.push({id:data.included[k].id, src:data.included[k].attributes.src})
         } else if (data.included[k].type == 'show') {
             Includes.shows[data.included[k].id] =
                 {name:     data.included[k].attributes.name,
@@ -1123,7 +1125,10 @@ Dplay.findImage = function(data, includes, factor) {
     {
         data = data.relationships.images.data
         for (var i=0; i < data.length; i++) {
-            return Dplay.fixThumb(includes.images[data[i].id], factor);
+            for (var k=0; k < includes.images.length; k++) {
+                if (includes.images[k].id == data[i].id)
+                    return Dplay.fixThumb(includes.images[k].src, factor);
+            }
         }
     }
     return null;

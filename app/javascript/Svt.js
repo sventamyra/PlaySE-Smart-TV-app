@@ -830,7 +830,7 @@ Svt.decodeShowList = function(data, extra) {
     var seasons = [];
     var hasClips = false;
     var hasZeroSeason = false;
-    var hasSeasonWithoutNumber = false;
+    var useSeasonName = false;
     var showName;
 
     showName = data.name;
@@ -838,8 +838,9 @@ Svt.decodeShowList = function(data, extra) {
     if (!extra.is_clips && !extra.season && !extra.variant) {
         for (var i=0; i < data.length; i++) {
             if (data[i].type == "Season") {
-                if (data[i].name.replace(/[^0-9]+/g,"").length == 0)
-                    hasSeasonWithoutNumber = true
+                if (!data[i].items[0].item.positionInSeason ||
+                    data[i].items[0].item.positionInSeason == "")
+                    useSeasonName = true
                 seasons.push(data[i].name);
             } else if (data[i].id == "clips") {
                 hasClips = true;
@@ -852,14 +853,14 @@ Svt.decodeShowList = function(data, extra) {
         }
 
         if (seasons.length > 1) {
-            if (!hasSeasonWithoutNumber)
+            if (!useSeasonName)
                 seasons.sort(function(a, b){
                     a = +a.replace(/[^0-9]+/g,"");
                     b = +b.replace(/[^0-9]+/g,"");
                     return b-a
                 });
             for (var i=0; i < seasons.length; i++) {
-                var Season = (hasSeasonWithoutNumber) ?
+                var Season = (useSeasonName) ?
                     seasons[i] :
                     +seasons[i].replace(/[^0-9]+/g,"");
                 seasonToHtml(seasons[i],
@@ -893,7 +894,7 @@ Svt.decodeShowList = function(data, extra) {
                        extra.season == data[i].name ||
                        (extra.season===0 && data[i].type == "Season")) {
                 if (extra.season === 0) {
-                    extra.season = (hasSeasonWithoutNumber) ?
+                    extra.season = (useSeasonName) ?
                         data[i].name :
                         +data[i].name.replace(/[^0-9]+/g,"");
                 }
@@ -1433,9 +1434,10 @@ Svt.getSeasonNumber = function(data) {
     else if (data.analyticsIdentifiers) {
         Season = data.analyticsIdentifiers.viewId.match(/[^\/]+\/([^\/]+)\//);
         if (Season) {
-            Season = Season[1].replace(/[^0-9]/g,"")
-            if (Season.length > 0)
-                return +Season
+            return Season[1];
+            // Season = Season[1].replace(/[^0-9]/g,"")
+            // if (Season.length > 0)
+            //     return +Season
         }
     } else if (data.urls && data.urls.svtplay) {
         Season = data.urls.svtplay.match(/sasong-([0-9]+)/);
