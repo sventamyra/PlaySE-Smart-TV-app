@@ -98,7 +98,7 @@ Tv4.getUrl = function(tag, extra) {
     {
     case "main":
         Tv4.fetchUnavailableShows();
-        return "http://api.tv4play.se/play/programs?per_page=50&page=1&is_premium=false&recommended=true";
+        return "http://api.tv4play.se/play/programs?per_page=50&page=1&recommended=true";
 
     case "section":
         switch(extra.location) {
@@ -109,7 +109,7 @@ Tv4.getUrl = function(tag, extra) {
             endDate.setDate(endDate.getDate() + 1)
             var startDate = getCurrentDate();
             startDate.setDate(startDate.getDate() - 7);
-            return 'http://api.tv4play.se/play/video_assets?is_live=false&platform=web&is_premium=false&premium=false&sort=broadcast_date_time&sort_order=desc&per_page=100&broadcast_from=' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&type=' + type + drm;
+            return 'http://api.tv4play.se/play/video_assets?is_live=false&platform=web&premium=false&sort=broadcast_date_time&sort_order=desc&per_page=100&broadcast_from=' + dateToString(startDate) + '&broadcast_to=' + dateToString(endDate) + '&type=' + type + drm;
 
         case "PopularClips.html":
             type = "clip"
@@ -117,7 +117,7 @@ Tv4.getUrl = function(tag, extra) {
         default:
             break;
         }
-        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
+        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&type=' + type + drm;
 
     case "live":
         var startDate = getCurrentDate();
@@ -127,7 +127,14 @@ Tv4.getUrl = function(tag, extra) {
         break;
 
     case "categories":
-        return 'http://api.tv4play.se/play/categories'
+        switch (Tv4.getCategoryIndex().current) {
+            case 0:
+            return 'http://api.tv4play.se/play/categories';
+
+            case 1:
+            case 2:
+            return "http://api.tv4play.se/play/programs?per_page=1000&page=1&fl=name,nid,program_image,description,tags"
+        };
         break;
 
     case "categoryDetail":
@@ -135,31 +142,45 @@ Tv4.getUrl = function(tag, extra) {
         break;
 
     case "categoryUrl":
-        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false&category='
+        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&category='
         break;
 
     case "allShows":
-        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&is_premium=false'
+        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&fl=name,nid,program_image'
         break;
 
     case "clips":
         type = "clip"
     case "episodes":
-        return 'http://api.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&is_premium=false&type=' + type + drm + '&node_nids='
+        return 'http://api.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&type=' + type + drm + '&node_nids='
         break;
 
     case "searchList":
-        return 'http://api.tv4play.se/play/programs?per_page=100&platform=web&is_premium=false&q=' + extra.query
+        if (extra.query.length == 1)
+            return Tv4.getUrl("allShows", extra)
+        else
+            return 'http://api.tv4play.se/play/programs?per_page=100&platform=web&q=' + extra.query
 
     case "searchVideos":
-        return 'http://api.tv4play.se/play/video_assets?is_live=false&per_page=200&is_premium=false&platform=web' + drm + '&q=' + extra.query
+        return 'http://api.tv4play.se/play/video_assets?is_live=false&per_page=200&platform=web' + drm + '&q=' + extra.query
 
     case "popular":
-        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&is_premium=false&type=' + type + drm;
+        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&type=' + type + drm;
 
     default:
         return tag;
         break;
+    }
+};
+
+Tv4.getCategoryTitle = function() {
+    switch (Tv4.getCategoryIndex().current) {
+    case 0:
+        return "Kategorier";
+    case 1:
+        return "Alla Kategorier";
+    case 2:
+        return "Alla Program";
     }
 };
 
@@ -186,18 +207,54 @@ Tv4.decodeSection = function(data, extra) {
 };
 
 Tv4.decodeCategories = function(data, extra) {
+
+    var Name;
+    var Link;
+
     try {
-        var Name;
-	var Link;
+        switch (Tv4.getCategoryIndex().current) {
+            case 0:
+            data = JSON.parse(data.responseText);
+            for (var k=0; k < data.length; k++) {
+                Name = data[k].name;
+	        Link = Tv4.getUrl("categoryUrl") + data[k].nid;
+                categoryToHtml(Name, null, null, Link);
+	    }
+            break;
 
-        data = JSON.parse(data.responseText);
+            case 1:
+            var Categories = [];
+            data = JSON.parse(data.responseText).results;
+            for (var k=0; k < data.length; k++) {
+                if (!data[k].tags) {
+                    continue;
+                }
+                data[k] = data[k].tags;
+                for (var i=0; i < data[k].length; i++) {
+                    if (Categories.indexOf(data[k][i]) != -1)
+                        continue;
+                    Categories.push(data[k][i])
+                }
+            }
+            Categories.sort(function(a, b) {
+                if (a.toLowerCase() > b.toLowerCase())
+                    return 1
+                else
+                    return -1
+            });
+            for (var k=0; k < Categories.length; k++) {
+                Name = Tv4.tagToName(Categories[k]);
+	        Link = Tv4.getUrl("categoryUrl") + encodeURIComponent(Categories[k]);
+                categoryToHtml(Name, null, null, Link);
+	    }
+            break;
 
-        for (var k=0; k < data.length; k++) {
-            Name = data[k].name;
-	    Link = Tv4.getUrl("categoryUrl") + data[k].nid;
-            categoryToHtml(Name, null, null, Link);
-	}
-	data = null;
+            case 2:
+            Tv4.decodeShows(data, extra);
+            extra.cbComplete = null;
+            break;
+        }
+        data = null;
     } catch(err) {
         Log("Tv4.decodeCategories Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
     }
@@ -309,6 +366,21 @@ Tv4.keyRed = function() {
     }
 }
 
+Tv4.keyGreen = function() {
+    if ($("#b-button").text().match(/^[CK]ateg/))
+	setLocation('categories.html');
+    else
+        setLocation(Tv4.getNextCategory())
+}
+
+Tv4.getNextCategory = function() {
+    return getNextIndexLocation(2);
+}
+
+Tv4.getCategoryIndex = function () {
+    return getIndex(2)
+};
+
 Tv4.getLiveTitle = function() {
     return 'Livesändningar';
 }
@@ -342,6 +414,29 @@ Tv4.getAButtonText = function(language) {
 	    return 'Rekommenderat';
         }
     }
+};
+
+Tv4.getBButtonText = function(language) {
+    if (getIndexLocation().match(/categories\.html/)) {
+        switch (Tv4.getCategoryIndex().next) {
+        case 0:
+            // Use Default
+            return null;
+        case 1:
+            if (language == "Swedish")
+                return "Alla Kategorier";
+            else
+                return "All Categories";
+            break
+        case 2:
+            if (language == "Swedish")
+                return "Alla Program";
+            else
+                return "All Shows";
+            break;
+        }
+    } else
+        return null
 };
 
 Tv4.getCButtonText = function (language) {
@@ -511,6 +606,8 @@ Tv4.decodeShows = function(data, extra) {
                 if (!Tv4.isViewable(data[k], false, CurrentDate))
                     // Premium/DRM
                     continue;
+                if (!data[k].program)
+                    continue
                 Tv4.reCheckUnavailableShows(data[k]);
                 data[k] = data[k].program
                 if (extra.recommended_nids.indexOf(data[k].nid) != -1)
@@ -596,7 +693,7 @@ Tv4.getDetailsData = function(url, data) {
         } else {
             NotAvailable = false;
         }
-        if (data.program && !data.program.is_premium && Tv4.unavailableShows.indexOf(data.program.nid) == -1) {
+        if (data.program && Tv4.unavailableShows.indexOf(data.program.nid) == -1) {
             Show = {name : data.program.name,
                     // Will fail if there's only clips...
                     url   : Tv4.getUrl("episodes") + data.program.nid,
@@ -647,7 +744,7 @@ Tv4.getShowData = function(url, data) {
         Description = data.description.trim();
 	DetailsImgLink = Tv4.fixThumb(data.program_image, DETAILS_THUMB_FACTOR);
         for (var i=0; i < data.tags.length; i++) {
-            Genre.push(data.tags[i].replace(/-/," & ").capitalize());
+            Genre.push(Tv4.tagToName(data.tags[i]));
         }
         Genre = Genre.join('/');
     } catch(err) {
@@ -745,8 +842,15 @@ Tv4.fixThumb = function(thumb, factor) {
     return RedirectIfEmulator("https://imageproxy.b17g.services/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb);
 };
 
+Tv4.tagToName = function(string) {
+    var words = string.split('-');
+    for (var i=0; i < words.length; i++)
+        words[i] = words[i].capitalize()
+    return words.join(' ');
+}
+
 Tv4.isViewable = function (data, isLive, currentDate) {
-    if (data.is_premium || (data.availability.availability_group_free == "0" || !data.availability.availability_group_free || (data.is_drm_protected && deviceYear < 2012)))
+    if (data.is_drm_protected && deviceYear < 2012 && !isEmulator)
         return false;
     else {
         if (isLive) {
