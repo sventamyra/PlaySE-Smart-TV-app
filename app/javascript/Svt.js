@@ -10,7 +10,7 @@
 
 var SVT_API_BASE = "https://api.svt.se/contento/graphql?ua=svtplaywebb-play-render-prod-client&operationName=";
 var SVT_OLD_API_BASE = "https://www.svtplay.se/api/"
-var SVT_ALT_API_URL = "http://www.svt.se/videoplayer-api/video/"
+var SVT_ALT_API_URL = "https://www.svt.se/videoplayer-api/video/"
 
 var Svt =
 {
@@ -1270,6 +1270,7 @@ Svt.decode = function(data, extra) {
             Name = Svt.getItemName(data[k]);
             ImgLink = Svt.getThumb(data[k]);
             LargeImgLink = Svt.getThumb(data[k], "large");
+            Background = Svt.getThumb(data[k], "extralarge");
             Episode = Svt.getEpisodeNumber(data[k]);
             Season  = extra.season || Svt.getSeasonNumber(data[k]);
             Description = !extra.is_live && data[k].subHeading;
@@ -1285,7 +1286,6 @@ Svt.decode = function(data, extra) {
                 data[k] = data[k].item;
             Description = Description || data[k].longDescription;
             Duration = data[k].duration;
-            Background = Svt.getThumb(data[k], "extralarge");
             IsLive = data[k].live;
             starttime = (IsLive) ? Svt.getAirDate(data[k]) : null;
             IsRunning = IsLive && (data[k].live.liveNow | getCurrentDate() > starttime);

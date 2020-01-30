@@ -1,3 +1,4 @@
+var TV4_API_BASE = "https://tv4-graphql-web.b17g.net/graphql?operationName=";
 var Tv4 =
 {
     result:[],
@@ -24,12 +25,12 @@ Tv4.refreshdUnavailableShows = function() {
         // Already updating
         return;
     Tv4.updatingUnavailableShows = true;
-    httpRequest(Tv4.getUrl("allShows"),
+    httpRequest(Tv4.makeAllShowsLink(),
                 {cb:function(status,data) {
                     Tv4.unavailableShows = [];
-                    data = JSON.parse(data);
+                    data = JSON.parse(data).data.programSearch.programs;
                     var i = 0;
-                    return Tv4.checkShows(i, data.results);
+                    return Tv4.checkShows(i, data);
                 },
                  no_log:true
                 });
@@ -38,15 +39,22 @@ Tv4.refreshdUnavailableShows = function() {
 Tv4.checkShows = function(i, data) {
     if (i < data.length)
     {
-        httpRequest(Tv4.getUrl("episodes") + data[i].nid,
-                    {cb:function(status, episode) {
-                        episode = JSON.parse(episode).results;
+        httpRequest(Tv4.makeShowLink(data[i].nid),
+                    {cb:function(status, program) {
+                        program = JSON.parse(program).data.program.panels;
                         var anyViewable = false;
-                        for (var k=0; k < episode.length; k++) {
-                            if (Tv4.isViewable(episode[k])) {
-                                anyViewable = true
-                                break;
+                        for (var k=0; k < program.length; k++) {
+                            if (program[k].assetType == "CLIP")
+                                continue;
+                            var episodes = program[k].videoList.videoAssets;
+                            for (var l=0; l < episodes.length; l++) {
+                                if (Tv4.isViewable(episodes[l])) {
+                                    anyViewable = true
+                                    break;
+                                }
                             }
+                            if (anyViewable)
+                                break;
                         }
                         if (!anyViewable) {
                             Tv4.unavailableShows.push(data[i].nid)
@@ -98,7 +106,10 @@ Tv4.getUrl = function(tag, extra) {
     {
     case "main":
         Tv4.fetchUnavailableShows();
-        return "http://api.tv4play.se/play/programs?per_page=50&page=1&recommended=true";
+        return Tv4.makeApiLink("StartPage",
+                               '{}',
+                               "43a909d2f6e98341bec3da70a183b8bc11199dc1ef2d38986c7f80226c6edb8d"
+                              );
 
     case "section":
         switch(extra.location) {
@@ -128,12 +139,11 @@ Tv4.getUrl = function(tag, extra) {
 
     case "categories":
         switch (Tv4.getCategoryIndex().current) {
-            case 0:
-            return 'http://api.tv4play.se/play/categories';
+        case 0:
+            return Tv4.makeStartPageLink();
 
-            case 1:
-            case 2:
-            return "http://api.tv4play.se/play/programs?per_page=1000&page=1&fl=name,nid,program_image,description,tags"
+        case 1:
+            return Tv4.makeAllShowsLink();
         };
         break;
 
@@ -141,31 +151,15 @@ Tv4.getUrl = function(tag, extra) {
         return extra.location
         break;
 
-    case "categoryUrl":
-        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&category='
-        break;
-
-    case "allShows":
-        return 'http://api.tv4play.se/play/programs?per_page=1000&page=1&fl=name,nid,program_image'
-        break;
-
-    case "clips":
-        type = "clip"
-    case "episodes":
-        return 'http://api.tv4play.se/play/video_assets?is_live=false&page=1&per_page=250&platform=web&type=' + type + drm + '&node_nids='
-        break;
-
     case "searchList":
         if (extra.query.length == 1)
-            return Tv4.getUrl("allShows", extra)
+            return Tv4.makeAllShowsLink()
         else
-            return 'http://api.tv4play.se/play/programs?per_page=100&platform=web&q=' + extra.query
-
-    case "searchVideos":
-        return 'http://api.tv4play.se/play/video_assets?is_live=false&per_page=200&platform=web' + drm + '&q=' + extra.query
-
-    case "popular":
-        return 'http://api.tv4play.se/play/video_assets/most_viewed?page=1&is_live=false&platform=web&per_page=100&sort_order=desc&type=' + type + drm;
+            return Tv4.makeApiLink("ProgramSearchQuery",
+                                   '{"q":"' + extra.query + '","offset":0,"limit":100}',
+                                   "4694bccb5dc91bb2e3939f72a666237a889c00149661f1e654977ebba436d9e3"
+                                  );
+        break;
 
     default:
         return tag;
@@ -178,78 +172,82 @@ Tv4.getCategoryTitle = function() {
     case 0:
         return "Kategorier";
     case 1:
-        return "Alla Kategorier";
-    case 2:
         return "Alla Program";
     }
 };
 
 Tv4.upgradeUrl = function(url) {
-    return url.replace("webapi.tv4play","api.tv4play")
+    url = url.replace("webapi.tv4play","api.tv4play")
+    if (url.match(/api.tv4play.se.+&node_nids=([^&]+)$/))
+        url= Tv4.makeShowLink(url.match(/api.tv4play.se.+&node_nids=([^&]+)$/)[1])
+    return url
 }
 
 Tv4.decodeMain = function(data, extra) {
-    var cbComplete = extra.cbComplete;
-    extra.cbComplete = null;
-    extra.recommended_nids = Tv4.decodeShows(data, extra);
-    requestUrl(Tv4.getUrl("popular", extra),
-                   function(status, data)
-                   {
-                       Tv4.decodeShows(data, extra);
-                       data = null;
-                   },
-                   {cbComplete:cbComplete}
-                  );
+
+    var recommended = data.responseText;
+    data = null;
+    // Recommended fetched - lookup Most Viewed shows.
+    requestUrl(Tv4.makeStartPageLink(),
+               function(status, data)
+               {
+                   recommended = Tv4.decodeRecommended({responseText:recommended});
+                   extra.cbComplete = null;
+                   data = JSON.parse(data.responseText).data.startPage.mostViewedPanel.programs;
+                   for (var i=0; i < data.length; i++) {
+                       if (recommended.indexOf(data[i].nid) != -1)
+                           continue;
+                       showToHtml(data[i].name,
+                                  Tv4.fixThumb(data[i].image),
+                                  Tv4.makeShowLink(data[i].nid)
+                                 );
+                   }
+                   data = null;
+               },
+               {cbComplete:extra.cbComplete}
+              );
 };
 
 Tv4.decodeSection = function(data, extra) {
-    Tv4.decode(data, extra);
+    Tv4.oldDecode(data, extra);
 };
 
 Tv4.decodeCategories = function(data, extra) {
 
     var Name;
     var Link;
+    var Thumb;
+    var LargeThumb;
 
     try {
         switch (Tv4.getCategoryIndex().current) {
-            case 0:
-            data = JSON.parse(data.responseText);
+        case 0:
+            data = JSON.parse(data.responseText).data.indexPage.panels;
             for (var k=0; k < data.length; k++) {
-                Name = data[k].name;
-	        Link = Tv4.getUrl("categoryUrl") + data[k].nid;
-                categoryToHtml(Name, null, null, Link);
-	    }
-            break;
-
-            case 1:
-            var Categories = [];
-            data = JSON.parse(data.responseText).results;
-            for (var k=0; k < data.length; k++) {
-                if (!data[k].tags) {
-                    continue;
-                }
-                data[k] = data[k].tags;
-                for (var i=0; i < data[k].length; i++) {
-                    if (Categories.indexOf(data[k][i]) != -1)
-                        continue;
-                    Categories.push(data[k][i])
+                if (data[k].cards[0].__typename == "PageCard") {
+                    data = data[k].cards;
+                    break
                 }
             }
-            Categories.sort(function(a, b) {
-                if (a.toLowerCase() > b.toLowerCase())
+            data.sort(function(a, b) {
+                if (a.title.toLowerCase() > b.title.toLowerCase())
                     return 1
                 else
                     return -1
             });
-            for (var k=0; k < Categories.length; k++) {
-                Name = Tv4.tagToName(Categories[k]);
-	        Link = Tv4.getUrl("categoryUrl") + encodeURIComponent(Categories[k]);
-                categoryToHtml(Name, null, null, Link);
+            for (var k=0; k < data.length; k++) {
+                Name = data[k].title;
+                Link = Tv4.makeApiLink("CategoryPage",
+                                       '{"id":"' + data[k].page.id + '", "assetId":null}',
+                                       "f61c9569ac98cd9c5b2c8f96923e429f9243b70d339bfb73422ed464593242d1"
+                                      );
+                Thumb = Tv4.fixThumb(data[k].images.main16x9)
+                LargeThumb = Tv4.fixThumb(data[k].images.main16x9, DETAILS_THUMB_FACTOR)
+                categoryToHtml(Name, Thumb, LargeThumb, Link);
 	    }
             break;
 
-            case 2:
+        case 1:
             Tv4.decodeShows(data, extra);
             extra.cbComplete = null;
             break;
@@ -263,91 +261,110 @@ Tv4.decodeCategories = function(data, extra) {
 };
 
 Tv4.decodeCategoryDetail = function(data, extra) {
+    data = JSON.parse(data.responseText).data.page.panels;
+    for (var k=0; k < data.length; k++) {
+        if (data[k].type == "querybasedprogramlist") {
+            data = data[k].programs
+            break;
+        }
+    }
+    extra.is_json = true;
     Tv4.decodeShows(data, extra);
 };
 
 Tv4.decodeLive = function(data, extra) {
-    Tv4.decode(data, extra);
+    Tv4.oldDecode(data, extra);
 };
 
 Tv4.decodeShowList = function(data, extra) {
 
     if (!extra.is_clips && !extra.season) {
-        data = JSON.parse(data.responseText).results;
-        var showThumb = (data.length > 0) ? Tv4.fixThumb(data[0].program.program_image) : null;
+        data = JSON.parse(data.responseText).data;
+        var showThumb;
         var seasons = [];
         var non_seasons = [];
         var cbComplete = extra.cbComplete;
+        var clips_url = null
+        var nid;
+        var season;
+        var all_items_url;
 
         // 0 Means the only season
         if (extra.season != 0) {
+            showThumb = Tv4.fixThumb(data.program.image)
+            nid = data.program.id;
+            data = data.program.panels;
             // Find seasons and non-seasons
             for (var k=0; k < data.length; k++) {
-                if (data[k].season && seasons.indexOf(data[k].season) == -1)
-                    seasons.push(data[k].season);
-                else if (!data[k].season)
-                    non_seasons.push(data[k])
+                data[k].loadMoreParams = data[k].loadMoreParams.replace(/\\/g,"").replace(/"rows":[0-9]+/,'"limit":100').replace(/episode/,"EPISODE").replace(/node_nids/,"nodeNids").replace(/clip/,"CLIP");
+                all_items_url = Tv4.makeApiLink("searchQuery",
+                                                data[k].loadMoreParams,
+                                                "7de088d655c4127b060af63cc1cefbe52e4229cfbe930dd109b8fce67a63a0f8"
+                                               );
+                if (data[k].assetType != "CLIP") {
+                    season = data[k].videoList.videoAssets[0].season;
+                    if (season > 0) {
+                        seasons.push({name   : data[k].name,
+                                      url    : all_items_url,
+                                      season : season
+                                     });
+                    } else {
+                        // Will only find maximum of 15(?) hits...
+                        non_seasons = non_seasons.concat(data[k].videoList.videoAssets)
+                    }
+                } else if (data[k].assetType == "CLIP")
+                    clips_url = all_items_url;
             }
             if (seasons.length > 1 || non_seasons.length >= 1) {
-                seasons.sort(function(a, b){return b-a})
                 for (var i=0; i < seasons.length; i++) {
-                    seasonToHtml("Säsong " + seasons[i],
+                    seasonToHtml(seasons[i].name,
                                  showThumb,
-                                 extra.url + "&season=" + seasons[i],
-                                 seasons[i]
+                                 seasons[i].url,
+                                 seasons[i].season
                                 )
                 };
             } else if (seasons.length == 1) {
-                return callTheOnlySeason("Säsong " + seasons[0], extra.url, extra.loc);
+                return callTheOnlySeason(seasons[0].name, seasons[0].url, extra.loc);
             }
         }
-
         extra.cbComplete      = false;
-        extra.already_decoded = true;
-
         if (extra.season == 0) {
+            data = data.videoAssetSearch.videoAssets;
+            // Init the data needed for Clips below...
+            showThumb = Tv4.fixThumb(data[0].program.image);
+            nid = data[0].program.nid
             Tv4.decode(data, extra);
         } else if (non_seasons.length) {
             Tv4.decode(non_seasons, extra);
         }
 
-        // Check if clips exists
-        var clips_url;
-        if (data.length > 0) {
-            clips_url = Tv4.getUrl("clips") + data[0].program.nid;
-        } else {
-            clips_url = getLocation().replace(/.+(http.+)&history.+/, "$1")
-            clips_url = clips_url.replace("episode", "clips")
+        if (clips_url) {
+            clipToHtml(showThumb, clips_url)
         }
-        var data = JSON.parse(httpRequest(clips_url+"&per_page=1", {sync:true}).data);
-        if (data.total_hits > 0) {
-            clipToHtml(showThumb,
-                       clips_url
-                      )
-        }
+
         if (cbComplete) cbComplete();
     } else {
+        data = JSON.parse(data.responseText).data.videoAssetSearch.videoAssets;
         Tv4.decode(data, extra)
     }
 };
 
 Tv4.decodeSearchList = function(data, extra) {
 
-    var cbComplete = extra.cbComplete;
-    extra.cbComplete = null;
-    Tv4.decodeShows(data, extra);
+    if (extra.query.length == 1) {
+        Tv4.decodeShows(data, extra);
+    } else {
+        var cbComplete = extra.cbComplete;
+        extra.cbComplete = null;
+        extra.is_json = true;
+        data = JSON.parse(data.responseText).data;
+        if (data.programSearch.totalHits > 0)
+            extra.exclude_nids = Tv4.decodeShows(data.programSearch.programs, extra);
+        extra.cbComplete=cbComplete;
+        data = data.episodes.videoAssets.concat(data.clips.videoAssets);
+        Tv4.decode(data, extra)
+    }
     data = null;
-    if (extra.query.length > 1) {
-        requestUrl(Tv4.getUrl("searchVideos", extra),
-                   function(status, data)
-                   {
-                       Tv4.decode(data);
-                       data = null;
-                   },
-                   {cbComplete:cbComplete}
-                  );
-    } else if (cbComplete)
-        cbComplete();
 };
 
 Tv4.getHeaderPrefix = function() {
@@ -374,11 +391,11 @@ Tv4.keyGreen = function() {
 }
 
 Tv4.getNextCategory = function() {
-    return getNextIndexLocation(2);
+    return getNextIndexLocation(1);
 }
 
 Tv4.getCategoryIndex = function () {
-    return getIndex(2)
+    return getIndex(1)
 };
 
 Tv4.getLiveTitle = function() {
@@ -424,12 +441,6 @@ Tv4.getBButtonText = function(language) {
             return null;
         case 1:
             if (language == "Swedish")
-                return "Alla Kategorier";
-            else
-                return "All Categories";
-            break
-        case 2:
-            if (language == "Swedish")
                 return "Alla Program";
             else
                 return "All Shows";
@@ -450,12 +461,174 @@ Tv4.determineEpisodeName = function(data) {
     var Name = data.title.trim();
     var Show = (data.program) ? data.program.name : null;
     if (Show && Name != Show) {
-        Name = Name.replace(Show,"").replace(/^[,. :\-]*/,"").trim();
+        Name = Name.replace(Show,"").replace(/^[,. :\–\-]*/,"").trim();
         Name = Name.capitalize();
     }
     return Name
 }
+
+Tv4.decodeRecommended = function(data) {
+    var nids = [];
+    data = JSON.parse(data.responseText).data.indexPage.showcase
+    for (var i=0; i < data.length; i++) {
+        for (var k=0; k < data[i].cards.length; k++) {
+            if (data[i].cards[k].__typename == "URLPitchCard")
+                continue;
+            if (data[i].cards[k].program) {
+                if (nids.indexOf(data[i].cards[k].program.nid) != -1)
+                    continue;
+                nids.push(data[i].cards[k].program.nid);
+                toHtml({name: data[i].cards[k].program.name,
+                        link: Tv4.makeShowLink(data[i].cards[k].program.nid),
+                        link_prefix: makeShowLinkPrefix(),
+                        thumb: Tv4.fixThumb(data[i].cards[k].program.image),
+                        description: data[i].cards[k].title
+                       });
+            } else {
+                if (nids.indexOf(data[i].cards[k].videoAsset.id) != -1)
+                    continue;
+                nids.push(data[i].cards[k].videoAsset.id);
+                data[i].cards[k] =
+                    jQuery.extend(data[i].cards[k],
+                                  data[i].cards[k].videoAsset
+                                 );
+                Tv4.decode([data[i].cards[k]])
+            }
+        }
+    };
+    return nids;
+}
+
 Tv4.decode = function(data, extra) {
+    try {
+        var Name;
+        var Duration;
+        var IsLive;
+        var IsRunning;
+        var starttime;
+        var Link;
+        var Description;
+        var ImgLink;
+        var Background;
+        var AirDate;
+        var Show=null;
+        var Season=null;
+        var Episode=null;
+        var CurrentDate = getCurrentDate();
+
+        if (!extra)
+            extra = {};
+
+        Tv4.result = [];
+
+        for (var k=0; k < data.length; k++) {
+            Name = data[k].title.trim();
+            if (data[k].program) {
+                Show = data[k].program.name;
+                if (!Show && data[k].program.id)
+                    Show = data[k].program.id.capitalize()
+            } else
+                Show = null
+            if (extra.exclude_nids &&
+                Show &&
+                extra.exclude_nids.indexOf(data[k].program.nid) !=-1
+               )
+                continue;
+
+            IsLive = data[k].live;
+            if (!Tv4.isViewable(data[k], IsLive, CurrentDate))
+                // Premium/DRM
+                continue;
+
+            Tv4.reCheckUnavailableShows(data[k]);
+
+            starttime = (IsLive) ? timeToDate(data[k].broadcastDateTime) : null;
+            IsRunning = IsLive && starttime && (getCurrentDate() > starttime);
+
+            if (extra.strip_show) {
+                Name = Tv4.determineEpisodeName(data[k])
+            }
+            if (!data[k].image && data[k].images)
+                data[k].image = data[k].images.main16x9;
+            ImgLink = Tv4.fixThumb(data[k].image);
+            Background = Tv4.fixThumb(data[k].image, BACKGROUND_THUMB_FACTOR);
+            Duration = data[k].duration;
+            Description = (data[k].description) ? data[k].description.trim() : "";
+            Link = Tv4.makeVideoLink(data[k].id);
+            AirDate = data[k].broadcastDateTime;
+            Season = (data[k].season) ? data[k].season : null;
+            Episode = (data[k].episode) ? data[k].episode : null;
+            Tv4.result.push({name:Name,
+                             show:Show,
+                             season:Season,
+                             episode:Episode,
+                             link:Link,
+                             thumb:ImgLink,
+                             background:Background,
+                             duration:Duration,
+                             description:Description,
+                             airDate:AirDate,
+                             link_prefix:'<a href="details.html?ilink=',
+                             is_live:IsLive,
+                             starttime:starttime,
+                             is_running:IsRunning
+                            }
+                           );
+        }
+
+        if (extra.strip_show) {
+            if (Tv4.result.length == 0) {
+                // Has become unavailable...
+                Tv4.unavailableShows.push(data[0].program.nid)
+            }
+            Tv4.result.sort(function(a, b){
+                if (!a.episode || !b.episode)
+                    return Tv4.sortOnAirDate(a, b)
+
+                if (a.season == b.season) {
+                    if (a.episode == b.episode) {
+                        return Tv4.sortOnAirDate(a, b)
+                    } else if (!b.episode || +a.episode > +b.episode) {
+                        return -1
+                    } else {
+                        return 1
+                    }
+                } else if (!b.season || +a.season > +b.season) {
+                    return -1
+                } else
+                    return 1
+            })
+        };
+
+        for (var k=0; k < Tv4.result.length; k++) {
+            toHtml({name:Tv4.result[k].name,
+                    duration:Tv4.result[k].duration,
+                    is_live:Tv4.result[k].is_live,
+                    is_channel:false,
+                    is_running:Tv4.result[k].is_running,
+                    starttime:Tv4.result[k].starttime,
+                    link:Tv4.result[k].link,
+                    link_prefix:Tv4.result[k].link_prefix,
+                    description:Tv4.result[k].description,
+                    thumb:Tv4.result[k].thumb,
+                    background:Tv4.result[k].background,
+                    show:Tv4.result[k].show,
+                    season:Tv4.result[k].season,
+                    episode:Tv4.result[k].episode
+                   });
+	}
+        data = null;
+        Tv4.result = [];
+    } catch(err) {
+        Log("Tv4.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
+    }
+    if (extra.cbComplete)
+        extra.cbComplete();
+};
+
+
+
+Tv4.oldDecode = function(data, extra) {
     try {
         var Name;
         var Duration;
@@ -500,7 +673,7 @@ Tv4.decode = function(data, extra) {
             Background = Tv4.fixThumb(data[k].image, BACKGROUND_THUMB_FACTOR);
             Duration = data[k].duration;
             Description = (data[k].description) ? data[k].description.trim() : "";
-            Link = "http://api.tv4play.se/play/video_assets?id=" +  data[k].id;
+            Link = Tv4.makeVideoLink(data[k].id);
             AirDate = data[k].broadcast_date_time;
             Season = (data[k].season) ? data[k].season : null;
             Episode = (data[k].episode) ? data[k].episode : null;
@@ -574,7 +747,7 @@ Tv4.decode = function(data, extra) {
         data = null;
         Tv4.result = [];
     } catch(err) {
-        Log("Tv4.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
+        Log("Tv4.oldDecode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
     }
     if (extra.cbComplete)
         extra.cbComplete();
@@ -592,37 +765,25 @@ Tv4.decodeShows = function(data, extra) {
         var Name;
         var Link;
         var ImgLink;
-        var next = null;
-        var checkSeasons=false;
-        var json = null;
         var queryTest = (extra.query && extra.query.length == 1) ? new RegExp("^" + extra.query, 'i') : null;
         var nids = [];
-        var CurrentDate = getCurrentDate();
+
+        if (!extra.is_json)
+            data = JSON.parse(data.responseText).data.programSearch.programs;
 
         Tv4.result = [];
-        data = JSON.parse(data.responseText).results;
         for (var k=0; k < data.length; k++) {
-            if (extra.recommended_nids) {
-                if (!Tv4.isViewable(data[k], false, CurrentDate))
-                    // Premium/DRM
-                    continue;
-                if (!data[k].program)
-                    continue
-                Tv4.reCheckUnavailableShows(data[k]);
-                data[k] = data[k].program
-                if (extra.recommended_nids.indexOf(data[k].nid) != -1)
-                    continue;
-                else
-                    extra.recommended_nids.push(data[k].nid);
-            }
+            if (data[k].program)
+                data[k] = data[k].program;
             Name = data[k].name;
             if (queryTest && !queryTest.test(Name))
                 continue;
             if (Tv4.unavailableShows.indexOf(data[k].nid) != -1)
                 // Only drm/premium episodes
                 continue;
-            ImgLink = Tv4.fixThumb(data[k].program_image);
-            Link = Tv4.getUrl("episodes") + data[k].nid
+
+            ImgLink = Tv4.fixThumb(data[k].image);
+            Link = Tv4.makeShowLink(data[k].nid);
             Tv4.result.push({name:Name, link:Link, thumb:ImgLink});
             nids.push(data[k].nid);
         }
@@ -655,7 +816,7 @@ Tv4.decodeShows = function(data, extra) {
 
 Tv4.getDetailsData = function(url, data) {
 
-    if (url.match(/\?nids=/))
+    if (url.match(/=(cdp|searchQuery)/))
         return Tv4.getShowData(url,data);
 
     var Name="";
@@ -673,21 +834,21 @@ Tv4.getDetailsData = function(url, data) {
     var EpisodeName = null;
     try {
 
-        data = JSON.parse(data.responseText).results[0];
+        data = JSON.parse(data.responseText).data.videoAsset;
 
         Name = data.title;
         Title = Name;
 	DetailsImgLink = Tv4.fixThumb(data.image, DETAILS_THUMB_FACTOR);
         Description  = (data.description) ? data.description.trim() : "";
-        AirDate = timeToDate(data.broadcast_date_time);
+        AirDate = timeToDate(data.broadcastDateTime);
         VideoLength = dataLengthToVideoLength(null, data.duration);
-        isLive = data.is_live;
-        AvailDate = data.availability.human.match(/\(([^)]+ dag[^) ]*)/);
-        AvailDate = (AvailDate) ? AvailDate[1] : data.availability.availability_group_free + ' dagar'
+        isLive = data.live;
+        AvailDate = data.humanDaysLeftInService.match(/([^)]+ dag[^) ]*)/);
+        AvailDate = (AvailDate) ? AvailDate[1] : data.daysLeftInService + ' dagar'
         AvailDate = (AvailDate.match(/dag(ar)?$/)) ? AvailDate + " kvar" : AvailDate;
         if (data.expire_date_time)
             AvailDate = dateToString(timeToDate(data.expire_date_time),"-") + ' (' + AvailDate + ')';
-        
+
         if (isLive) {
             NotAvailable = ((AirDate - getCurrentDate()) > 60*1000);
         } else {
@@ -695,9 +856,8 @@ Tv4.getDetailsData = function(url, data) {
         }
         if (data.program && Tv4.unavailableShows.indexOf(data.program.nid) == -1) {
             Show = {name : data.program.name,
-                    // Will fail if there's only clips...
-                    url   : Tv4.getUrl("episodes") + data.program.nid,
-                    thumb : Tv4.fixThumb(data.program.program_image)
+                    url   : Tv4.makeShowLink(data.program.nid),
+                    thumb : Tv4.fixThumb(data.program.image)
                    }
         }
         Season = (data.season) ? data.season : null;
@@ -738,15 +898,21 @@ Tv4.getShowData = function(url, data) {
     var Description="";
 
     try {
-
-        data = JSON.parse(data.responseText).results[0];
-        Name = data.name;
-        Description = data.description.trim();
-	DetailsImgLink = Tv4.fixThumb(data.program_image, DETAILS_THUMB_FACTOR);
-        for (var i=0; i < data.tags.length; i++) {
-            Genre.push(Tv4.tagToName(data.tags[i]));
+        data = JSON.parse(data.responseText).data;
+        if (data.videoAssetSearch) {
+            Name = itemSelected.find('a').text()
+            DetailsImgLink = Tv4.fixThumb(data.videoAssetSearch.videoAssets[0].program.image, DETAILS_THUMB_FACTOR);
+        } else {
+            data = data.program;
+            Name = data.name;
+            Description = data.description.trim();
+	    DetailsImgLink = Tv4.fixThumb(data.image, DETAILS_THUMB_FACTOR);
+            Genre = data.displayCategory
+            // for (var i=0; i < data.tags.length; i++) {
+            //     Genre.push(Tv4.tagToName(data.tags[i]));
+            // }
+            // Genre = Genre.join('/');
         }
-        Genre = Genre.join('/');
     } catch(err) {
         Log("Tv4.getShowData exception:" + err.message);
         Log("Name:" + Name);
@@ -772,7 +938,7 @@ Tv4.getDetailsUrl = function(streamUrl) {
 
 Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
 
-    var asset = streamUrl.replace(/.*\?id=([^&]+).*/, "$1");
+    var asset = decodeURIComponent(streamUrl).match(/"id":([^}]+)/)[1];
     var protocol = (drm) ? "&device=samsung-orsay&protocol=mss" : "&device=browser&protocol=dash"
     var reqUrl = "https://playback-api.b17g.net/media/" + asset + "?service=tv4&drm=playready" + protocol;
     hlsUrl = hlsUrl || reqUrl.replace(/dash/,"hls")
@@ -798,7 +964,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                function(status, data)
                {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
-                       var stream=null, srtUrl=null;
+                       var stream=null, license=null, srtUrl=null;
                        data = JSON.parse(data.responseText).playbackItem;
                        stream = data.manifestUrl;
                        license = data.license && data.license.url;
@@ -836,6 +1002,46 @@ Tv4.getSrtUrl = function (hlsUrl, cb) {
               );
 };
 
+Tv4.makeApiLink = function(Operation, variables, sha) {
+    var Link = addUrlParam(TV4_API_BASE + Operation,
+                           "variables",
+                           variables
+                          );
+    return RedirectIfEmulator(addUrlParam(Link,
+                                          "extensions",
+                                          '{"persistedQuery":{"version":1,"sha256Hash":"' + sha + '"}}'
+                                         )
+                             );
+};
+
+Tv4.makeStartPageLink = function(id) {
+    return Tv4.makeApiLink("StartPage",
+                           '{"loggedIn":false}',
+                           "97d31adf4d4ed7881ecb372d97733604c79f0e2a61dd4a7c1035fad5db5cc3b4"
+                          );
+};
+
+Tv4.makeShowLink = function(nid) {
+    return Tv4.makeApiLink("cdp",
+                           '{"nid":"' + nid + '"}',
+                           "9fc9e761b8faa1c53203a82b6c3c72286d83ae28bf3a9c959d9e818ca3017d45"
+                          );
+};
+
+Tv4.makeVideoLink = function(id) {
+    return Tv4.makeApiLink("VideoAsset",
+                           '{"id":' + id + '}',
+                           "1a13f98fbf2b30e0e0453ac618f8376763293bc3d7766fafd0a7a8f7b7658219"
+                          );
+};
+
+Tv4.makeAllShowsLink = function() {
+    return Tv4.makeApiLink("ProgramSearch",
+                           '{"order_by":"NAME","per_page":1000}',
+                           "08eaecccac7076054c6b672cfa7eb2c99c1708b18de246ea85a7b3614a064f5a"
+                          );
+};
+
 Tv4.fixThumb = function(thumb, factor) {
     if (!factor) factor = 1;
     var size = Math.round(factor*THUMB_WIDTH) + "x" + Math.round(factor*THUMB_HEIGHT);
@@ -859,7 +1065,10 @@ Tv4.isViewable = function (data, isLive, currentDate) {
         } else {
             if (!currentDate)
                 currentDate = getCurrentDate();
-            return currentDate > timeToDate(data.broadcast_date_time);
+            if (data.broadcast_date_time)
+                return currentDate > timeToDate(data.broadcast_date_time);
+            else
+                return currentDate > timeToDate(data.broadcastDateTime);
         }
     }
 }
@@ -868,3 +1077,6 @@ Tv4.requestNextPage = function(url, callback) {
     requestUrl(url,callback,callback);
 }
 
+Tv4.getHeaders = function() {
+    return [{key:"platform", value:"web"}];
+}
