@@ -461,7 +461,7 @@ Tv4.determineEpisodeName = function(data) {
     var Name = data.title.trim();
     var Show = (data.program) ? data.program.name : null;
     if (Show && Name != Show) {
-        Name = Name.replace(Show,"").replace(/^[,. :\–\-]*/,"").trim();
+        Name = Name.replace(Show,"").replace(/^[,. 	:\–\-]*/,"").trim();
         Name = Name.capitalize();
     }
     return Name
@@ -978,7 +978,12 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                                              cbComplete(stream, srtUrl, license)
                                          });
                        } else {
-                           cbComplete(stream, null, license);
+                           // Seems URL is redirected which Player doesn't support when Auto
+                           // is used as target.
+                           Tv4.checkHlsRedirect(stream,
+                                                function(newStream) {
+                                                    cbComplete(newStream, null, license);
+                                                })
                        }
                    }
                }
@@ -1001,6 +1006,24 @@ Tv4.getSrtUrl = function (hlsUrl, cb) {
                {cbComplete: function() {cb(srtUrl)}}
               );
 };
+
+Tv4.checkHlsRedirect = function (hlsUrl, cb) {
+    var newHlsUrl = hlsUrl;
+    requestUrl(RedirectIfEmulator(hlsUrl),
+               function(status, data) {
+                   HOST_REGEXP = new RegExp("^(https?:\/\/[^\/]+)","m");
+                   try {
+                       data = data.responseText.match(HOST_REGEXP)
+                       if (data) {
+                           newHlsUrl = hlsUrl.replace(HOST_REGEXP, data[1]);
+                       }
+                   } catch (err) {
+                       Log("Tv4.checkHlsRedirect: " + err + " hlsUrl:" + hlsUrl);
+                   }
+               },
+               {cbComplete: function() {cb(newHlsUrl)}}
+              );
+}
 
 Tv4.makeApiLink = function(Operation, variables, sha) {
     var Link = addUrlParam(TV4_API_BASE + Operation,
