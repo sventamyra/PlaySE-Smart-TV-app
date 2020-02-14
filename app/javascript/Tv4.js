@@ -73,7 +73,7 @@ Tv4.checkShows = function(i, data) {
 }
 
 Tv4.reCheckUnavailableShows = function(data) {
-    if (!Tv4.updatingUnavailableShows && !data.is_clip && data.program)
+    if (!Tv4.updatingUnavailableShows && !(data.is_clip||data.clip) && data.program)
     {
         var showIndex = Tv4.unavailableShows.indexOf(data.program.nid);
         if (showIndex != -1) {
@@ -302,6 +302,8 @@ Tv4.decodeShowList = function(data, extra) {
                                                 "7de088d655c4127b060af63cc1cefbe52e4229cfbe930dd109b8fce67a63a0f8"
                                                );
                 if (data[k].assetType != "CLIP") {
+                    if (data[k].videoList.totalHits == 0)
+                        continue;
                     season = data[k].videoList.videoAssets[0].season;
                     if (season > 0) {
                         seasons.push({name   : data[k].name,
@@ -336,6 +338,9 @@ Tv4.decodeShowList = function(data, extra) {
             Tv4.decode(data, extra);
         } else if (non_seasons.length) {
             Tv4.decode(non_seasons, extra);
+        } else {
+            // No episodes
+            Tv4.unavailableShows.push(nid)
         }
 
         if (clips_url) {
@@ -1066,6 +1071,7 @@ Tv4.makeAllShowsLink = function() {
 };
 
 Tv4.fixThumb = function(thumb, factor) {
+    if (!thumb) return thumb;
     if (!factor) factor = 1;
     var size = Math.round(factor*THUMB_WIDTH) + "x" + Math.round(factor*THUMB_HEIGHT);
     return RedirectIfEmulator("https://imageproxy.b17g.services/?format=jpeg&quality=80&resize=" + size + "&retina=false&shape=cut&source=" + thumb);

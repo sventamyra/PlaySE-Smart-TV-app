@@ -839,7 +839,9 @@ Svt.decodeShowList = function(data, extra) {
         for (var i=0; i < data.length; i++) {
             if (data[i].type == "Season") {
                 if (!data[i].items[0].item.positionInSeason ||
-                    data[i].items[0].item.positionInSeason == "")
+                    data[i].items[0].item.positionInSeason == "" ||
+                    !data[i].name.match(/[0-9]/)
+                   )
                     useSeasonName = true
                 seasons.push(data[i].name);
             } else if (data[i].id == "clips") {
@@ -1370,7 +1372,6 @@ Svt.decode = function(data, extra) {
             //     Variants.indexOf(data[k].versions[0].accessService) != -1
             //    )
             //     continue;
-
             if (extra.is_recommended)
                 Links.push(Link);
             Shows.push({name:Name,
@@ -1427,12 +1428,12 @@ Svt.getVariantName = function(accessService) {
 Svt.getSeasonNumber = function(data) {
     var Season = (data.episode &&
                   data.episode.positionInSeason &&
-                  data.episode.positionInSeason.match(/[^0-9]*([0-9]+)/)
+                  data.episode.positionInSeason.match(/^[^ —\–\-0-9]*([0-9]+)/)
                  );
     if (Season)
         return +Season[1];
     else if (data.analyticsIdentifiers) {
-        Season = data.analyticsIdentifiers.viewId.match(/[^\/]+\/([^\/]+)\//);
+        Season = data.analyticsIdentifiers.viewId.match(/^[^\/]+\/([^\/]+)\//);
         if (Season) {
             return Season[1];
             // Season = Season[1].replace(/[^0-9]/g,"")

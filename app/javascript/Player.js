@@ -1108,9 +1108,9 @@ Player.checkHls = function(OtherCalback, text) {
     // Seems stop before OnBufferingStart gives e.g. OnRenderError
     // Can also happen in case "resume" is chosen too late...
     if (Player.state != Player.STOPPED && delayedPlayTimer != -1) {
-        if(videoUrl.indexOf("=HLS") != -1 && videoUrl.indexOf(":10666/") == -1) {
+        if (videoUrl.match("=HLS") && !videoUrl.match(/\/downgradehls\//)) {
             var thisVideoUrl = videoUrl;
-            Player.getHlsVersion(videoUrl.replace(/\|.+/,""), 
+            Player.getHlsVersion(videoUrl.replace(/\|.+/,""),
                                  function(hls_version) {
                                      if (hls_version && hls_version > 3) {
                                          var text = 'HLS Version ' + hls_version + ' unsupported.';
