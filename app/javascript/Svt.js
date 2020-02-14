@@ -1281,7 +1281,7 @@ Svt.decode = function(data, extra) {
                     Name = Name + " - " + data[k].byline;
             } else {
                 AltName = data[k].subHeading && data[k].subHeading.replace(/^[0-9]+\./,"");
-                AltName = AltName && AltName.replace(/(avsnitt|del) [0-9]+/i,"");
+                AltName = AltName && AltName.replace(/(avsnitt|del) [0-9]+/i,"").trim();
             }
             // alert("Season: " + Season + " Episode: " +Episode);
             if (data[k].item)
@@ -1318,7 +1318,8 @@ Svt.decode = function(data, extra) {
                             Name = Show + " - " + Name;
                         else if (!Name.length)
                             Name = Show;
-                    } else if (AltName && AltName.length > 0 && AltName != Description)
+                    } else if (AltName && AltName.length > 0 &&
+                               AltName != Description && AltName != Name)
                         Name = Name + " - " + AltName;
                 }
             } else
