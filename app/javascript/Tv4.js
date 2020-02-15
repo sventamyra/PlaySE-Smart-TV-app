@@ -177,7 +177,9 @@ Tv4.getCategoryTitle = function() {
 };
 
 Tv4.upgradeUrl = function(url) {
-    url = url.replace("webapi.tv4play","api.tv4play")
+    url = url.replace("webapi.tv4play","api.tv4play");
+    url = url.replace("9fc9e761b8faa1c53203a82b6c3c72286d83ae28bf3a9c959d9e818ca3017d45",
+                      "28e2864cab4a4132b1336db5d8e716cadb4de0e64da0ec64869bfb608126a937");
     if (url.match(/api.tv4play.se.+&node_nids=([^&]+)$/))
         url= Tv4.makeShowLink(url.match(/api.tv4play.se.+&node_nids=([^&]+)$/)[1])
     return url
