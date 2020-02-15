@@ -38,7 +38,6 @@ History.checkResume = function(location) {
             return History.findVariant(show, meta);
         else
             return History.findEpisode(show, meta);
-            alert("Resuming episode (and season and name?):" + meta.episode)
     }
     return false
 }
@@ -74,12 +73,30 @@ History.findLinkPrefix = function(show, regexp) {
     return false
 };
 
+History.getNumber = function(thing) {
+    if  (typeof(thing) === 'string') {
+        var number = thing.replace(/[^0-9]+/g,"")
+        if (number == "") return -1
+        return +number
+    }
+    return thing;
+}
+
+History.match = function(a, b) {
+
+    if (a != b) {
+        var number = History.getNumber(a);
+        return (number >= 0 && number == History.getNumber(b))
+    } else
+        return true
+}
+
 History.findEpisode = function(show, meta) {
     alert("Resume Episode " + meta.episode + " season " + meta.season + " name " + meta.episode_name)
     var hits = []
     for (var i=0; meta.episode && i < items.length; i++) {
-        if ((!meta.season || meta.season == items[i].season) &&
-            meta.episode == items[i].episode) {
+        if ((!meta.season || History.match(meta.season,items[i].season)) &&
+            History.match(meta.episode, items[i].episode)) {
             hits.push(i)
         }
     }

@@ -340,9 +340,6 @@ Tv4.decodeShowList = function(data, extra) {
             Tv4.decode(data, extra);
         } else if (non_seasons.length) {
             Tv4.decode(non_seasons, extra);
-        } else {
-            // No episodes
-            Tv4.unavailableShows.push(nid)
         }
 
         if (clips_url) {
