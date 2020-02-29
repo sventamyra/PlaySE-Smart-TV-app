@@ -157,7 +157,7 @@ Tv4.getUrl = function(tag, extra) {
         else
             return Tv4.makeApiLink("ProgramSearchQuery",
                                    '{"q":"' + extra.query + '","offset":0,"limit":100}',
-                                   "4694bccb5dc91bb2e3939f72a666237a889c00149661f1e654977ebba436d9e3"
+                                   "7269394305e1499c205d32e3619d90635e2c0133de46ea7db107fee2fd8b97ed"
                                   );
         break;
 
@@ -241,7 +241,7 @@ Tv4.decodeCategories = function(data, extra) {
                 Name = data[k].title;
                 Link = Tv4.makeApiLink("CategoryPage",
                                        '{"id":"' + data[k].page.id + '", "assetId":null}',
-                                       "f61c9569ac98cd9c5b2c8f96923e429f9243b70d339bfb73422ed464593242d1"
+                                       "d7e20b48d136b8777b574ce4de69f07989fafdf9b30c195f8f45e7c7c56a549f"
                                       );
                 Thumb = Tv4.fixThumb(data[k].images.main16x9)
                 LargeThumb = Tv4.fixThumb(data[k].images.main16x9, DETAILS_THUMB_FACTOR)
@@ -1065,7 +1065,7 @@ Tv4.makeVideoLink = function(id) {
 Tv4.makeAllShowsLink = function() {
     return Tv4.makeApiLink("ProgramSearch",
                            '{"order_by":"NAME","per_page":1000}',
-                           "08eaecccac7076054c6b672cfa7eb2c99c1708b18de246ea85a7b3614a064f5a"
+                           "78cdda0280f7e6b21dea52021406cc44ef0ce37102cb13571804b1a5bd3b9aa1"
                           );
 };
 
