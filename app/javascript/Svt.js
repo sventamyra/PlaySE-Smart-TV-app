@@ -72,33 +72,6 @@ Svt.getBButtonText = function(language, catLoaded) {
     return text;
 };
 
-Svt.oldFixLink = function (Link, Publication)
-{
-    if (Link) {
-        Link = Link.replace(/amp;/g, "").replace(/([^:])\/\//g,"$1/")
-        Link = Link.replace("{format}", "small");
-        Link = Link.replace(/file:\/\/(localhost\/)?/, "http://").trim();
-    }
-    if (Link && Link.match(/^<>[0-9]+<>/)) {
-        var index = +Link.match(/^<>([0-9]+)<>/)[1]
-        if (Publication)
-            Svt.checkThumbIndex(index, Publication);
-        else
-            Publication = Svt.getThumbIndex(index);
-        Publication = (Publication) ? Publication : "svtse";
-        Link = Link.replace(/^<>[0-9]+<>/, "http://www.svtstatic.se/image-cms/" + Publication);
-    } else if (Link && Link.match(/^\/\//)) {
-        Link = "http:" + Link;
-    } else if (Link && !Link.match("https*:")) {
-        if (!Link.match(/^\//))
-            Link = "/" + Link;
-        Link =  "https://www.svtplay.se" + Link
-    }
-    if (Link && Link.match(/www.oppetarkiv.se/))
-        Link = Link.replace("www.oppetarkiv.se", "origin-www.svt.se/oppet-arkiv-api")
-    return Link
-};
-
 Svt.makeApiLink = function(Operation, variables, sha) {
     var Link = addUrlParam(SVT_API_BASE + Operation,
                            "variables",
@@ -194,48 +167,6 @@ Svt.getThumb = function(data, size) {
     return "https://www.svtstatic.se/image/" + size + "/" + data.id + "/" + data.changed;
 }
 
-Svt.oldGetThumb = function(data, size) {
-    var Thumb = "";
-    if (data.thumbnail)
-        Thumb = data.thumbnail;
-    else if (data.imageSmall)
-        Thumb = data.imageSmall;
-    else if (data.thumbnailXL)
-        Thumb = data.thumbnailXL;
-    else if (data.imageLarge)
-        Thumb = data.imageLarge;
-    else if (data.thumbnailImage)
-        Thumb = data.thumbnailImage;
-    else if (data.posterImageUrl)
-        Thumb = data.posterImageUrl;
-    else if (data.posterXL)
-        Thumb = data.posterXL;
-    else if (data.imageMedium)
-        Thumb = data.imageMedium;
-    else if (data.image)
-        Thumb = data.image;
-    else if (data.poster)
-        Thumb = data.poster;
-    else if (data.backgroundImage)
-        Thumb = data.backgroundImage;
-    else if (typeof(data) === 'string')
-        Thumb = data;
-    Thumb = Svt.oldFixLink(Thumb, data.publication).replace("_imax", "");
-    if (Thumb.match(/\/wide\/[0-9]+/)) {
-        if (size == "extralarge")
-            size = Math.round(BACKGROUND_THUMB_FACTOR*THUMB_WIDTH);
-        else if (size == "large")
-            size = Math.round(DETAILS_THUMB_FACTOR*THUMB_WIDTH);
-        else
-            size = THUMB_WIDTH;
-        Thumb = Thumb.replace(/\/wide\/[0-9]+/, "/wide/" + size);
-    } else {
-        if (!size) size = "small";
-        Thumb = Thumb.replace(/\/(small|medium|(extra)?large)\//, "/" + size + "/")
-    }
-    return Thumb
-}
-
 Svt.isPlayable = function (url) {
     return url.match(/VideoPage/);
 }
@@ -254,7 +185,7 @@ Svt.getNextSectionIndex = function() {
 Svt.getNextSectionText = function() {
     if (Svt.sections.length == 0)
         // Sections not added yet
-        return 'Populärt';
+        return 'PopulÃ¤rt';
 
     return Svt.sections[Svt.getNextSectionIndex()].name;
 };
@@ -269,8 +200,6 @@ Svt.setNextSection = function() {
 };
 
 Svt.getDetailsUrl = function(streamUrl) {
-    if (streamUrl.match("Barnkanalen"))
-        return streamUrl.replace("Barnkanalen", "svtbarn");
     return streamUrl
 };
 
@@ -279,7 +208,7 @@ Svt.getDetailsData = function(url, data) {
     if (url.match("oppet-arkiv-api"))
         return Oa.getDetailsData(url, data);
 
-    if (!Svt.isPlayable(url) && url.indexOf("/kanaler/") == -1) {
+    if (!Svt.isPlayable(url) && !url.match(/=ChannelsQuery/)) {
         return Svt.getShowData(url, data);
     }
 
@@ -301,23 +230,22 @@ Svt.getDetailsData = function(url, data) {
     var EpisodeName=null;
     var Variant=null;
     try {
-        if (url.match("/kanaler/")) {
-            data = Svt.decodeJson(data);
-            data = data.channelsPage
-	    for (var i in data.schedule) {
-                if (data.schedule[i].channel == data.activeChannelId.toLowerCase()) {
-                    data = data.schedule[i];
+        if (url.match(/=ChannelsQuery/)) {
+            data = JSON.parse(data.responseText).data.channels.channels
+            for (var i in data) {
+                if (data[i].id == getUrlParam(url, "chId")) {
+                    data = data[i];
                     break;
                 }
             }
-            Name = data.channelName.trim() + " - " + data.programmeTitle.trim();
-            if (data.description)
-	        Description = data.description.trim();
-            ImgLink = Svt.oldGetThumb(data, "large")
+            Name = data.name.trim() + " - " + data.running.name.trim();
+            if (data.running.description)
+	        Description = data.running.description.trim();
+            ImgLink = Svt.getThumb(data.running, "large")
             if (!ImgLink)
-	        ImgLink = Svt.GetChannelThumb(data.channel);
-            startTime = timeToDate(data.publishingTime);
-            endTime = timeToDate(data.publishingEndTime);
+	        ImgLink = Svt.GetChannelThumb(data.name);
+            startTime = timeToDate(data.running.start);
+            endTime = timeToDate(data.running.end);
             VideoLength = Math.round((endTime-startTime)/1000);
             AirDate = dateToClock(startTime) + "-" + dateToClock(endTime);
             Title = AirDate + " " + Name;
@@ -481,7 +409,10 @@ Svt.getUrl = function(tag, extra) {
         return Svt.getCategoryDetailsUrl(extra.location);
 
     case "live":
-        return "https://api.svt.se/program-guide/programs?channel=svt1,svt2,svt24,svtb,svtk&includePartiallyOverlapping=true&from=" + getCurrentDate().toISOString()+ "&to=" + getCurrentDate().toISOString();
+        return Svt.makeApiLink("ChannelsQuery",
+                               '{}',
+                               "65ceeccf67cc8334bc14eb495eb921cffebf34300562900076958856e1a58d37"
+                              );
 
     case "searchList":
         return Svt.makeSearchLink(extra.query);
@@ -792,13 +723,14 @@ Svt.decodeCategoryTabs = function (name, slug, data, url) {
 };
 
 Svt.decodeLive = function(data, extra) {
-    var ChannelsData = JSON.parse(data.responseText);
+    var ChannelsData = JSON.parse(data.responseText).data.channels.channels;
+    var ChannelsUrl  = extra.url;
     data = null;
     extra.url = Svt.getUrl("main"); 
     requestUrl(extra.url,
                function(status, data)
                {
-                   Svt.decodeChannels(ChannelsData)
+                   Svt.decodeChannels(ChannelsData, ChannelsUrl)
                    data = JSON.parse(data.responseText).data.startForSvtPlay.selections;
                    for (var k=0; k < data.length; k++) {
                        if (data[k].id.match(/live/i)) {
@@ -957,8 +889,8 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
 
     var video_urls=[], extra = {isLive:isLive};
 
-    if (url.match("/kanaler/"))
-        streamUrl = SVT_ALT_API_URL + "ch-" + url.match(/\/kanaler\/([^\/]+)/)[1].toLowerCase()
+    if (url.match(/=ChannelsQuery/))
+        streamUrl = SVT_ALT_API_URL + getUrlParam(url,"chId");
     else if(!streamUrl) {
         streamUrl = url;
     }
@@ -969,12 +901,7 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl)
                    if (Player.checkPlayUrlStillValid(url)) {
                        var videoReferences, subtitleReferences=[], srtUrl=null;
                        var hls_url=null, dash_hbbtv_url=null, other_url=null;
-                       if (url.indexOf("/kanaler/") != -1) {
-                           data = JSON.parse(data.responseText);
-                           // No subtitles
-                           data.disabled = true;
-                           data.subtitleReferences = []
-                       } else if (streamUrl==url && !streamUrl.match(SVT_ALT_API_URL)) {
+                       if (!streamUrl.match(SVT_ALT_API_URL)) {
                            data = JSON.parse(data.responseText).data.listablesByEscenicId[0];
                            streamUrl = SVT_ALT_API_URL + data.videoSvtId;
                            return Svt.getPlayUrl(url, isLive, streamUrl, cb, failedUrl);
@@ -1069,24 +996,6 @@ Svt.tryAltPlayUrl = function(failedUrl, cb)
         return false
 };
 
-Svt.decodeJson = function(data) {
-    if (data.responseText) {
-        if (data.responseText[0] != "{") {
-            data = data.responseText.split("root\['__svtplay']")
-            if (data.length > 1 && !data[1].match(/"stores":{}/)) {
-                data = data[1]
-            } else {
-                data = data.join("").split("root\['__reduxStore']")[1]
-            }
-            data = data.split('};')[0] + '}'
-            data = data.replace(/^[^{]*{/, "{");
-            data = data.replace(/;$/, "");
-        } else
-            data = data.responseText;
-    }
-    return JSON.parse(data)
-};
-
 Svt.getNextCategory = function() {
     return getNextIndexLocation(2);
 }
@@ -1154,7 +1063,7 @@ Svt.GetChannelThumb = function (Name)
     return "https://www.svtplay.se/assets/images/channels/posters/" + Name.toLowerCase().replace(" ","") + ".png";
 };
 
-Svt.decodeChannels = function(data) {
+Svt.decodeChannels = function(data, BaseUrl) {
     try {
         var Name;
         var Duration;
@@ -1163,33 +1072,18 @@ Svt.decodeChannels = function(data) {
         var Background;
         var starttime;
         var endtime;
-        var BaseUrl = 'http://www.svtplay.se/kanaler';
-        var FoundChannels = [];
 
-        data = data.hits;
-        data.sort(function(a, b) {
-                if (b.channel.toLowerCase() > a.channel.toLowerCase())
-                    return -1
-                return 1
-            })
         for (var k in data) {
-            Name = data[k].channel.trim();
-            if (FoundChannels.indexOf(Name) != -1)
-                continue;
-            FoundChannels.push(Name);
-            if (Name == "SVTB")
-                Name = "Barnkanalen";
-            else if (Name == "SVTK")
-                Name = "Kunskapskanalen"
-            Link = BaseUrl + '/' + Name;
+            Name = data[k].name.trim();
+            Link = addUrlParam(BaseUrl,"chId",data[k].id);
             ImgLink = Svt.GetChannelThumb(Name);
-            Background = Svt.oldGetThumb(data[k], "extralarge");
+            Background = Svt.getThumb(data[k].running, "extralarge");
             if (!Background)
-                Background = Svt.oldGetThumb(ImgLink, "extralarge");
-            starttime = timeToDate(data[k].publishingTime);
-            endtime = timeToDate(data[k].publishingEndTime);
+                Background = ImgLink;
+            starttime = timeToDate(data[k].running.start);
+            endtime   = timeToDate(data[k].running.end);
             Duration  = Math.round((endtime-starttime)/1000);
-            Name = dateToClock(starttime) + "-" + dateToClock(endtime) + " " + data[k].programmeTitle.trim();
+            Name = dateToClock(starttime) + "-" + dateToClock(endtime) + " " + data[k].running.name.trim();
             toHtml({name:Name,
                     duration:Duration,
                     is_live:false,
@@ -1309,9 +1203,9 @@ Svt.decode = function(data, extra) {
                     if (Episode)
                         Description = "Avsnitt " + Episode;
                     if (Season && Episode)
-                        Description = "Säsong " + Season + " - " + Description;
+                        Description = "SÃ¤song " + Season + " - " + Description;
                     else if (Season)
-                        Description = "Säsong " + Season
+                        Description = "SÃ¤song " + Season
                     if (Show) {
                         Name = Name.replace(/^(((avsnitt|del) [0-9]+)|[0-9.]+\.)/i,"");
                         if (Name.length && !Name.match(new RegExp(Show, 'i')))
@@ -1429,7 +1323,7 @@ Svt.getVariantName = function(accessService) {
 Svt.getSeasonNumber = function(data) {
     var Season = (data.episode &&
                   data.episode.positionInSeason &&
-                  data.episode.positionInSeason.match(/^[^ —\–\-0-9]*([0-9]+)/)
+                  data.episode.positionInSeason.match(/^[^ â\â\-0-9]*([0-9]+)/)
                  );
     if (Season)
         return +Season[1];

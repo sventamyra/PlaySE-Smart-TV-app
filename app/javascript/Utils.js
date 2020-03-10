@@ -805,7 +805,10 @@ runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData, i) {
 }
 
 getHistory = function(Name,LinkPrefix) {
-    var Prefix = document.title ;
+    var Prefix = document.title;
+    if (!Prefix.match(/\//))
+        // Encode the initial entry
+        Prefix = encodeURIComponent(Prefix);
     if (myRefreshLocation) {
         if (myRefreshLocation.match(/.+&history=/)) {
             Prefix = getUrlParam(myRefreshLocation, "history", true);

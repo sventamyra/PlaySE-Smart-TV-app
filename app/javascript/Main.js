@@ -48,6 +48,7 @@ Main.onLoad = function(refresh)
         pluginAPI.registIMEKey();
 	Language.setLang();
 	Resolution.displayRes();
+        Player.enableScreenSaver();
         setOffsets();
         fixCss();
 	this.loadXml(refresh);	
