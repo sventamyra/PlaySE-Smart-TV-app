@@ -1,5 +1,4 @@
-var Dplay =
-{
+var Dplay = {
     is_logged_in:false,
     channel_idx:null,
     channels:[],
@@ -17,90 +16,89 @@ Dplay.resetSubChannel = function() {
     Dplay.all_show_names = [];
     Dplay.all_genres = [];
     Dplay.reset();
-}
+};
 
 Dplay.isSubChannelSet = function() {
     return Dplay.channel_idx != null;
-}
+};
 
 Dplay.reset = function() {
     Dplay.show_names = [];
     Dplay.result = [];
-}
+};
 
 Dplay.getUrl = function(tag, extra) {
 
-    switch (tag)
-    {
-    case "main":
+    switch (tag) {
+    case 'main':
         var newChannel = getLocation(extra.refresh).match(/dplay_channel=([0-9]+|reset)/);
         newChannel = (newChannel && newChannel.length > 0) ? newChannel[1] : null;
         if (newChannel && !extra.refresh)
             myHistory = [];
         if (newChannel && Dplay.channel_idx != newChannel) {
             Dplay.resetSubChannel();
-            if (newChannel != "reset")
+            if (newChannel != 'reset')
                 Dplay.channel_idx = newChannel;
             // Force new channel name
             Header.display(document.title);
         }
         Dplay.preFetchAllShows();
-        if (!newChannel || newChannel == "reset")
-            return "https://disco-api.dplay.se/cms/collections/home-page?include=default"
+        if (!newChannel || newChannel == 'reset')
+            return 'https://disco-api.dplay.se/cms/collections/home-page?include=default';
         else
-            return Dplay.getPopularUrl()
+            return Dplay.getPopularUrl();
         break;
 
-    case "section":
+    case 'section':
         switch (extra.location) {
 
-        case "Latest.html":
-            return Dplay.makeApiUrl("/videos", "&include=images%2Cshow&filter%5BvideoType%5D=EPISODE&page%5Bsize%5D=75&sort=-publishStart");
+        case 'Latest.html':
+            return Dplay.makeApiUrl('/videos', '&include=images%2Cshow&filter%5BvideoType%5D=EPISODE&page%5Bsize%5D=75&sort=-publishStart');
             break;
-        };
+        }
         break;
 
-    case "categories":
+    case 'categories':
         if (Dplay.getCategoryIndex().current==1) {
             if (Dplay.all_shows.length == 0)
                 return Dplay.getAllShowsUrl();
             else
                 return {cached:true};
         } else {
-            return Dplay.makeApiUrl("/genres", "&include=images");
+            return Dplay.makeApiUrl('/genres', '&include=images');
         }
         break;
 
-    case "categoryDetail":
+    case 'categoryDetail':
         return {cached:true,url:extra.location};
 
-    case "live":
-        return Dplay.makeApiUrl("/channels", "&include=images");
+    case 'live':
+        return Dplay.makeApiUrl('/channels', '&include=images');
         break;
 
-    case "searchList":
+    case 'searchList':
         if (Dplay.all_show_names.length == 0)
-            return Dplay.getAllShowsUrl()
+            return Dplay.getAllShowsUrl();
         else if (extra.query.length > 1)
             return Dplay.makeApiUrl('/shows', '&include=images&page%5Bsize%5D=100&query=' + extra.query);
         else
-            return {cached:true}
+            return {cached:true};
         break;
 
     default:
         return tag;
-    };
+    }
 };
 
 Dplay.getPopularUrl = function() {
-    return Dplay.makeApiUrl("/shows", "&include=images&page%5Bsize%5D=50&sort=views.lastMonth");
-}
+    return Dplay.makeApiUrl('/shows', '&include=images&page%5Bsize%5D=50&sort=views.lastMonth');
+};
 
 Dplay.login = function(callback) {
     Dplay.is_logged_in = false;
-    httpRequest("https://disco-api.dplay.se/token?realm=dplayse&deviceId=deviceId&shortlived=true",
+    httpRequest('https://disco-api.dplay.se/token?realm=dplayse&deviceId=deviceId&shortlived=true',
                 {cb:function(status, data, xhr) {
-                    Log(xhr.getAllResponseHeaders().split(/\r?\n/))
+                    Log(xhr.getAllResponseHeaders().split(/\r?\n/));
                     Log(xhr.getResponseHeader('set_cookie0'));
                     Log(xhr.getResponseHeader('set-cookie'));
                     Dplay.is_logged_in = true;
@@ -110,33 +108,33 @@ Dplay.login = function(callback) {
                  sync:!callback,
                  headers:Dplay.getHeaders()
                 }
-               )
+               );
 };
 
 Dplay.isLoggedIn = function() {
     return Dplay.is_logged_in;
-}
+};
 
 Dplay.getHeaders = function() {
-    var headers = [{key:"user-agent", value:"Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36"}];
+    var headers = [{key:'user-agent', value:'Mozilla/5.0 (Windows NT 5.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/49.0.2623.112 Safari/537.36'}];
 
     // if (Dplay.cookie)
-    //     headers.push({key:"cookie", value:Dplay.cookie})
-    return headers
-}
+    //     headers.push({key:'cookie', value:Dplay.cookie})
+    return headers;
+};
 
 Dplay.decodeMain = function(data, extra) {
-    Dplay.reset()
+    Dplay.reset();
     data = JSON.parse(data.responseText);
     var RecommendedCollection = [];
     var Recommended = [];
     var RecommendedShowIds = [];
     if (data.data.relationships) {
-        Recommended = data.data.relationships.items.data[0].id
+        Recommended = data.data.relationships.items.data[0].id;
 
         Recommended = Dplay.findIncludedId(data, Recommended).relationships.collection.data.id;
         Recommended = Dplay.findIncludedId(data, Recommended).relationships.items.data;
-        RecommendedCollection = Dplay.decodeCollection(data, Recommended, [])
+        RecommendedCollection = Dplay.decodeCollection(data, Recommended, []);
         Recommended = [];
         for (var i=0,showId=0; i < RecommendedCollection.length; i++) {
             showId = RecommendedCollection[i].show_id;
@@ -145,7 +143,7 @@ Dplay.decodeMain = function(data, extra) {
                 // duplicate
                 continue;
             Recommended.push(Dplay.findIncludedId(data, RecommendedCollection[i].id));
-            RecommendedShowIds.push(showId)
+            RecommendedShowIds.push(showId);
         }
         data.data = Recommended;
         Dplay.decodeShows(data,extra);
@@ -157,8 +155,7 @@ Dplay.decodeMain = function(data, extra) {
     extra.cbComplete = null;
     extra.recommended_ids = RecommendedShowIds;
     requestUrl(extra.url,
-               function(status, data)
-               {
+               function(status, data) {
                    Dplay.result = Recommended;
                    Dplay.decode(data, extra);
                },
@@ -182,7 +179,7 @@ Dplay.decodeCategories = function(data, extra, allFetched) {
         // somehow. I.e. when callback is invoked data contains the data
         // received in getAllShowsUrl...
         var responseText = data.responseText;
-        return Dplay.getAllShows(function(){Dplay.decodeCategories({responseText:responseText}, extra, true)}, null, true);
+        return Dplay.getAllShows(function(){Dplay.decodeCategories({responseText:responseText}, extra, true);}, null, true);
         data = null;
     } else {
         try {
@@ -195,7 +192,7 @@ Dplay.decodeCategories = function(data, extra, allFetched) {
                     // No shows
                     continue;
                 genres.push({name:data[k].attributes.name.trim(),
-                             link:Dplay.getAllShowsUrl() + "?filter%5Bgenre.id%5D=" + data[k].id
+                             link:Dplay.getAllShowsUrl() + '?filter%5Bgenre.id%5D=' + data[k].id
                             });
 	    }
             genres.sort(function(a, b) {
@@ -207,14 +204,14 @@ Dplay.decodeCategories = function(data, extra, allFetched) {
             });
 	    data = null;
 
-            for (var k=0; k < genres.length; k++)
-                categoryToHtml(genres[k].name, null, null, genres[k].link);
+            for (var i=0; i < genres.length; i++)
+                categoryToHtml(genres[i].name, null, null, genres[i].link);
 
             if (extra.cbComplete)
                 extra.cbComplete();
 
         } catch(err) {
-            Log("Dplay.decodeCategories Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
+            Log('Dplay.decodeCategories Exception:' + err.message + ' data[' + k + ']:' + JSON.stringify(data[k]));
         }
     }
 };
@@ -237,7 +234,7 @@ Dplay.decodeLive = function(data, extra) {
         Dplay.channels.push({name:Name, id:data[k].id});
         if (oldId != null) {
             if (k == 0)
-                Dplay.channelToHtml("DPLAY", "reset", null);
+                Dplay.channelToHtml('DPLAY', 'reset', null);
             if (oldId == data[k].id) {
                 Dplay.channel_idx = k;
                 continue;
@@ -251,21 +248,19 @@ Dplay.decodeLive = function(data, extra) {
 
 Dplay.decodeShowList = function(data, extra) {
     Dplay.decode(data, extra);
-}
+};
 
 Dplay.decodeSearchList = function(data, extra) {
-    Dplay.reset()
-    // At least in old Dplay api Search result for shows also contains "unplayable" shows,
+    Dplay.reset();
+    // At least in old Dplay api Search result for shows also contains 'unplayable' shows,
     // so first fetch all shows and then we filter from that.
-    if (Dplay.all_show_names.length == 0)
-    {
+    if (Dplay.all_show_names.length == 0) {
         extra.only_save = true;
         Dplay.handleAllShows(data, extra);
-        extra.url = Dplay.getUrl("searchList", extra),
+        extra.url = Dplay.getUrl('searchList', extra),
         requestUrl(extra.url,
-                   function(status, data)
-                   {
-                       Dplay.decodeSearchList(data, extra)
+                   function(status, data) {
+                       Dplay.decodeSearchList(data, extra);
                        data = null;
                    },
                    {cbError:extra.cbComplete,
@@ -277,17 +272,17 @@ Dplay.decodeSearchList = function(data, extra) {
             data = JSON.parse(data.responseText);
             Dplay.decodeShows(data, extra);
             data = null;
-            extra.url = extra.url.replace(/\/shows/, "/videos").replace("=images","=images%2Cshow");
+            extra.url = extra.url.replace(/\/shows/, '/videos').replace('=images','=images%2Cshow');
             Dplay.searchVideos(extra);
         } else {
-            var queryReqexp = (extra.query && extra.query.length == 1) ? new RegExp("^" + extra.query, 'i') : null;
+            var queryReqexp = (extra.query && extra.query.length == 1) ? new RegExp('^' + extra.query, 'i') : null;
             Dplay.result = [];
             for (var k=0; k < Dplay.all_shows.length; k++) {
                 if (!queryReqexp.test(Dplay.all_shows[k].name))
                     continue;
                 Dplay.result.push(Dplay.all_shows[k]);
             }
-            Dplay.finishSearch(extra.cbComplete)
+            Dplay.finishSearch(extra.cbComplete);
         }
     }
 };
@@ -298,16 +293,16 @@ Dplay.searchVideos = function(extra) {
                    var NextPage = Dplay.decodeSearchHits(data, extra),
                    data = null;
                    if (NextPage) {
-                       extra.url = NextPage
-                       Dplay.searchVideos(extra)
+                       extra.url = NextPage;
+                       Dplay.searchVideos(extra);
                    } else
-                       Dplay.finishSearch(extra.cbComplete)
+                       Dplay.finishSearch(extra.cbComplete);
                },
                {cbError:extra.cbComplete,
                 headers:Dplay.getHeaders()
                }
-              )
-}
+              );
+};
 
 // TODO - merge handleAllShows and getAllShows
 Dplay.handleAllShows = function(data, extra, nextPage) {
@@ -316,8 +311,8 @@ Dplay.handleAllShows = function(data, extra, nextPage) {
 
     if (Dplay.all_shows.length == 0 || nextPage) {
         extra.all_shows = true;
-        var cbComplete = extra.cbComplete
-        extra.cbComplete = null
+        var cbComplete = extra.cbComplete;
+        extra.cbComplete = null;
         nextPage = Dplay.decode(data, extra);
         extra.cbComplete = cbComplete;
         data = null;
@@ -328,7 +323,7 @@ Dplay.handleAllShows = function(data, extra, nextPage) {
         if (extra.cbComplete)
             extra.cbComplete();
     }
-    return null
+    return null;
 };
 
 Dplay.getAllShows = function(completeFun, url, onlySave, nextPage) {
@@ -336,14 +331,13 @@ Dplay.getAllShows = function(completeFun, url, onlySave, nextPage) {
     if (Dplay.all_shows.length == 0 || nextPage) {
         url = (nextPage) ? nextPage : Dplay.getAllShowsUrl();
         requestUrl(url,
-                   function(status, data)
-                   {
+                   function(status, data) {
                        nextPage = Dplay.decode(data, {all_shows:true,url:url,only_save:onlySave});
                        data = null;
                        if (nextPage)
-                           Dplay.getAllShows(completeFun, url, onlySave, nextPage)
+                           Dplay.getAllShows(completeFun, url, onlySave, nextPage);
                    },
-                   {cbComplete:function(){if (!nextPage && completeFun) completeFun()}}
+                   {cbComplete:function(){if (!nextPage && completeFun) completeFun();}}
                   );
     } else {
         if (!onlySave) {
@@ -359,44 +353,44 @@ Dplay.getAllShows = function(completeFun, url, onlySave, nextPage) {
 
 Dplay.preFetchAllShows = function(nextPage) {
     if (Dplay.all_shows.length != 0 && !nextPage)
-        return
+        return;
     var extra = {only_save:true,
                  all_shows:true,
                  url      :(nextPage) ? nextPage : Dplay.getAllShowsUrl(),
-                }
+                };
     httpRequest(extra.url,
                 {cb:function(status, text) {
-                    nextPage = Dplay.handleAllShows({responseText:text}, extra, nextPage)
+                    nextPage = Dplay.handleAllShows({responseText:text}, extra, nextPage);
                     if (nextPage)
-                        Dplay.preFetchAllShows(nextPage)
+                        Dplay.preFetchAllShows(nextPage);
                 },
                  headers:Dplay.getHeaders()
                 }
-               )
-}
+               );
+};
 
 Dplay.getAllShowsUrl = function() {
-    return Dplay.makeApiUrl('/shows', "&include=images%2Cgenres");
-}
+    return Dplay.makeApiUrl('/shows', '&include=images%2Cgenres');
+};
 
 Dplay.filterShows = function(shows, genre) {
     if (!genre)
-        return shows
+        return shows;
     var result = [];
     for (var k=0; k < shows.length; k++) {
         if (shows[k].genres.indexOf(genre) > -1)
-            result.push(shows[k])
+            result.push(shows[k]);
     }
     return result;
-}
+};
 
 Dplay.makeApiUrl = function(path, extra) {
 
-    var channel = (Dplay.channel_idx) ? Dplay.channels[Dplay.channel_idx].id : null
-    channel = (!path.match(/\/channels/) && channel) ? "&filter%5BprimaryChannel.id%5D=" + channel : "";
-    extra = (extra) ? extra : "";
+    var channel = (Dplay.channel_idx) ? Dplay.channels[Dplay.channel_idx].id : null;
+    channel = (!path.match(/\/channels/) && channel) ? '&filter%5BprimaryChannel.id%5D=' + channel : '';
+    extra = (extra) ? extra : '';
 
-    return  "https://disco-api.dplay.se/content" + path + "?page%5Bsize%5D=100&page%5Bnumber%5D=1" + channel + extra
+    return  'https://disco-api.dplay.se/content' + path + '?page%5Bsize%5D=100&page%5Bnumber%5D=1' + channel + extra;
 };
 
 Dplay.makeShowUrl = function(id) {
@@ -407,12 +401,12 @@ Dplay.getPrefix = function(channel_idx) {
     var Name = channel;
     if (channel_idx)
         Name = Dplay.channels[channel_idx].prefix;
-    return 'http://www.' + Name + 'play.se/'
+    return 'http://www.' + Name + 'play.se/';
 };
 
 Dplay.addChannel = function(url) {
     if (Dplay.isSubChannelSet())
-        return url + "&channel=" + Dplay.channels[Dplay.channel_idx].id;
+        return url + '&channel=' + Dplay.channels[Dplay.channel_idx].id;
     return url;
 };
 
@@ -432,43 +426,43 @@ Dplay.getCategoryIndex = function () {
 
 Dplay.getHeaderPrefix = function(MainName) {
     if (MainName || !Dplay.channel_idx)
-        return "DPLAY";
+        return 'DPLAY';
     else {
         return Dplay.channels[Dplay.channel_idx].name;
     }
 };
 
 Dplay.keyRed = function() {
-    if ($("#a-button").text().indexOf("Pop") != -1) {
+    if ($('#a-button').text().indexOf('Pop') != -1) {
 	setLocation('index.html');
     } else {
 	setLocation('Latest.html');
     }
-}
+};
 
 Dplay.keyGreen = function() {
-    if ($("#b-button").text().indexOf("ateg") != -1)
+    if ($('#b-button').text().indexOf('ateg') != -1)
 	setLocation('categories.html');
     else
-        setLocation(Dplay.getNextCategory())
-}
+        setLocation(Dplay.getNextCategory());
+};
 
 Dplay.getSectionTitle = function(location) {
     return 'Senaste';
-}
+};
 
 Dplay.getCategoryTitle = function() {
     switch (Dplay.getCategoryIndex().current) {
     case 0:
-        return "Kategorier";
+        return 'Kategorier';
     case 1:
-        return "Alla Program";
+        return 'Alla Program';
     }
 };
 
 Dplay.getLiveTitle = function() {
     return 'Kanaler';
-}
+};
 
 Dplay.getAButtonText = function(language) {
     var loc = getIndexLocation();
@@ -479,7 +473,7 @@ Dplay.getAButtonText = function(language) {
 	    return 'Senaste';
         }
     } else {
-        return null
+        return null;
     }
 };
 
@@ -490,14 +484,14 @@ Dplay.getBButtonText = function(language) {
             // Use Default
             return null;
         case 1:
-            if (language == "Swedish")
-                return "Alla Program";
+            if (language == 'Swedish')
+                return 'Alla Program';
             else
-                return "All Shows";
+                return 'All Shows';
             break;
         }
     } else
-        return null
+        return null;
 };
 
 Dplay.getCButtonText = function (language) {
@@ -525,22 +519,22 @@ Dplay.decodeSearchHits = function(data, extra) {
 
         data = JSON.parse(data.responseText);
         Includes = Dplay.decodeIncludes(data);
-        NextPage = Dplay.getNextPage(data, extra)
+        NextPage = Dplay.getNextPage(data, extra);
 
         data = data.data;
         for (var k=0; k < data.length; k++) {
-            Show = Dplay.findShowName(data[k], Includes)
+            Show = Dplay.findShowName(data[k], Includes);
             Name = Dplay.determineEpisodeName(data[k], Show);
             if (!Dplay.isItemOk(Name, data[k]))
                 continue;
             if (data[k].attributes.drmEnabled) {
-                Log("DPLAY DRM??:" + Name)
+                Log('DPLAY DRM??:' + Name);
                 continue;
             }
             if (Show) {
                 if (Dplay.show_names.indexOf(Show) != -1)
                     continue;
-                Name = Show + " - " + Name;
+                Name = Show + ' - ' + Name;
             }
 
             Description = data[k].attributes.description;
@@ -550,7 +544,7 @@ Dplay.decodeSearchHits = function(data, extra) {
             ImgLink = Dplay.findImage(data[k], Includes);
             Background = Dplay.findImage(data[k], Includes, BACKGROUND_THUMB_FACTOR);
             AirDate = Dplay.getAirDate(data[k]);
-            Link = Dplay.makeApiUrl("/videos/" + data[k].id, "&include=genres%2Cimages%2Cshow%2Cshow.images");
+            Link = Dplay.makeApiUrl('/videos/' + data[k].id, '&include=genres%2Cimages%2Cshow%2Cshow.images');
             Season  = (data[k].attributes.seasonNumber) ? data[k].attributes.seasonNumber : null;
             Episode = data[k].attributes.episodeNumber;
             Dplay.result.push({name:Name,
@@ -570,9 +564,9 @@ Dplay.decodeSearchHits = function(data, extra) {
             data[k] = null;
         }
         data = null;
-        return NextPage
+        return NextPage;
     } catch(err) {
-        Log("Dplay.decodeSearchHits Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
+        Log('Dplay.decodeSearchHits Exception:' + err.message + ' data[' + k + ']:' + JSON.stringify(data[k]));
     }
 };
 
@@ -584,7 +578,7 @@ Dplay.decode = function(data, extra) {
         if (!extra.recommended_ids)
             Dplay.reset();
         data = JSON.parse(data.responseText);
-        if (data.data[0] && data.data[0].type == "show") {
+        if (data.data[0] && data.data[0].type == 'show') {
             NextPage = Dplay.decodeShows(data, extra);
         } else if (extra.url.match(/\/shows\/[0-9]+/))
             return Dplay.decodeSeason(extra, data);
@@ -592,7 +586,7 @@ Dplay.decode = function(data, extra) {
             Includes = Dplay.decodeIncludes(data);
             data = data.data;
             for (var k=0; k < data.length; k++) {
-                Dplay.decodeEpisode(data[k], Includes, extra)
+                Dplay.decodeEpisode(data[k], Includes, extra);
                 data[k] = null;
             }
         }
@@ -601,24 +595,24 @@ Dplay.decode = function(data, extra) {
             Dplay.result.sort(function(a, b){
                 if (a.episode == b.episode) {
                     if (a.isFollowUp || a.airDate > b.airDate)
-                        return -1
+                        return -1;
                     else
-                        return 1
+                        return 1;
                 } else if (!b.episode || +a.episode > +b.episode) {
-                    return -1
+                    return -1;
                 } else {
-                    return 1
+                    return 1;
                 }
-            })
-        };
+            });
+        }
         if (extra.only_save)
             Dplay.reset();
         else if (!NextPage)
             Dplay.resultToHtml();
         if (NextPage)
-            return NextPage
+            return NextPage;
     } catch(err) {
-        Log("Dplay.decode Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
+        Log('Dplay.decode Exception:' + err.message + ' data[' + k + ']:' + JSON.stringify(data[k]));
     }
     if (extra.cbComplete)
         extra.cbComplete();
@@ -629,7 +623,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
     var Name;
     var Duration;
     var Link;
-    var Description="";
+    var Description='';
     var ImgLink;
     var Background;
     var AirDate;
@@ -638,7 +632,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
     var Episode=null;
     var IsLive=false;
 
-    Show = Dplay.findShowName(data, includes)
+    Show = Dplay.findShowName(data, includes);
     Name = Dplay.determineEpisodeName(data, Show);
     if (!Dplay.isItemOk(Name, data))
         return;
@@ -646,21 +640,21 @@ Dplay.decodeEpisode = function (data, includes, extra) {
     //     continue;
     if (extra.strip_show && data.attributes.episodeNumber) {
         Description = data.attributes.name.trim();
-        Name        = "Avsnitt " + data.attributes.episodeNumber;
+        Name        = 'Avsnitt ' + data.attributes.episodeNumber;
     } else if (!extra.strip_show && Show){
         if (Name.indexOf(Show) == -1) {
-            Name = Show + " - " + Name;
+            Name = Show + ' - ' + Name;
         }
         if (data.attributes.description)
             Description = data.attributes.description.trim();
     }
     if (Description == Name)
-        Description = "";
+        Description = '';
     Duration = Dplay.getDuration(data);
     ImgLink = Dplay.findImage(data, includes);
     Background = Dplay.findImage(data, includes, BACKGROUND_THUMB_FACTOR);
     AirDate = Dplay.getAirDate(data);
-    Link = Dplay.makeApiUrl("/videos/" + data.id, "&include=genres%2Cimages%2Cshow%2Cshow.images");
+    Link = Dplay.makeApiUrl('/videos/' + data.id, '&include=genres%2Cimages%2Cshow%2Cshow.images');
     Season  = (data.attributes.seasonNumber) ? data.attributes.seasonNumber : null;
     Episode = data.attributes.episodeNumber;
     IsLive = data.attributes.videoType.match(/LIVE/);
@@ -681,12 +675,12 @@ Dplay.decodeEpisode = function (data, includes, extra) {
          // Non-running live shows are skipped - so if here it's running...
          is_running : IsLive
         });
-}
+};
 
 Dplay.decodeShows = function(data, extra) {
     try {
         var Link;
-        var NextPage = Dplay.getNextPage(data, extra)
+        var NextPage = Dplay.getNextPage(data, extra);
         var ImgLink;
         var showData;
         var Name;
@@ -696,7 +690,7 @@ Dplay.decodeShows = function(data, extra) {
         Includes = Dplay.decodeIncludes(data);
         data = data.data;
         for (var k=0; k < data.length; k++) {
-            if (data[k].type != "show") {
+            if (data[k].type != 'show') {
                 // Can happen for recommended....
                 Dplay.decodeEpisode(data[k], Includes, extra);
                 continue;
@@ -711,12 +705,12 @@ Dplay.decodeShows = function(data, extra) {
             if (!Dplay.isItemOk(Name, showData))
                 continue;
             if (showData.attributes.video_count == 0) {
-                Log(Name + ": No episodes");
+                Log(Name + ': No episodes');
                 continue;
             }
             if (extra.query && Dplay.all_show_names.indexOf(Name) == -1) {
                 // Not playable... Probably not applicable after DPLAY
-                Log(Name +  ": queried show isn't playable.");
+                Log(Name +  ': queried show isn\'t playable.');
                 continue;
             }
             if (showData.relationships.genres)
@@ -733,11 +727,11 @@ Dplay.decodeShows = function(data, extra) {
             Dplay.all_show_names = Dplay.all_show_names.concat(Dplay.show_names);
             Dplay.all_shows      = Dplay.all_shows.concat(Dplay.result);
             // Save genres
-            for (var genres, k=0; k < Dplay.all_shows.length; k++) {
-                genres = Dplay.all_shows[k].genres;
-                for (var i=0; i < genres.length; i++) {
-                    if (Dplay.all_genres.indexOf(genres[i]) == -1)
-                        Dplay.all_genres.push(genres[i]);
+            for (var genres, j=0; j < Dplay.all_shows.length; j++) {
+                genres = Dplay.all_shows[j].genres;
+                for (var l=0; l < genres.length; l++) {
+                    if (Dplay.all_genres.indexOf(genres[l]) == -1)
+                        Dplay.all_genres.push(genres[l]);
                 }
             }
 
@@ -745,10 +739,10 @@ Dplay.decodeShows = function(data, extra) {
         else
             NextPage = null;
         data = null;
-        return NextPage
+        return NextPage;
 
     } catch(err) {
-        Log("Dplay.decodeShows Exception:" + err.message + " data[" + k + "]:" + JSON.stringify(data[k]));
+        Log('Dplay.decodeShows Exception:' + err.message + ' data[' + k + ']:' + JSON.stringify(data[k]));
     }
 };
 
@@ -762,11 +756,11 @@ Dplay.decodeSeason = function(extra, data) {
         var Includes = Dplay.decodeIncludes(data);
 
         for (var k=0; k < Includes.seasons.length; k++) {
-            Link = Dplay.makeApiUrl("/videos", "&include=images%2Cshow%2Cshow.images" +
-                                    "&filter%5Bshow.id%5D=" + showId +
-                                    "&filter%5BseasonNumber%5D=" + Includes.seasons[k] +
-                                    "&sort=episodeNumber");
-            Name = "Säsong " + Includes.seasons[k];
+            Link = Dplay.makeApiUrl('/videos', '&include=images%2Cshow%2Cshow.images' +
+                                    '&filter%5Bshow.id%5D=' + showId +
+                                    '&filter%5BseasonNumber%5D=' + Includes.seasons[k] +
+                                    '&sort=episodeNumber');
+            Name = 'Säsong ' + Includes.seasons[k];
             seasons.push({season:Includes.seasons[k], name:Name, link:Link});
         }
         ImgLink = Dplay.findImage(data.data, Includes);
@@ -774,30 +768,30 @@ Dplay.decodeSeason = function(extra, data) {
         if (seasons.length == 1) {
             return callTheOnlySeason(seasons[0].name, seasons[0].link, extra.loc);
         } else if (seasons.length == 0) {
-            extra.url = Dplay.makeApiUrl("/videos", "&include=images%2Cshow%2Cshow.images" +
-                                         "&filter%5Bshow.id%5D="+showId);
+            extra.url = Dplay.makeApiUrl('/videos', '&include=images%2Cshow%2Cshow.images' +
+                                         '&filter%5Bshow.id%5D='+showId);
             return requestUrl(extra.url,
                               function(status, data) {
-                                  Dplay.decodeShowList(data, extra)
+                                  Dplay.decodeShowList(data, extra);
                               },
                               {cbError:extra.cbComplete,
                                headers:Dplay.getHeaders()
                               }
-                             )
+                             );
         }
         seasons.sort(function(a, b){
                 if (a.season > b.season)
                     return -1;
                 else
-                    return 1
+                    return 1;
         });
 
-        for (var k=0; k < seasons.length; k++) {
-            seasonToHtml(seasons[k].name, ImgLink, seasons[k].link, seasons[k].season);
+        for (var i=0; i < seasons.length; i++) {
+            seasonToHtml(seasons[i].name, ImgLink, seasons[i].link, seasons[i].season);
         }
 
     } catch(err) {
-        Log("Dplay.decodeSeason Exception:" + err.message);
+        Log('Dplay.decodeSeason Exception:' + err.message);
     }
     if (extra.cbComplete)
         extra.cbComplete();
@@ -805,10 +799,10 @@ Dplay.decodeSeason = function(extra, data) {
 
 Dplay.channelToHtml = function(name, idx, thumb) {
     toHtml({name:name,
-            duration:"",
+            duration:'',
             link:idx,
             link_prefix:'<a href="index.html?dplay_channel=',
-            description:"",
+            description:'',
             thumb:thumb
            });
 };
@@ -818,13 +812,13 @@ Dplay.getDetailsData = function(url, data) {
     if (url.match(/\/shows/))
         return Dplay.getShowData(url,data);
 
-    var Name="";
+    var Name='';
     var Title = Name;
-    var DetailsImgLink="";
-    var AirDate="";
+    var DetailsImgLink='';
+    var AirDate='';
     var AvailDate=null;
-    var VideoLength = "";
-    var Description="";
+    var VideoLength = '';
+    var Description='';
     var Show=null;
     var isLive = false;
     var Season = null;
@@ -836,10 +830,10 @@ Dplay.getDetailsData = function(url, data) {
         data = data.data;
         Show = Dplay.findShow(data, Includes);
         Name = Dplay.determineEpisodeName(data, (Show)?Show.name:null);
-        Title = (data.attributes.episodeNumber) ? "Avsnitt " + data.attributes.episodeNumber : Name;
+        Title = (data.attributes.episodeNumber) ? 'Avsnitt ' + data.attributes.episodeNumber : Name;
         isLive = data.attributes.videoType.match(/LIVE/);
         if (Show)
-            Title = Show.name + " - " + Title;
+            Title = Show.name + ' - ' + Title;
 	DetailsImgLink = Dplay.findImage(data, Includes, DETAILS_THUMB_FACTOR);
         AirDate = Dplay.getAirDate(data);
         VideoLength = dataLengthToVideoLength(null, Dplay.getDuration(data));
@@ -851,18 +845,18 @@ Dplay.getDetailsData = function(url, data) {
             Show = {name  : Show.name,
                     url   : Dplay.makeShowUrl(data.relationships.show.data.id),
                     thumb : Dplay.findImage(Show.includes, Includes)
-                   }
+                   };
         }
         Season  = (data.attributes.seasonNumber) ? data.attributes.seasonNumber : null;
         Episode = data.attributes.episodeNumber;
 
     } catch(err) {
-        Log("Dplay.getDetailsData Exception:" + err.message);
-        Log("Name:" + Name);
-        Log("AirDate:" + AirDate);
-        Log("VideoLength:" + VideoLength);
-        Log("Description:" + Description);
-        Log("DetailsImgLink:" + DetailsImgLink);
+        Log('Dplay.getDetailsData Exception:' + err.message);
+        Log('Name:' + Name);
+        Log('AirDate:' + AirDate);
+        Log('VideoLength:' + VideoLength);
+        Log('Description:' + Description);
+        Log('DetailsImgLink:' + DetailsImgLink);
     }
     data = null;
     return {name          : Name,
@@ -879,22 +873,22 @@ Dplay.getDetailsData = function(url, data) {
             episode       : Episode,
             episode_name  : Name,
             parent_show   : Show
-    }
+    };
 };
 
 Dplay.determineEpisodeName = function(data, show) {
     var Name = data.attributes.name.trim();
     if (data.relationships.show && data.attributes.episodeNumber &&
         (!show || show.indexOf(Name) != -1))
-        Name = "Avsnitt " + data.attributes.episodeNumber;
+        Name = 'Avsnitt ' + data.attributes.episodeNumber;
     return Name;
-}
+};
 
 Dplay.getShowData = function(url, data) {
-    var Name="";
+    var Name='';
     var Genres = [];
-    var DetailsImgLink="";
-    var Description="";
+    var DetailsImgLink='';
+    var Description='';
     var Includes = null;
 
     try {
@@ -907,11 +901,11 @@ Dplay.getShowData = function(url, data) {
         Genres = Dplay.findGenres(data, Includes);
 
     } catch(err) {
-        Log("Dplay.getShowData exception:" + err.message);
-        Log("Name:" + Name);
-        Log("Genre:" + Genre);
-        Log("Description:" + Description);
-        Log("DetailsImgLink:" + DetailsImgLink);
+        Log('Dplay.getShowData exception:' + err.message);
+        Log('Name:' + Name);
+        Log('Genre:' + Genres);
+        Log('Description:' + Description);
+        Log('DetailsImgLink:' + DetailsImgLink);
     }
     data = null;
     return {show          : true,
@@ -923,15 +917,14 @@ Dplay.getShowData = function(url, data) {
 };
 
 Dplay.getDetailsUrl = function(streamUrl) {
-    return streamUrl.replace(/\/seasons/, "");
+    return streamUrl.replace(/\/seasons/, '');
 };
 
 Dplay.getPlayUrl = function(streamUrl, isLive, callback) {
     Dplay.play_args = {stream_url:streamUrl, is_live:isLive};
-    var videoUrl = "https://disco-api.dplay.se/playback/videoPlaybackInfo/" + streamUrl.match(/\/videos\/([0-9]+)/)[1];
+    var videoUrl = 'https://disco-api.dplay.se/playback/videoPlaybackInfo/' + streamUrl.match(/\/videos\/([0-9]+)/)[1];
     requestUrl(videoUrl,
-               function(status, data)
-               {
+               function(status, data) {
                    if (Player.checkPlayUrlStillValid(streamUrl)) {
                        data = JSON.parse(data.responseText).data.attributes;
                        data = data.streaming.hls.url;
@@ -953,30 +946,29 @@ Dplay.fixThumb = function(thumb, factor) {
     if (thumb) {
         var height = (factor) ? Math.round(factor*THUMB_HEIGHT) : THUMB_HEIGHT;
         var width  = (factor) ? Math.round(factor*THUMB_WIDTH)  : THUMB_WIDTH;
-        thumb = (thumb.match(/\?/)) ? thumb+"&" : thumb+"?";
-        // thumb = thumb + "f=jpg&p=true&h=" + height;
-        thumb = thumb + "f=jpg&p=true&w=" + width;
+        thumb = (thumb.match(/\?/)) ? thumb+'&' : thumb+'?';
+        // thumb = thumb + 'f=jpg&p=true&h=' + height;
+        thumb = thumb + 'f=jpg&p=true&w=' + width;
     }
-    return thumb
+    return thumb;
 };
 
 Dplay.isPlayable = function(Name, data) {
     var isPremium = false;
     if (data.relationships.contentPackages) {
         for (var k=0; k < data.relationships.contentPackages.data.length; k++) {
-            switch (data.relationships.contentPackages.data[k].id)
-            {
-                case "Free":
+            switch (data.relationships.contentPackages.data[k].id) {
+                case 'Free':
                 return true;
 
-                case "Premium":
-                isPremium = true
+                case 'Premium':
+                isPremium = true;
                 break;
             }
-        };
+        }
         return !isPremium;
     } else {
-        Log(Name + ": No package");
+        Log(Name + ': No package');
         return true;
     }
 
@@ -986,15 +978,15 @@ Dplay.isCorrectChannel = function(Name, data) {
     if (!Dplay.isSubChannelSet())
         return true;
 
-    var channel_id = Dplay.channels[Dplay.channel_idx].id
+    var channel_id = Dplay.channels[Dplay.channel_idx].id;
 
     if (data.show)
-        data = data.show
+        data = data.show;
     if (data.home_channel)
-        return data.home_channel.id == channel_id
+        return data.home_channel.id == channel_id;
     else
-        Log(Name + ": No home_channel");
-    return true
+        Log(Name + ': No home_channel');
+    return true;
 };
 
 Dplay.isAvailable = function(Name, data) {
@@ -1002,15 +994,15 @@ Dplay.isAvailable = function(Name, data) {
     if (data.attributes &&
         data.attributes.availabilityWindows) {
         for (var i=0; i < data.attributes.availabilityWindows.length; i++) {
-            if (data.attributes.availabilityWindows[i].package == "Free") {
+            if (data.attributes.availabilityWindows[i].package == 'Free') {
                 if (data.attributes.availabilityWindows[i].playableStart) {
                     if (getCurrentDate() > timeToDate(data.attributes.availabilityWindows[i].playableStart)) {
                         if (data.attributes.availabilityWindows[i].playableEnd)
-                            return getCurrentDate() < timeToDate(data.attributes.availabilityWindows[i].playableEnd)
-                        return true
+                            return getCurrentDate() < timeToDate(data.attributes.availabilityWindows[i].playableEnd);
+                        return true;
                     }
                     else
-                        return false
+                        return false;
                 }
             }
         }
@@ -1026,10 +1018,10 @@ Dplay.isAvailable = function(Name, data) {
     // } else if (data.rights) {
     //     var start = (data.rights.advod) ? data.rights.advod.start : null;
     //     if (!start && data.rights.svod)
-    //         start = data.rights.svod.start
+    //         start = data.rights.svod.start;
     //     if (start && timeToDate(start) > getCurrentDate()) {
     //         // Premium/Future episode
-    //         alert("Skipping " + data.show.title + " " + data.title)
+    //         alert('Skipping ' + data.show.title + ' ' + data.title)
     //         return false;
     //     }
     // }
@@ -1039,15 +1031,15 @@ Dplay.isAvailable = function(Name, data) {
 Dplay.isItemOk = function(Name, data, genre) {
     if (!Dplay.isPlayable(Name, data)) {
         // alert(JSON.stringify(data))
-        // alert(Name + ": Premium");
+        // alert(Name + ': Premium');
         return false;
     }
     if (!Dplay.isCorrectChannel(Name, data)) {
-        alert(Name + ": wrong channel");
+        alert(Name + ': wrong channel');
         return false;
     }
     if (!Dplay.isAvailable(Name, data)) {
-        alert(Name + ": not yet available");
+        alert(Name + ': not yet available');
         return false;
     }
     return true;
@@ -1065,12 +1057,12 @@ Dplay.resultToHtml = function() {
             Dplay.result[k].link_prefix = '<a href="details.html?ilink=',
             toHtml(Dplay.result[k]);
         }
-    };
+    }
 };
 
 Dplay.decodeCollection = function(data, recommended, result) {
     for (var ShowId,Collection,i=0; i < recommended.length; i++) {
-        Collection = Dplay.findIncludedId(data, recommended[i].id)
+        Collection = Dplay.findIncludedId(data, recommended[i].id);
         if (Collection.relationships.show) {
             result.push({id:Collection.relationships.show.data.id, is_show:true});
         } else if (Collection.relationships.video) {
@@ -1084,46 +1076,45 @@ Dplay.decodeCollection = function(data, recommended, result) {
                                            );
         } else {
             for (var key in Collection.relationships)
-                Log("Dplay.decodeCollection ignore:" + key)
+                Log('Dplay.decodeCollection ignore:' + key);
         }
     }
     return result;
-}
+};
 
 Dplay.findIncludedId = function(data, id) {
     for (var i=0; i < data.included.length; i++) {
         if (data.included[i].id == id) {
-            return  data.included[i]
+            return  data.included[i];
         }
     }
-}
+};
 
 Dplay.decodeIncludes = function(data) {
-    var Includes = {images:[], shows:[], seasons:[], genres:[]}
+    var Includes = {images:[], shows:[], seasons:[], genres:[]};
     for (var k=0; k < data.included.length; k++) {
         if (data.included[k].type == 'image' &&
             data.included[k].attributes.kind == 'default') {
-            Includes.images.push({id:data.included[k].id, src:data.included[k].attributes.src})
+            Includes.images.push({id:data.included[k].id, src:data.included[k].attributes.src});
         } else if (data.included[k].type == 'show') {
             Includes.shows[data.included[k].id] =
                 {name:     data.included[k].attributes.name,
                  includes: data.included[k]
                 };
         } else if (data.included[k].type == 'genre') {
-            Includes.genres[data.included[k].id] = data.included[k].attributes.name
+            Includes.genres[data.included[k].id] = data.included[k].attributes.name;
         } else if (data.included[k].type == 'season') {
             if (data.included[k].attributes.videoCount > 0)
-                Includes.seasons.push(data.included[k].attributes.seasonNumber)
+                Includes.seasons.push(data.included[k].attributes.seasonNumber);
         }
     }
-    return Includes
+    return Includes;
 };
 
 Dplay.findImage = function(data, includes, factor) {
     if (data.relationships &&
-        data.relationships.images)
-    {
-        data = data.relationships.images.data
+        data.relationships.images) {
+        data = data.relationships.images.data;
         for (var i=0; i < data.length; i++) {
             for (var k=0; k < includes.images.length; k++) {
                 if (includes.images[k].id == data[i].id)
@@ -1157,12 +1148,11 @@ Dplay.findShowImage = function(data, includes) {
 Dplay.findGenres = function(data, includes) {
     var Genres = [];
     if (data.relationships &&
-        data.relationships.genres)
-    {
-        data = data.relationships.genres.data
+        data.relationships.genres) {
+        data = data.relationships.genres.data;
         for (var i=0; i < data.length; i++) {
             if (includes.genres[data[i].id])
-                Genres.push(includes.genres[data[i].id])
+                Genres.push(includes.genres[data[i].id]);
         }
     }
     return Genres.join('/');
@@ -1179,31 +1169,28 @@ Dplay.getDuration = function(data) {
         return Math.floor(Duration/1000);
     else {
         data = data.attributes.availabilityWindows;
-        for (var i=0; i < data.length; i++)
-        {
-            if (data[i].package == "Free" && data[i].playableEnd)
+        for (var i=0; i < data.length; i++) {
+            if (data[i].package == 'Free' && data[i].playableEnd)
                 return (timeToDate(data[i].playableEnd)-timeToDate(data[i].playableStart))/1000;
         }
     }
-    return null
-}
+    return null;
+};
 
 Dplay.getAvailDate = function(data) {
     data = data.attributes.availabilityWindows;
-    for (var i=0; i < data.length; i++)
-    {
-        if (data[i].package == "Free" && data[i].playableEnd)
+    for (var i=0; i < data.length; i++) {
+        if (data[i].package == 'Free' && data[i].playableEnd)
             return timeToDate(data[i].playableEnd);
     }
-    return null
-}
+    return null;
+};
 
 Dplay.getAirDate = function(data) {
     var airDate = data.attributes.airDate;
     if (data.attributes.availabilityWindows) {
-        for (var i=0; i < data.attributes.availabilityWindows.length; i++)
-        {
-            if (data.attributes.availabilityWindows[i].package == "Free" &&
+        for (var i=0; i < data.attributes.availabilityWindows.length; i++) {
+            if (data.attributes.availabilityWindows[i].package == 'Free' &&
                 data.attributes.availabilityWindows[i].playableStart) {
                 airDate = Dplay.getMinDate(airDate, data.attributes.availabilityWindows[i].playableStart);
                 break;
@@ -1211,24 +1198,24 @@ Dplay.getAirDate = function(data) {
         }
     }
     return timeToDate(airDate);
-}
+};
 
 Dplay.getMinDate = function (a, b) {
     if (!a) return b;
     if (!b) return a;
     if (timeToDate(a) < timeToDate(b))
         return a;
-    return b
-}
+    return b;
+};
 
 Dplay.getNextPage = function(data, extra) {
     var ThisPage = extra.url.match(/&page%5Bnumber%5D=([0-9]+)/);
     var TotalPages = (data.meta) ? data.meta.totalPages : null;
-    var NextPage = null
+    var NextPage = null;
 
     if (ThisPage && TotalPages && +ThisPage[1] < TotalPages) {
-        NextPage = "&page%5Bnumber%5D=" + (+ThisPage[1] + 1)
-        NextPage = extra.url.replace(/&page%5Bnumber%5D=[0-9]+/, NextPage)
+        NextPage = '&page%5Bnumber%5D=' + (+ThisPage[1] + 1);
+        NextPage = extra.url.replace(/&page%5Bnumber%5D=[0-9]+/, NextPage);
     }
-    return NextPage
-}
+    return NextPage;
+};

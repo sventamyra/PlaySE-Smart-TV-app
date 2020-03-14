@@ -1,9 +1,7 @@
-var live =
-{
+var live = {
 };
 
-live.onLoad = function(refresh)
-{
+live.onLoad = function(refresh) {
     if (!refresh) {
         document.title = Channel.getLiveTitle();
 	Header.display(document.title);
@@ -14,12 +12,11 @@ live.onLoad = function(refresh)
 };
 
 live.loadXml = function(refresh) {
-    $("#content-scroll").hide();
-    var url = Channel.getUrl("live", {refresh:refresh});
+    $('#content-scroll').hide();
+    var url = Channel.getUrl('live', {refresh:refresh});
     var cbComplete = function(status){loadFinished(status, refresh)};
     requestUrl(url,
-               function(status, data)
-               {
+               function(status, data) {
                    Channel.decodeLive(data, 
                                       {url:url, 
                                        refresh:refresh,
@@ -33,8 +30,7 @@ live.loadXml = function(refresh) {
                });
 };
 
-live.onUnload = function()
-{
+live.onUnload = function() {
 	Player.deinit();
 };
 //window.location = 'project.html?ilink=' + ilink;

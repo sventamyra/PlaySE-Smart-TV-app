@@ -1,19 +1,16 @@
 var timeout;
 var mute = false;
 
-var Audio =
-{
+var Audio = {
     plugin : null
 };
 
-Audio.init = function()
-{
+Audio.init = function() {
     var success = true;
     
-    this.plugin = document.getElementById("pluginAudio");
+    this.plugin = document.getElementById('pluginAudio');
     
-    if (!this.plugin)
-    {
+    if (!this.plugin) {
         success = false;
     }
 
@@ -25,16 +22,16 @@ Audio.toggleMute = function(){
 	if (mute == false){
 		this.plugin.SetUserMute(1);
 		Footer.display(true);
-		$('.muteoverlay').css("display", "block");
-		alert("mute");
+		$('.muteoverlay').css('display', 'block');
+		alert('mute');
 		mute = true;
 	
 	}
 	else{
 		this.plugin.SetUserMute(0);
 		Footer.display(false);
-		$('.muteoverlay').css("display", "none");
-		alert("unmute");
+		$('.muteoverlay').css('display', 'none');
+		alert('unmute');
 		mute = false;
 		
 	}
@@ -46,9 +43,9 @@ Audio.showMute = function(){
 	mute = this.plugin.GetUserMute();
 	if (mute == true){
 		window.clearTimeout(timeout);
-		$('.video-wrapper').css("display", "block");				
-		$('.video-footer').css("display", "block");
-		$('.bottomoverlaybig').css("display", "block");
+		$('.video-wrapper').css('display', 'block');				
+		$('.video-footer').css('display', 'block');
+		$('.bottomoverlaybig').css('display', 'block');
 		var pp;
 		if(Language.getisSwedish()){
 			pp='Volym: Tyst';
@@ -60,9 +57,9 @@ Audio.showMute = function(){
 	}
 	else{
 		window.clearTimeout(timeout);
-		$('.video-wrapper').css("display", "block");				
-		$('.video-footer').css("display", "block");
-		$('.bottomoverlaybig').css("display", "block");
+		$('.video-wrapper').css('display', 'block');				
+		$('.video-footer').css('display', 'block');
+		$('.bottomoverlaybig').css('display', 'block');
 		var pp;
 		if(Language.getisSwedish()){
 			pp='Volym: ';
@@ -74,21 +71,20 @@ Audio.showMute = function(){
 	}
 };
 
-Audio.setRelativeVolume = function(delta)
-{
+Audio.setRelativeVolume = function(delta) {
 
 	window.clearTimeout(timeout);
     this.plugin.SetVolumeWithKey(delta);
-	$('.video-wrapper').css("display", "block");				
-	$('.video-footer').css("display", "block");
-	$('.bottomoverlaybig').css("display", "block");
+	$('.video-wrapper').css('display', 'block');				
+	$('.video-footer').css('display', 'block');
+	$('.bottomoverlaybig').css('display', 'block');
 	var pp;
 	if(Language.getisSwedish()){
 		pp='Volym: ';
 	}else{
 		pp='Volume: ';
 	}
-	$('.muteoverlay').css("display", "none");
+	$('.muteoverlay').css('display', 'none');
 	$('.bottomoverlaybig').html(pp + this.getVolume() + '%');
 	this.showMuteFooter();
 	timeout = window.setTimeout(this.hideControls, 5000);
@@ -96,13 +92,12 @@ Audio.setRelativeVolume = function(delta)
 };
 
 Audio.hideControls = function(){
-	$('.video-wrapper').css("display", "none");				
-	$('.video-footer').css("display", "none");
-	$('.bottomoverlaybig').css("display", "none");
+	$('.video-wrapper').css('display', 'none');				
+	$('.video-footer').css('display', 'none');
+	$('.bottomoverlaybig').css('display', 'none');
 };
 
-Audio.getVolume = function()
-{
+Audio.getVolume = function() {
     return this.plugin.GetVolume();
 };
 
@@ -117,35 +112,33 @@ Audio.setCurrentMode = function(smute){
 	}
 	else{
 		alert('play muted');
-		$('.muteoverlay').css("display", "block");
+		$('.muteoverlay').css('display', 'block');
 		this.plugin.SetUserMute(1);
 	}
 };
 
 
-Audio.uiToggleMute = function()
-{
+Audio.uiToggleMute = function() {
 	if(this.plugin.GetUserMute() == 0){
-		alert("mute");
+		alert('mute');
 		this.plugin.SetUserMute(1);
 		Footer.display(true);
 	}
 	else{
-		alert("unmute");
+		alert('unmute');
 		this.plugin.SetUserMute(0);
 		Footer.display(false);
 	}
 	
 };
 
-Audio.showMuteFooter = function()
-{
+Audio.showMuteFooter = function() {
 	if(this.plugin.GetUserMute() == 1){
-		alert("muted");
+		alert('muted');
 		Footer.display(true);
 	}
 	else{
-		alert("unmuted");
+		alert('unmuted');
 		Footer.display(false);
 	}
 	

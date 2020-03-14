@@ -1,11 +1,9 @@
 
-var Footer =
-{
+var Footer = {
    
 };
 
-Footer.display = function(mute)
-{
+Footer.display = function(mute) {
 	var leftcorner = '<span id="footer-clock"></span><div class="footer-left-r"></div>';
 	var rightcorner = '<div class="footer-right-r"></div>';
 	

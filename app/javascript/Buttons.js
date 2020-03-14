@@ -12,20 +12,19 @@ var capslock = false;
 var rowCount = 1;
 var keyCount = 0;
 var first = true;
-var resButton = ["#resauto", "#res1", "#res2", "#res3", "#res4", "#res5", "#res6"];
-var reslButton = ["#reslauto", "#resl1", "#resl2", "#resl3", "#resl4", "#resl5", "#resl6"];
-var langButton = ["#english", "#swedish"];
-var channelButton = ["#svt", "#oa", "#viasat", "#tv4", "#dplay", "#history"];
+var resButton = ['#resauto', '#res1', '#res2', '#res3', '#res4', '#res5', '#res6'];
+var reslButton = ['#reslauto', '#resl1', '#resl2', '#resl3', '#resl4', '#resl5', '#resl6'];
+var langButton = ['#english', '#swedish'];
+var channelButton = ['#svt', '#oa', '#viasat', '#tv4', '#dplay', '#history'];
 var menuId = 0;
 var menu = [{id:'.language-content .title', button:langButton},
-            {id:'.res-content .title', button:resButton}, 
+            {id:'.res-content .title', button:resButton},
             {id:'.res-live-content .title', button:reslButton},
             {id:'.channel-content .title', button:channelButton}
            ];
 var animateCallbacked = 0;
 
-var Buttons =
-{
+var Buttons = {
 };
 
 Buttons.checkKey = function(limit) {
@@ -33,51 +32,49 @@ Buttons.checkKey = function(limit) {
     var newTs = new Date();
     if (event.keyCode == lastKey) {
         var keyDiff = (keyTs) ? (newTs-keyTs) : 6666;
-        // Log("keyDiff:" + keyDiff + " limit:" + limit);
+        // Log('keyDiff:' + keyDiff + ' limit:' + limit);
         if (limit && keyDiff < 600) {
-            // Log("ignoring, key repeat too quick.");
-            widgetAPI.blockNavigation(event)
-            return -1
+            // Log('ignoring, key repeat too quick.');
+            widgetAPI.blockNavigation(event);
+            return -1;
         }
         if (keyHeld) {
             keyHeldCounter++;
         } else if (!limit || keyHeld === 0) {
-            // Log("enableKeyHeld");
-            keyHeld = true
+            // Log('enableKeyHeld');
+            keyHeld = true;
         } else {
-            // Log("first key repeat");
+            // Log('first key repeat');
             keyHeld = 0;
         }
-    } 
-    keyTs = newTs; 
+    }
+    keyTs = newTs;
 
-    return 0
+    return 0;
 };
 
-Buttons.keyDown = function()
-{
-    // Log("Key Down: " + event.keyCode + " index:" + index);
+Buttons.keyDown = function() {
+    // Log('Key Down: ' + event.keyCode + ' index:' + index);
 
     if (event.keyCode != lastKey)
         Buttons.clearKey();
 
-    Buttons.restartKeyTimer()
+    Buttons.restartKeyTimer();
 
-    // Log("index:" + index + " exit:" + $('#exitBlock').is(':visible') + " error:" + $(".slider-error").is(':visible')); 
+    // Log('index:' + index + ' exit:' + $('#exitBlock').is(':visible') + ' error:' + $('.slider-error').is(':visible'));
     if(index == 2){
 	this.keyHandleForPlayer();
     }
     else if($('#exitBlock').is(':visible')) {
         this.keyHandleForExit();
     }
-    else if ($(".slider-error").is(':visible') || index == 9) {
+    else if ($('.slider-error').is(':visible') || index == 9) {
 	this.keyHandleForConnectionError();
-    } 
+    }
     else if(index == 0){
 	this.keyHandleForList();
     }
-    else if(index == 1)
-    {
+    else if(index == 1) {
 	this.keyHandleForDetails();
     }
     else if(index == 3){
@@ -100,19 +97,17 @@ Buttons.setKeyHandleID = function(iid){
 };
 
 Buttons.getKeyHandleID = function(){
-	return index; 
+	return index;
 };
 
 
 
-Buttons.enableKeys = function()
-{
-	document.getElementById("anchor").focus();
+Buttons.enableKeys = function() {
+	document.getElementById('anchor').focus();
 };
 
-Buttons.clearKey = function() 
-{
-    // Log("clearKey");
+Buttons.clearKey = function() {
+    // Log('clearKey');
     lastKey = 0;
     keyHeld = false;
     keyHeldCounter = 0;
@@ -123,15 +118,14 @@ Buttons.restartKeyTimer = function() {
     keyTimer = window.setTimeout(this.clearKey, 400);
 };
 
-Buttons.sscroll = function(hide) 
-{
-    // alert("Buttons.sscroll:" + itemCounter + " margin:" + Buttons.getMargin()); 
+Buttons.sscroll = function(hide) {
+    // alert('Buttons.sscroll:' + itemCounter + ' margin:' + Buttons.getMargin());
     animateCallbacked = 0;
     $('.content-holder').animate(
         {marginLeft: Buttons.getMargin()},
         {complete: function() {
             animateCallbacked = animateCallbacked+1;
-            if (itemCounter && !hide && animateCallbacked == 2 && !$("#content-scroll").is(':visible')) {
+            if (itemCounter && !hide && animateCallbacked == 2 && !$('#content-scroll').is(':visible')) {
                 contentShow();
             }
         }
@@ -148,21 +142,18 @@ Buttons.getMargin = function() {
     return xaxis;
 };
 
-Buttons.refresh = function(hide) 
-{
-    $('.content-holder').css({marginLeft: Buttons.getMargin()})    
+Buttons.refresh = function(hide) {
+    $('.content-holder').css({marginLeft: Buttons.getMargin()});
 };
 
-Buttons.keyHandleForExit = function()
-{
+Buttons.keyHandleForExit = function() {
     var keyCode = event.keyCode;
 
-    switch(keyCode)
-    {
+    switch(keyCode) {
     case tvKey.KEY_RETURN:
-	widgetAPI.blockNavigation(event); 
-        $("#exitBlock").hide();
-        break
+	widgetAPI.blockNavigation(event);
+        $('#exitBlock').hide();
+        break;
 
     case tvKey.KEY_ENTER:
         widgetAPI.sendReturnEvent();
@@ -170,25 +161,23 @@ Buttons.keyHandleForExit = function()
     }
 };
 
-Buttons.keyHandleForList = function()
-{
+Buttons.keyHandleForList = function() {
     if (Buttons.checkKey(true) == -1)
-        return
+        return;
 
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
     var keyCode = event.keyCode;
 
-    // Log("Key handled: " + keyCode + " lastKey=" + lastKey);
+    // Log('Key handled: ' + keyCode + ' lastKey=' + lastKey);
     if (!itemSelected) {
 	itemSelected = topItems.eq(0).addClass('selected');
 	columnCounter = 0;
     }
-    switch(keyCode)
-    {
+    switch(keyCode) {
     case tvKey.KEY_RIGHT:
         if (keyHeld) {
-            
+
             itemSelected = nextInList(topItems, bottomItems, itemSelected, 4-(columnCounter%4));
         }
         else {
@@ -197,12 +186,12 @@ Buttons.keyHandleForList = function()
 	break;
 
     case tvKey.KEY_CH_UP:
-    case tvKey.KEY_PANEL_CH_UP:         
+    case tvKey.KEY_PANEL_CH_UP:
     case tvKey.KEY_FF:
     case tvKey.KEY_FF_:
         itemSelected = nextInList(topItems, bottomItems, itemSelected, 4);
 	break;
-	
+
     case tvKey.KEY_LEFT:
         if (keyHeld) {
             itemSelected = prevInList(topItems, bottomItems, itemSelected, 4-(columnCounter%4));
@@ -227,29 +216,28 @@ Buttons.keyHandleForList = function()
 	}
 	break;
 
-    case tvKey.KEY_UP:				
+    case tvKey.KEY_UP:
 	if (!isTopRowSelected) {
             isTopRowSelected = true;
 	    itemSelected.removeClass('selected');
-            itemSelected = topItems.eq(columnCounter).addClass('selected');				
+            itemSelected = topItems.eq(columnCounter).addClass('selected');
         }
 	break;
     case tvKey.KEY_INFO:
     case tvKey.KEY_ENTER:
     case tvKey.KEY_PANEL_ENTER:
     case tvKey.KEY_PLAY:
-	var ilink = itemSelected.find('.ilink').attr("href");
-        if (ilink != undefined)
-        {
+	var ilink = itemSelected.find('.ilink').attr('href');
+        if (ilink != undefined) {
             if (keyCode != tvKey.KEY_INFO && Buttons.isPlayable(ilink)) {
                 Buttons.playItem();
                 return;
             }
-            else if (keyCode == tvKey.KEY_INFO && 
-                     (ilink.match(/showList.html\?((show_name|tmp_channel_id)=[^&]+&)*name=/) || 
-                      ilink.match("categoryDetail.html"))) {
+            else if (keyCode == tvKey.KEY_INFO &&
+                     (ilink.match(/showList.html\?((show_name|tmp_channel_id)=[^&]+&)*name=/) ||
+                      ilink.match('categoryDetail.html'))) {
                 // Info of show.
-                ilink = "details.html?" + ilink;
+                ilink = 'details.html?' + ilink;
             }
             else if (keyCode == tvKey.KEY_INFO && !Buttons.isPlayable(ilink)) {
                 // Info of non-episode/show, not relevant.
@@ -266,28 +254,28 @@ Buttons.keyHandleForList = function()
     default:
         this.handleMenuKeys(keyCode);
         return;
-        
+
     }
     this.sscroll();
 };
 
-selectItemIndex = function(i) {
+function selectItemIndex(i) {
     columnCounter = Math.floor(i/2);
-    isTopRowSelected = (i % 2 == 0)
+    isTopRowSelected = (i % 2 == 0);
     if (items.length >= 8*(MAX_PAGES+1)) {
         htmlSection = getInitialSection();
         orgColumnCounter = columnCounter;
-        while (columnCounter >= htmlSection.load_next_column && 
+        while (columnCounter >= htmlSection.load_next_column &&
                htmlSection.load_next_column > 0) {
             getNextSection();
             columnCounter = orgColumnCounter - htmlSection.index/2;
         }
     } else
         htmlSection = null;
-    alert("i:" + i + " col:" + columnCounter + " top:" + isTopRowSelected + " htmlSection:" + JSON.stringify(htmlSection));
+    alert('i:' + i + ' col:' + columnCounter + ' top:' + isTopRowSelected + ' htmlSection:' + JSON.stringify(htmlSection));
 }
 
-checkLoadNextSection = function(column, steps) {
+function checkLoadNextSection(column, steps) {
     var selected = null;
     if (htmlSection) {
         if (htmlSection.load_next_column != 0) {
@@ -308,10 +296,10 @@ checkLoadNextSection = function(column, steps) {
                };
     }
 
-    return null
+    return null;
 }
 
-checkLoadPriorSection = function(column, steps) {
+function checkLoadPriorSection(column, steps) {
     var selected = null;
 
     if (htmlSection) {
@@ -333,11 +321,10 @@ checkLoadPriorSection = function(column, steps) {
                };
     }
 
-    return null
+    return null;
 }
 
-nextInList = function(topItems, bottomItems, itemSelected, steps)
-{
+function nextInList(topItems, bottomItems, itemSelected, steps) {
     var nextLoaded = checkLoadNextSection(columnCounter, steps);
     if (nextLoaded) {
         itemSelected = nextLoaded.selected,
@@ -345,10 +332,9 @@ nextInList = function(topItems, bottomItems, itemSelected, steps)
         bottomItems  = nextLoaded.bottom;
     }
     itemSelected.removeClass('selected');
-    next = itemSelected.next();
+    var next = itemSelected.next();
     while(--steps > 0 && next.length > 0){
-        if ((next.next()).length > 0)
-        {
+        if ((next.next()).length > 0) {
             columnCounter++;
             itemSelected = next.addClass('selected');
             itemSelected.removeClass('selected');
@@ -370,12 +356,11 @@ nextInList = function(topItems, bottomItems, itemSelected, steps)
     }
     nextLoaded = checkLoadNextSection(columnCounter, 0);
     if (nextLoaded)
-        return nextLoaded.selected
+        return nextLoaded.selected;
     return itemSelected;
-};
+}
 
-prevInList = function(topItems, bottomItems, itemSelected, steps)
-{
+function prevInList(topItems, bottomItems, itemSelected, steps) {
 
     var priorLoaded = checkLoadPriorSection(columnCounter, steps);
     if (priorLoaded) {
@@ -385,10 +370,9 @@ prevInList = function(topItems, bottomItems, itemSelected, steps)
     }
 
     itemSelected.removeClass('selected');
-    prev = itemSelected.prev();
+    var prev = itemSelected.prev();
     while(--steps > 0 && prev.length > 0){
-        if ((prev.prev()).length > 0)
-        {
+        if ((prev.prev()).length > 0) {
             columnCounter--;
             itemSelected = prev.addClass('selected');
             itemSelected.removeClass('selected');
@@ -417,17 +401,15 @@ prevInList = function(topItems, bottomItems, itemSelected, steps)
         }
     }
     return itemSelected;
-};
+}
 
-Buttons.keyHandleForDetails = function()
-{
+Buttons.keyHandleForDetails = function() {
 
     if (Buttons.checkKey(true) == -1)
-        return
+        return;
 
     var keyCode = event.keyCode;
-    switch(keyCode)
-    {
+    switch(keyCode) {
 
     case tvKey.KEY_DOWN:
         if($('#extraButton').is(':visible')) {
@@ -442,16 +424,16 @@ Buttons.keyHandleForDetails = function()
            !$('#notStartedButton').is(':visible')) {
 	    $('#extraButton').removeClass('selected');
             if ($('#playButton').is(':visible'))
-                $('#playButton').addClass('selected')
-            else ($('#enterShowButton').is(':visible'))
-                $('#enterShowButton').addClass('selected')
+                $('#playButton').addClass('selected');
+            else if ($('#enterShowButton').is(':visible'))
+                $('#enterShowButton').addClass('selected');
         }
         break;
 
     case tvKey.KEY_ENTER:
     case tvKey.KEY_PANEL_ENTER:
 	if ($('#enterShowButton').hasClass('selected')) {
-	    setLocation(itemSelected.find('.ilink').attr("href"));
+	    setLocation(itemSelected.find('.ilink').attr('href'));
 	} else if ($('#playButton').hasClass('selected')) {
 	    Details.startPlayer();
 	} else if ($('#extraButton').hasClass('selected')) {
@@ -464,7 +446,7 @@ Buttons.keyHandleForDetails = function()
             Details.startPlayer();
         }
 	break;
-	
+
     case tvKey.KEY_INFO:
 	goBack();
 	break;
@@ -484,13 +466,12 @@ Buttons.keyHandleForDetails = function()
 	break;
     }
     this.handleMenuKeys(keyCode);
-    
+
 };
 
-Buttons.keyHandleForSettings = function()
-{
+Buttons.keyHandleForSettings = function() {
     var keyCode = event.keyCode;
-    
+
     var selected = -1;
     var checked  = -1;
     var button = menu[menuId].button;
@@ -499,14 +480,13 @@ Buttons.keyHandleForSettings = function()
 	    selected = i;
 	}
 	if($(button[i]).hasClass('checked'))
-            checked = i
+            checked = i;
     }
 
-    switch(keyCode)
-    {
+    switch(keyCode) {
     case tvKey.KEY_RIGHT:
     case tvKey.KEY_LEFT:
-        var newSelected = (keyCode == tvKey.KEY_RIGHT) ? selected+1 : selected-1
+        var newSelected = (keyCode == tvKey.KEY_RIGHT) ? selected+1 : selected-1;
         if (newSelected >= 0 && newSelected < button.length) {
             if (selected != -1) {
 	        $(button[selected]).removeClass('selected');
@@ -520,7 +500,7 @@ Buttons.keyHandleForSettings = function()
 
     case tvKey.KEY_DOWN:
     case tvKey.KEY_UP:
-        var newMenuId = (keyCode == tvKey.KEY_DOWN) ? menuId+1 : menuId-1
+        var newMenuId = (keyCode == tvKey.KEY_DOWN) ? menuId+1 : menuId-1;
         if (newMenuId  >= 0 && newMenuId < menu.length) {
             if (selected != -1) {
 	        $(button[selected]).removeClass('selected');
@@ -563,10 +543,10 @@ Buttons.keyHandleForSettings = function()
                 break;
             case 3:
                 Language.hide();
-                Channel.setUnCheckedChannelText($(button[checked]))
-                setChannel(eval($(button[selected]).attr("channel")),
-                           $(button[selected]).attr("id"));
-                Channel.setCheckedChannelText($(button[selected]))
+                Channel.setUnCheckedChannelText($(button[checked]));
+                setChannel(eval($(button[selected]).attr('channel')),
+                           $(button[selected]).attr('id'));
+                Channel.setCheckedChannelText($(button[selected]));
                 break;
             }
         }
@@ -576,24 +556,20 @@ Buttons.keyHandleForSettings = function()
     this.handleMenuKeys(keyCode);
 };
 
-Buttons.keyHandleForImeSearch = function()
-{
+Buttons.keyHandleForImeSearch = function() {
 };
 
-Buttons.keyHandleForKanaler = function()
-{
-    Log("keyHandleForKanaler!!!");
+Buttons.keyHandleForKanaler = function() {
+    Log('keyHandleForKanaler!!!');
 };
 
 Buttons.keyHandleForPlayer = function() {
-
-    Buttons.checkKey()
+    Buttons.checkKey();
     var keyCode = event.keyCode;
-    
+
     var longMinutes = Math.floor(keyHeldCounter/10) + 1;
 
-    switch(keyCode)
-    {
+    switch(keyCode) {
     case tvKey.KEY_RIGHT:
         Player.skipLongForwardVideo(longMinutes);
 	break;
@@ -629,23 +605,23 @@ Buttons.keyHandleForPlayer = function() {
 	Player.stopVideo();
 	break;
     case tvKey.KEY_VOL_DOWN:
-	Log("VOL_DOWN");
+	Log('VOL_DOWN');
 	Audio.setRelativeVolume(1);
 	break;
     case tvKey.KEY_PANEL_VOL_DOWN:
-	Log("VOL_DOWN");
+	Log('VOL_DOWN');
 	Audio.setRelativeVolume(1);
 	break;
     case tvKey.KEY_VOL_UP:
-	Log("VOL_UP");
+	Log('VOL_UP');
 	Audio.setRelativeVolume(0);
 	break;
     case tvKey.KEY_PANEL_VOL_UP:
-	Log("VOL_UP");
+	Log('VOL_UP');
 	Audio.setRelativeVolume(0);
 	break;
     case tvKey.KEY_RETURN:
-	widgetAPI.blockNavigation(event); 
+	widgetAPI.blockNavigation(event);
         Player.keyReturn();
 	break;
     case tvKey.KEY_EXIT:
@@ -660,7 +636,7 @@ Buttons.keyHandleForPlayer = function() {
 	Player.showDetails();
 	break;
     case tvKey.KEY_TOOLS:
-        widgetAPI.blockNavigation(event); 
+        widgetAPI.blockNavigation(event);
 	Player.showHelp();
 	break;
     case tvKey.KEY_MUTE:
@@ -676,7 +652,7 @@ Buttons.keyHandleForPlayer = function() {
 	Player.toggleAspectRatio();
 	break;
     case tvKey.KEY_YELLOW:
-    case tvKey.KEY_SUBTITLE:     
+    case tvKey.KEY_SUBTITLE:
     case tvKey.KEY_SUB_TITLE:
 	Subtitles.toggle();
 	break;
@@ -700,33 +676,29 @@ Buttons.keyHandleForPlayer = function() {
 	Subtitles.separate(keyCode == tvKey.KEY_6);
 	break;
     default:
-        Log("Unhandled key:" + keyCode);
+        Log('Unhandled key:' + keyCode);
     }
 };
 
 
-Buttons.keyHandleForGeofilter = function()
-{
+Buttons.keyHandleForGeofilter = function() {
 	var keyCode = event.keyCode;
-	switch(keyCode)
-	{
-		
+	switch(keyCode) {
+
 		case tvKey.KEY_ENTER:
 		case tvKey.KEY_PANEL_ENTER:
 	                history.go(-1);
 			break;
-		
+
 	}
 	this.handleMenuKeys(keyCode);
-	
+
 };
 
-Buttons.keyHandleForConnectionError = function()
-{
+Buttons.keyHandleForConnectionError = function() {
 	var keyCode = event.keyCode;
-	switch(keyCode)
-	{
-		
+	switch(keyCode) {
+
 		case tvKey.KEY_ENTER:
 		case tvKey.KEY_PANEL_ENTER:
 			// location.reload(true);
@@ -737,12 +709,11 @@ Buttons.keyHandleForConnectionError = function()
 };
 
 Buttons.handleMenuKeys = function(keyCode){
-    switch(keyCode)
-    {
-    case tvKey.KEY_RED: 
+    switch(keyCode) {
+    case tvKey.KEY_RED:
         Channel.keyRed();
 	break;
-    case tvKey.KEY_GREEN: 
+    case tvKey.KEY_GREEN:
         Channel.keyGreen();
 	break;
     case tvKey.KEY_YELLOW:
@@ -752,13 +723,13 @@ Buttons.handleMenuKeys = function(keyCode){
 	Channel.keyBlue();
 	break;
     case tvKey.KEY_RETURN:
-	widgetAPI.blockNavigation(event); 
+	widgetAPI.blockNavigation(event);
 	var urlpath = myLocation;
 	// var ifound = urlpath.indexOf('index.html');
-	if(index == 6 || $(".slider-language").is(':visible')){
+	if(index == 6 || $('.slider-language').is(':visible')){
 	    Language.hide();
 	}
-	else if(index == 9 || $(".slider-error").is(':visible')) {
+	else if(index == 9 || $('.slider-error').is(':visible')) {
             ConnectionError.show(true);
         }
         else if(myHistory.length > 0) {
@@ -766,7 +737,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	    goBack();
 	}
 	else{
-            $("#exitBlock").show();
+            $('#exitBlock').show();
 	}
 	break;
     case tvKey.KEY_EXIT:
@@ -779,13 +750,12 @@ Buttons.handleMenuKeys = function(keyCode){
 	// Terminated by force
 	break;
     case tvKey.KEY_TOOLS:
-	widgetAPI.blockNavigation(event); 
+	widgetAPI.blockNavigation(event);
 	Search.hide();
 	Language.show();
 	break;
     case tvKey.KEY_MUTE:
 	Audio.uiToggleMute();
-	break;
 	break;
     case tvKey.KEY_0:
         Buttons.changeChannel(History);
@@ -812,31 +782,31 @@ Buttons.handleMenuKeys = function(keyCode){
 };
 
 Buttons.changeChannel = function (channel) {
-    var olduBtton, newButton;
+    var oldButton, newButton;
     for(var i=0; i < channelButton.length; i++) {
-        if ($(channelButton[i]).hasClass("checked")) {
+        if ($(channelButton[i]).hasClass('checked')) {
             oldButton = $(channelButton[i]);
-        } else if (eval($(channelButton[i]).attr("channel")) == channel) {
+        } else if (eval($(channelButton[i]).attr('channel')) == channel) {
             newButton = $(channelButton[i]);
         }
     }
-    if (!newButton) 
+    if (!newButton)
         newButton = oldButton;
 
     Language.hide();
     oldButton.removeClass('checked');
     Channel.setUnCheckedChannelText(oldButton);
-    setChannel(channel, newButton.attr("id"));
+    setChannel(channel, newButton.attr('id'));
     Channel.setCheckedChannelText(newButton);
     newButton.addClass('checked');
 };
 
 Buttons.playItem = function() {
-    var duration     = itemSelected.find('.ilink').attr("data-length");
-    var isLive       = (itemSelected.find('.ilink').attr("is-live") != null);
-    var notAvailable = (itemSelected.find('.ilink').attr("not-yet-available") != null);
+    var duration     = itemSelected.find('.ilink').attr('data-length');
+    var isLive       = (itemSelected.find('.ilink').attr('is-live') != null);
+    var notAvailable = (itemSelected.find('.ilink').attr('not-yet-available') != null);
     var starttime    = 0;
-    var itemLink     = itemSelected.find('.ilink').attr("href")
+    var itemLink     = itemSelected.find('.ilink').attr('href');
 
     if (notAvailable) {
         // Not available yet
@@ -851,9 +821,9 @@ Buttons.playItem = function() {
             starttime = (starttime) ? starttime[1] : 0;
         }
     }
-    // Log("isLive:" + isLive + " starttime:" + starttime);
+    // Log('isLive:' + isLive + ' starttime:' + starttime);
     if (duration.search(/[hsekmin]/) == -1) {
-        duration = duration + " sek";
+        duration = duration + ' sek';
     }
     Player.setDuration(duration);
     Player.setNowPlaying(itemSelected.find('a').text());
@@ -862,11 +832,10 @@ Buttons.playItem = function() {
 };
 
 Buttons.findNextItem = function(play) {
-
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
     var tmpItem;
-    var tmpTopSelected = isTopRowSelected
+    var tmpTopSelected = isTopRowSelected;
     var tmpColumnCounter = columnCounter;
 
     while (true) {
@@ -883,7 +852,7 @@ Buttons.findNextItem = function(play) {
                 tmpColumnCounter = 0;
             } else {
                 // There is no more item
-                return -1
+                return -1;
             }
         } else {
             // Go Up and right
@@ -896,7 +865,7 @@ Buttons.findNextItem = function(play) {
                     tmpColumnCounter = 0;
                 } else {
                     // There is no more item
-                    return -1
+                    return -1;
                 }
             } else {
                 tmpColumnCounter++;
@@ -905,23 +874,22 @@ Buttons.findNextItem = function(play) {
         if (tmpColumnCounter == 0 && checkLoadNextSection(tmpColumnCounter, 0)) {
             topItems = $('.topitem');
             bottomItems = $('.bottomitem');
-            tmpItem = topItems.eq(0); 
+            tmpItem = topItems.eq(0);
         }
-        if (tmpItem.find('.ilink').attr("href") != undefined && 
-            (Buttons.isPlayable(tmpItem.find('.ilink').attr("href")) ||
-             (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
+        if (tmpItem.find('.ilink').attr('href') != undefined &&
+            (Buttons.isPlayable(tmpItem.find('.ilink').attr('href')) ||
+             (tmpItem.find('.ilink').attr('href').search('(showList|categoryDetail).html\\?') != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('not-yet-available') === -1)) {
-            return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
+            return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter};
         }
     }
 };
 
 Buttons.findPriorItem = function(play) {
-
     var topItems = $('.topitem');
     var bottomItems = $('.bottomitem');
     var tmpItem;
-    var tmpTopSelected = isTopRowSelected
+    var tmpTopSelected = isTopRowSelected;
     var tmpColumnCounter = columnCounter;
 
     while (true) {
@@ -957,11 +925,11 @@ Buttons.findPriorItem = function(play) {
             tmpTopSelected = false;
             tmpItem = bottomItems.eq(tmpColumnCounter);
         }
-        if (tmpItem.find('.ilink').attr("href") != undefined && 
-            (Buttons.isPlayable(tmpItem.find('.ilink').attr("href")) ||
-             (tmpItem.find('.ilink').attr("href").search("(showList|categoryDetail).html\\?") != -1 && !play)) &&
+        if (tmpItem.find('.ilink').attr('href') != undefined &&
+            (Buttons.isPlayable(tmpItem.find('.ilink').attr('href')) ||
+             (tmpItem.find('.ilink').attr('href').search('(showList|categoryDetail).html\\?') != -1 && !play)) &&
             (!play || tmpItem.html().indexOf('not-yet-available') === -1)) {
-            return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter}
+            return {item:tmpItem, top:tmpTopSelected, col:tmpColumnCounter};
         }
     }
 };
@@ -981,18 +949,18 @@ Buttons.runNextItem = function(direction, play) {
         this.sscroll(true);
         if (detailsOnTop) {
             // refresh History
-            oldPos = myHistory.pop();
+            var oldPos = myHistory.pop();
             oldPos.pos.col=tmpItem.col;
             oldPos.pos.top=tmpItem.top;
-            oldPos.pos = Channel.savePosition(oldPos.pos)
+            oldPos.pos = Channel.savePosition(oldPos.pos);
             myHistory.push(oldPos);
         }
         if (myLocation.match(/details.html/)) {
             // refresh Details
-            myLocation = itemSelected.find('.ilink').attr("href");
-            if (myLocation.search("(showList|categoryDetail).html\\?") != -1) {
+            myLocation = itemSelected.find('.ilink').attr('href');
+            if (myLocation.search('(showList|categoryDetail).html\\?') != -1) {
                 // Info of category/show.
-                myLocation = "details.html?" + myLocation;
+                myLocation = 'details.html?' + myLocation;
             }
             Details.refresh(play);
         }
@@ -1002,7 +970,7 @@ Buttons.runNextItem = function(direction, play) {
         }
 
     } else {
-        // Log("No more items");
+        // Log('No more items');
         return -1;
     }
 };
@@ -1017,9 +985,9 @@ Buttons.showNextItem = function(direction) {
 };
 
 Buttons.isPlayable = function(Link) {
-    return Link.search("details.html\\?") != -1
-}
+    return Link.search('details.html\\?') != -1;
+};
 
 Buttons.getLinkUrl = function(Link) {
-    return Link.match(/ilink=(.+)&history/)[1]
-}
+    return Link.match(/ilink=(.+)&history/)[1];
+};

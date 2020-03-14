@@ -10,7 +10,7 @@ var itemCounter = 0;
 var htmlSection = null;
 var items = [];
 var thumbsLoaded = [];
-var myLocation = "index.html";
+var myLocation = 'index.html';
 var myRefreshLocation = null;
 var myHistory = [];
 var myPos = null;
@@ -18,110 +18,108 @@ var loadingTimer = 0;
 var detailsOnTop = false;
 var dateFormat = 0;
 var imgCounter = 0;
-var MAX_PAGES = 3
+var MAX_PAGES = 3;
 // reload on 3rd column on last "original page"
 var LOAD_NEXT_COLUMN  = Math.floor((8*(MAX_PAGES-1))/2)+2;
 var LOAD_PRIOR_COLUMN = 2;
 var THUMBS_PER_PAGE   = 8;
 
-checkSetTmpChannel = function(location) {
+function checkSetTmpChannel(location) {
     var tmpChannel = location.match(/[?&]tmp_channel_id=([^&]+)/);
     if (tmpChannel) {
-        setTmpChannel(tmpChannel[1])
+        setTmpChannel(tmpChannel[1]);
     }
 }
 
-checkClrTmpChannel = function(location) {
+function checkClrTmpChannel(location) {
     if (location.match(/[?&]tmp_channel_clr=([^&]+)/))
-        Channel.clearTmp()
+        Channel.clearTmp();
 }
 
-setChannel = function(newChannel, newId) {
+function setChannel(newChannel, newId) {
     if (Channel.set(newChannel, newId)) {
         initChannel();
     }
 }
 
-initChannel = function() {
+function initChannel() {
     myLocation = null;
     setLocation(Channel.getStartPage(), undefined);
     myHistory = []; 
     Language.setLang();
 }
 
-setTmpChannel = function(newId) {
-    var newChannel = eval($(".channel-content").find("#"+newId).attr("channel"))
+function setTmpChannel(newId) {
+    var newChannel = eval($('.channel-content').find('#'+newId).attr('channel'));
     if (!newChannel)
-        newChannel = eval(newId)
-    Channel.setTmp(newChannel, newId)
-    Channel.login()
+        newChannel = eval(newId);
+    Channel.setTmp(newChannel, newId);
+    Channel.login();
 }
 
-getDeviceYear = function() {
-    var pluginNNavi = document.getElementById("pluginObjectNNavi");
+function getDeviceYear() {
+    var pluginNNavi = document.getElementById('pluginObjectNNavi');
     var firmwareVersion = pluginNNavi.GetFirmware();
 
-    if (firmwareVersion === "") {
+    if (firmwareVersion === '') {
         // emulator
         return 666;
     }
 
-    // Log("JTDEBUG getDeviceYear: " + Number(firmwareVersion.substr(10, 4)))
+    // Log('JTDEBUG getDeviceYear: ' + Number(firmwareVersion.substr(10, 4)))
     return Number(firmwareVersion.substr(10, 4));
-};
+}
 
-deleteAllCookies = function (name) {
+function deleteAllCookies(name) {
     var cookies = document.cookie.match(/([^; ]+=[^; ]+)/g);
     if (name) {
-        var regexp = new RegExp("(\\b" + name + "\\b=[^; ]+)", "g");
+        var regexp = new RegExp('(\\b' + name + '\\b=[^; ]+)', 'g');
         cookies = document.cookie.match(regexp);
     }
-    for (var i=0; cookies && i<cookies.length; i++)
-    {
+    for (var i=0; cookies && i<cookies.length; i++) {
         deleteCookie(cookies[i]);
     }
     if (cookies)
-        Log("All cookies deleted (name=" + name + "): " + document.cookie);
+        Log('All cookies deleted (name=' + name + '): ' + document.cookie);
     // else
-    //     Log("No cookies to delete (name=" + name + "): " + document.cookie);
-};
-
-deleteCookie = function(cookie) {
-    // Log("Deleting " + cookie + " from " + document.cookie);
-    document.cookie = cookie  + "; expires=Thu, 01 Jan 1970 00:00:01 GMT";
-    // Log("Done " + document.cookie);
+    //     Log('No cookies to delete (name=' + name + '): ' + document.cookie);
 }
 
-getCookie = function (name) {
-    var regexp = new RegExp("\\b" + name + "\\b=([^; ]+)");
+function deleteCookie(cookie) {
+    // Log('Deleting ' + cookie + ' from ' + document.cookie);
+    document.cookie = cookie  + '; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+    // Log('Done ' + document.cookie);
+}
+
+function getCookie(name) {
+    var regexp = new RegExp('\\b' + name + '\\b=([^; ]+)');
     var cookie = document.cookie.match(regexp);
     if (cookie)
-        return unescape(cookie[1])
+        return unescape(cookie[1]);
     else
-        return null
-};
+        return null;
+}
 
-setCookie = function(cName,value,exdays)
-{
-    value = escape(value) + "; path=/; domain=127.0.0.1";
+function setCookie(cName,value,exdays) {
+    value = escape(value) + '; path=/; domain=127.0.0.1';
     var exdate=getCurrentDate();
     exdate.setDate(exdate.getDate() + exdays);
-    var c_value = value + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
-    // Log("Setting " + cName + "=" + c_value);
-    document.cookie=cName + "=" + c_value;
-};
+    var c_value = value + ((exdays==null) ? '' : '; expires='+exdate.toUTCString());
+    // Log('Setting ' + cName + '=' + c_value);
+    document.cookie=cName + '=' + c_value;
+}
 
-addCookiePath = function(cookie, url) {
-    return cookie + "; path=/; domain=" + url.match(/https?:\/\/([^:\/]+)/)[1];
-};
+function addCookiePath(cookie, url) {
+    return cookie + '; path=/; domain=' + url.match(/https?:\/\/([^:\/]+)/)[1];
+}
 
 String.prototype.trim = function () {
-    return this.replace(/^\s*/, "").replace(/\s*$/, "");
+    return this.replace(/^\s*/, '').replace(/\s*$/, '');
 };
 
 String.prototype.capitalize = function() {
-    return this.replace(/^./,this[0].toUpperCase())
-}
+    return this.replace(/^./,this[0].toUpperCase());
+};
 
 // Copied
 if (!String.prototype.startsWith) {
@@ -130,7 +128,7 @@ if (!String.prototype.startsWith) {
     };
 }
 
-loadingStart = function() {
+function loadingStart() {
     if (isEmulator) return;
     try {
         if (loadingTimer == 0) {
@@ -141,9 +139,9 @@ loadingStart = function() {
     } catch(err) {
         return;
     }
-};
+}
 
-loadingStop = function() {
+function loadingStop() {
     try {
         clearTimeout(loadingTimer);
         loadingTimer = 0;
@@ -151,34 +149,31 @@ loadingStop = function() {
     } catch(err) {
         return;
     }
-};
+}
 
-refreshLocation = function(entry)
-{
+function refreshLocation(entry) {
     myRefreshLocation = entry.loc;
-    checkClrTmpChannel(myRefreshLocation)
+    checkClrTmpChannel(myRefreshLocation);
     Language.fixAButton();
     Language.fixBButton();
     dispatch(myRefreshLocation, true);
-};
+}
 
-// Methods for "restoring" item position during "history.back"
-replaceLocation = function(newlocation) {
+// Methods for 'restoring' item position during 'history.back'
+function replaceLocation(newlocation) {
     setLocation(newlocation, undefined, true);
-};
+}
 
-setLocation = function(location, oldPos, skipHistory)
-{
+function setLocation(location, oldPos, skipHistory) {
     if (location == myLocation)
         return;
 
-    alert("location:" + location)
+    alert('location:' + location);
 
     if (oldPos == undefined) {
         myPos = null;
         if (myLocation && !skipHistory) {
-            myHistory.push(
-                {
+            myHistory.push( {
                     loc: myLocation,
                     pos: Channel.savePosition({col     : columnCounter,
                                                top     : isTopRowSelected,
@@ -192,8 +187,8 @@ setLocation = function(location, oldPos, skipHistory)
         myPos = oldPos;
     }
 
-    checkSetTmpChannel(location)
-    checkClrTmpChannel(location)
+    checkSetTmpChannel(location);
+    checkClrTmpChannel(location);
 
     var isDetails = location.match(/details.html/);
     myLocation = location;
@@ -210,8 +205,7 @@ setLocation = function(location, oldPos, skipHistory)
         Language.fixAButton();
         Language.fixBButton();
     }
-    if ((isDetails && !detailsOnTop) || !detailsOnTop)
-    {
+    if ((isDetails && !detailsOnTop) || !detailsOnTop) {
         itemSelected = null;
         itemCounter = 0;
         columnCounter = 0;
@@ -226,40 +220,39 @@ setLocation = function(location, oldPos, skipHistory)
         detailsOnTop = false;
     }
     // window.location = location;
-};
+}
 
-dispatch = function(NewLocation, Refresh) {
+function dispatch(NewLocation, Refresh) {
 
-    if (!Refresh && $(".slider-error").is(':visible'))
+    if (!Refresh && $('.slider-error').is(':visible'))
         ConnectionError.show(true);
 
-    switch (NewLocation.match(/([a-zA-Z]+)\.html/)[1])
-    {
-    case "details":
+    switch (NewLocation.match(/([a-zA-Z]+)\.html/)[1]) {
+    case 'details':
         Details.onLoad(Refresh);
         break;
 
-    case "index":
+    case 'index':
         Main.onLoad(Refresh);
         break;
 
-    case "live":
+    case 'live':
         live.onLoad(Refresh);
         break;
 
-    case "categories":
+    case 'categories':
         Categories.onLoad(Refresh);
         break;
 
-    case "categoryDetail":
+    case 'categoryDetail':
         categoryDetail.onLoad(NewLocation, Refresh);
         break;
 
-    case "showList":
+    case 'showList':
         showList.onLoad(Refresh);
         break;
 
-    case "SearchList":
+    case 'SearchList':
         SearchList.onLoad(Refresh);
         break;
 
@@ -267,43 +260,40 @@ dispatch = function(NewLocation, Refresh) {
         Section.onLoad(NewLocation, Refresh);
         break;
     }
-};
+}
 
-resetHtml = function(oldPos, isDetails)
-{
+function resetHtml(oldPos, isDetails) {
     // Delete and hide details
-    $(".content").hide();
-    $('#projdetails').html("");
+    $('.content').hide();
+    $('#projdetails').html('');
     // Delete and show list
     if ((isDetails && !detailsOnTop) || !detailsOnTop) {
-        $('#topRow').html("");
-        $('#bottomRow').html("");
-        $('.content-holder').css("marginLeft", "0");
+        $('#topRow').html('');
+        $('#bottomRow').html('');
+        $('.content-holder').css('marginLeft', '0');
         items = [];
         thumbsLoaded = [];
         htmlSection = (oldPos) ? oldPos.section : null;
     }
-    $("#content-scroll").hide();
-    $(".slider-body").show();
-};
+    $('#content-scroll').hide();
+    $('.slider-body').show();
+}
 
-goBack = function(location)
-{
+function goBack(location) {
     if (myHistory.length > 0) {
         oldLocation = myHistory.pop(),
         setLocation(oldLocation.loc, oldLocation.pos);
     }
     // history.go(-1);
-};
+}
 
-refreshSectionInHistory = function() {
+function refreshSectionInHistory() {
     oldLocation = myHistory.pop();
     oldLocation.pos.section = htmlSection;
     myHistory.push(oldLocation);
-};
+}
 
-restorePosition = function() 
-{
+function restorePosition() {
     if (myPos) {
         setPosition(myPos);
     }
@@ -314,35 +304,33 @@ restorePosition = function()
         loadingStop();
     }
     return myPos;
-};
+}
 
-fetchPriorLocation = function() 
-{
+function fetchPriorLocation() {
     refreshLocation(myHistory[myHistory.length-1]);
-};
+}
 
-getLocation = function (refresh)
-{
+function getLocation(refresh) {
     if (refresh)
         return myRefreshLocation;
     return myLocation;
-};
+}
 
-getOldLocation = function() {
+function getOldLocation() {
     if (myHistory.length > 0)
-        return myHistory[myHistory.length-1].loc
+        return myHistory[myHistory.length-1].loc;
     else
-        return null
-};
+        return null;
+}
 
-getIndexLocation = function() {
+function getIndexLocation() {
     var myNewLocation = (myRefreshLocation) ? myRefreshLocation : myLocation;
     if (myNewLocation.match(/details.html/))
         myNewLocation = getOldLocation();
     return myNewLocation;
 }
 
-getIndex = function(MaxIndex, IndexToSkip) {
+function getIndex(MaxIndex, IndexToSkip) {
     var thisLocation = getIndexLocation();
     var anyIndex = thisLocation.match(/\?tab_index=([0-9]+)/);
     var nextIndex;
@@ -352,26 +340,25 @@ getIndex = function(MaxIndex, IndexToSkip) {
         currentIndex = +anyIndex[1];
         anyIndex     = true;
     }
-    var nextIndex = (currentIndex == MaxIndex) ? 0 : currentIndex+1;
+    nextIndex = (currentIndex == MaxIndex) ? 0 : currentIndex+1;
     if (IndexToSkip && nextIndex==IndexToSkip)
        nextIndex = nextIndex+1;
-    return {current:currentIndex, next:nextIndex, any:anyIndex}
-};
+    return {current:currentIndex, next:nextIndex, any:anyIndex};
+}
 
-getNextIndexLocation = function(MaxIndex, IndexToSkip) {
+function getNextIndexLocation(MaxIndex, IndexToSkip) {
     var thisLocation = getIndexLocation();
     var NextIndex = getIndex(MaxIndex, IndexToSkip).next;
     if (NextIndex == 0) {
-        return thisLocation.replace(/\?tab_index=[0-9]+/, "")
+        return thisLocation.replace(/\?tab_index=[0-9]+/, '');
     } else {
-        return thisLocation.replace(/\.html(\?tab_index=[0-9]+)?/, ".html?tab_index=" + NextIndex)
+        return thisLocation.replace(/\.html(\?tab_index=[0-9]+)?/, '.html?tab_index=' + NextIndex);
     }
-};
+}
 
-setPosition = function(pos)
-{
+function setPosition(pos) {
     if (getItemCounter() == 0) {
-        Log("setPosition without items?");
+        Log('setPosition without items?');
         return;
     }
     if (itemSelected) {
@@ -383,54 +370,54 @@ setPosition = function(pos)
     else         itemSelected = $('.bottomitem').eq(pos.col).addClass('selected');
     columnCounter    = pos.col;
     isTopRowSelected = pos.top;
-    var newPos = Channel.checkPosition(pos)
+    var newPos = Channel.checkPosition(pos);
     if (newPos == pos)
-        // Log("Position set to "  + columnCounter + " " + isTopRowSelected);
+        // Log('Position set to '  + columnCounter + ' ' + isTopRowSelected);
         Buttons.sscroll();
     else
-        setPosition(newPos)
-};
+        setPosition(newPos);
+}
 
-getCurrentDate = function() {
+function getCurrentDate() {
     try {
-        var pluginTime = document.getElementById("pluginTime").GetEpochTime();
+        var pluginTime = document.getElementById('pluginTime').GetEpochTime();
         if (pluginTime && pluginTime > 0) {
             return new Date(pluginTime*1000 + clockOffset);
         }
     } catch(err) {
-        // Log("pluginTime failed:" + err);
+        // Log('pluginTime failed:' + err);
     }
     return new Date();
 }
 
-setOffsets = function() {
+function setOffsets() {
     // Retry once a minute in case of failure
     window.clearTimeout(setClockOffsetTimer);
     setClockOffsetTimer = window.setTimeout(setOffsets, 60*1000);
-    httpRequest("http://www.frokenur.com/",
+    httpRequest('http://www.frokenur.com/',
                 {cb:function(status, data) {
                     // Get the Date
                     var actualDate = data.match(/>[ \t]*[^0-9<]+([0-9]+[^0-9<]+[0-9]+)[ \t]*</)[1];
                     // Time is generated from other url - continue
                     var clockUrl = data.split(/iframe src="/).pop().match(/([^"]+)"/)[1];
                     httpRequest(clockUrl,
-                                {cb:function(status,data) {setClockOffset(actualDate, data)},
+                                {cb:function(status,data) {setClockOffset(actualDate, data);},
                                  no_log:true
                                 });
                 },
                  no_log:true
                 });
     setDateOffset();
-};
+}
 
-setClockOffset = function (actualDate, clockData) {
+function setClockOffset(actualDate, clockData) {
     var months = [/^jan/i, /^feb/i, /^mar/i, /^apr/i, /^ma[^r]/i, /^jun/i, /^jul/i, /^aug/i, /^sep/i, /^o/i, /^nov/i, /^dec/i];
     var actualTime = clockData.match(/>([0-9]+:[0-9]+:[0-9]+)</)[1];
     var actualDay = +actualDate.match(/^([0-9]+)[^0-9<]/)[1];
     var actualYear = actualDate.match(/[^0-9<]+([0-9]+)$/)[1];
     var actualMonth = actualDate.match(/[0-9 \t]+([^0-9<]+)[0-9]/)[1];
     for (var i=0; i< months.length; i++) {
-        new RegExp( + "[\\-. 	]*","i");
+        new RegExp( + '[\\-. 	]*','i');
         if (actualMonth.match(months[i])) {
             actualMonth = i+1;
             break;
@@ -439,14 +426,14 @@ setClockOffset = function (actualDate, clockData) {
     var oldClockOffset = clockOffset;
     clockOffset = 0;
     var now = getCurrentDate();
-    // Log("original date:" + now);
-    // Log("actual :" + (actualYear+" "+actualMonth+" "+actualDay+" "+actualTime) + " meaning:" + makeDate(actualYear, actualMonth, actualDay, actualTime));
+    // Log('original date:' + now);
+    // Log('actual :' + (actualYear+' '+actualMonth+' '+actualDay+' '+actualTime) + ' meaning:' + makeDate(actualYear, actualMonth, actualDay, actualTime));
 
     var newClockOffset = makeDate(actualYear, actualMonth, actualDay, actualTime) - now;
     // Only care about minutes
     newClockOffset = Math.round(newClockOffset/60/1000)*60*1000;
     if (newClockOffset != oldClockOffset && checkOffsetCounter != 5) {
-        Log("Clock Offset was changed!!!");
+        Log('Clock Offset was changed!!!');
         checkOffsetCounter = 0;
     }
     clockOffset = newClockOffset;
@@ -454,24 +441,24 @@ setClockOffset = function (actualDate, clockData) {
     if (checkOffsetCounter >= 0) {
         window.setTimeout(setOffsets, 10*1000);
     } else {
-        Log("Clock Offset (hours):" + clockOffset/3600/1000);
-        // Log("new date:" + getCurrentDate());
+        Log('Clock Offset (hours):' + clockOffset/3600/1000);
+        // Log('new date:' + getCurrentDate());
     }
-    window.clearTimeout(setClockOffsetTimer)
+    window.clearTimeout(setClockOffsetTimer);
 }
 
-setDateOffset = function () {
+function setDateOffset() {
     // Retry once a minute in case of failure
     window.clearTimeout(setDateOffsetTimer);
     setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
-    httpRequest("https://www.svtplay.se/api/server_time",
+    httpRequest('https://www.svtplay.se/api/server_time',
                 {cb:function(status,data) {
                     dateOffset = 0;
                     data = JSON.parse(data).time;
                     var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
                     var actualSeconds = actualData[2]*3600 + actualData[3]*60;
-                    var actualDateString = actualData[1].replace(/-/g, "")
-                    var tsDate = timeToDate(data)
+                    var actualDateString = actualData[1].replace(/-/g, '');
+                    var tsDate = timeToDate(data);
                     var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
                     var tsDateString = dateToString(tsDate);
                     if (actualDateString > tsDateString) {
@@ -479,105 +466,103 @@ setDateOffset = function () {
                         actualSeconds = actualSeconds + 24*3600;
                     } else if (tsDateString > actualDateString) {
                         // Add 24 hours to ts
-                        tsSeconds = tsSeconds + 24*3600
+                        tsSeconds = tsSeconds + 24*3600;
                     }
                     dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
                     if (checkOffsetCounter == -1) {
-                        Log("dateOffset (hours):" + dateOffset/3600/1000 + " actualDate:" + actualDateString + " tsDate:" + tsDateString + " tsDate:" + tsDate + " data:" + data + " starttime:" + actualData[0]);
+                        Log('dateOffset (hours):' + dateOffset/3600/1000 + ' actualDate:' + actualDateString + ' tsDate:' + tsDateString + ' tsDate:' + tsDate + ' data:' + data + ' starttime:' + actualData[0]);
                     }
 	            window.clearTimeout(setDateOffsetTimer);
                 },
                  no_log:true
-                })
-};
-
-makeDate = function (year, month, day, time) {
-    var separator = (dateFormat == 1) ? "/" : " ";
-    return new Date(year+separator+month+separator+day+" "+time)
+                });
 }
 
-checkDateFormat = function() {
-    if (isNaN(new Date("2016 07 25 22:00:00 +0200")))
+function makeDate(year, month, day, time) {
+    var separator = (dateFormat == 1) ? '/' : ' ';
+    return new Date(year+separator+month+separator+day+' '+time);
+}
+
+function checkDateFormat() {
+    if (isNaN(new Date('2016 07 25 22:00:00 +0200')))
         dateFormat = 1;
     else
         dateFormat = 0;
-    Log("dateFormat:" + dateFormat);
+    Log('dateFormat:' + dateFormat);
 }
 
-timeToDate = function(timeString) {
+function timeToDate(timeString) {
     if (+timeString != timeString){
-        timeString = timeString.replace(/(:[0-9]+)\.[0-9]+/,"$1")
+        timeString = timeString.replace(/(:[0-9]+)\.[0-9]+/,'$1');
         if (dateFormat == 1)
-            timeString = timeString.replace(/-/g,"/").replace("T", " ").replace(/\+([0-9]+):([0-9]+)/,"+$1$2").replace("Z", "+0000")
+            timeString = timeString.replace(/-/g,'/').replace('T', ' ').replace(/\+([0-9]+):([0-9]+)/,'+$1$2').replace('Z', '+0000');
         else
-            timeString = timeString.replace(/-/g," ").replace("T", " ").replace(/\+/," +").replace("Z", " +00:00")
+            timeString = timeString.replace(/-/g,' ').replace('T', ' ').replace(/\+/,' +').replace('Z', ' +00:00');
     }
     var date = new Date(timeString);
     return new Date(date.getTime() + dateOffset);
 }
 
-dateToHuman = function (date) {
+function dateToHuman(date) {
     if (date && (date instanceof Date)) {
-        var separator = (dateFormat == 1) ? '/' : " ";
+        var separator = (dateFormat == 1) ? '/' : ' ';
         var days_diff = new Date(dateToString(date,separator))-new Date(dateToString(getCurrentDate(),separator));
         days_diff = days_diff/1000/3600/24;
         if (days_diff == -1)
-            date = ((Language.getisSwedish()) ? "Igår " : "Yesterday ") + dateToClock(date);
+            date = ((Language.getisSwedish()) ? 'Igår ' : 'Yesterday ') + dateToClock(date);
         else if (days_diff == 0)
-            date = dateToClock(date)
+            date = dateToClock(date);
         else if (days_diff == 1)
-            date = ((Language.getisSwedish()) ? "Imorgon " : "Tomorrow ") + dateToClock(date)
+            date = ((Language.getisSwedish()) ? 'Imorgon ' : 'Tomorrow ') + dateToClock(date);
         else
             date = dateToFullString(date);
     } else if (date == undefined)
-        return "";
-    return date
+        return '';
+    return date;
 }
 
-dateToFullString = function (Date) {
-    return dateToString(Date,"-") + " " + dateToClock(Date);
+function dateToFullString(Date) {
+    return dateToString(Date,'-') + ' ' + dateToClock(Date);
 }
 
-dateToString = function (Date,separator) {
-    var Day = Date.getDate()
-    Day = Day < 10 ?  "0" + Day : "" + Day;
+function dateToString(Date,separator) {
+    var Day = Date.getDate();
+    Day = Day < 10 ?  '0' + Day : '' + Day;
     var Month = Date.getMonth()+1;
-    Month = Month < 10 ?  "0" + Month : "" + Month;
+    Month = Month < 10 ?  '0' + Month : '' + Month;
     if (separator)
         return Date.getFullYear() + separator + Month + separator + Day;
     else
         return Date.getFullYear() + Month + Day;
 }
 
-dateToClock = function(Date) {
+function dateToClock(Date) {
     if (Date)
-        return msToClock(Date.getTime())
+        return msToClock(Date.getTime());
     else
-        return Date
+        return Date;
 }
 
-getClock = function() 
-{
+function getClock() {
     return msToClock(getCurrentDate().getTime());
 }
 
-msToClock = function (ts)
-{
+function msToClock(ts) {
     var time = new Date(+ts);
     var hour = time.getHours();
     var minutes = time.getMinutes();
-    if (hour < 10) hour = "0" + hour;
-    if (minutes < 10) minutes = "0" + minutes;
-    return hour + ":" + minutes;
-};
+    if (hour < 10) hour = '0' + hour;
+    if (minutes < 10) minutes = '0' + minutes;
+    return hour + ':' + minutes;
+}
 
-requestUrl = function(url, cbSucces, extra) {
-    // Log("requesting url:" + url);
+function requestUrl(url, cbSucces, extra) {
+    // Log('requesting url:' + url);
     if (!extra) extra = {};
 
     if (url.cached) {
-        window.setTimeout(function(){callUrlCallBack(url, cbSucces, "success")},50)
-        return
+        window.setTimeout(function(){callUrlCallBack(url, cbSucces, 'success');},50);
+        return;
     }
 
     var requestedLocation = {url:url, loc:myLocation, refLoc:myRefreshLocation, channel:Channel.getName()};
@@ -586,21 +571,19 @@ requestUrl = function(url, cbSucces, extra) {
 
     if (extra.cookie) {
         extra.cookie = addCookiePath(extra.cookie, url);
-        Log("Adding " + extra.cookie + " to " + document.cookie);
+        Log('Adding ' + extra.cookie + ' to ' + document.cookie);
         document.cookie = extra.cookie;
-        // Log("Added " + document.cookie);
+        // Log('Added ' + document.cookie);
     }
     $.support.cors = true;
-    $.ajax(
-        {
+    $.ajax( {
             type: 'GET',
             url: url,
             tryCount : 0,
             retryLimit : 3,
 	    timeout: 15000,
             cache: cache,
-            beforeSend: function (request)
-            {
+            beforeSend: function (request) {
                 if (extra.headers) {
                     for (var i=0;i<extra.headers.length;i++) {
                         if (extra.headers[i].key.match(/user-agent/i))
@@ -609,27 +592,25 @@ requestUrl = function(url, cbSucces, extra) {
                     }
                 }
                 if (deviceYear == 2014 && extra.cookie) {
-                    extra.cookie = extra.cookie.replace(/ *;.*/,"")
-                    Log("Sending " + extra.cookie + " in Headers.");
-                    request.setRequestHeader("Cookie", extra.cookie)
+                    extra.cookie = extra.cookie.replace(/ *;.*/,'');
+                    Log('Sending ' + extra.cookie + ' in Headers.');
+                    request.setRequestHeader('Cookie', extra.cookie);
                 }
             },
-            success: function(data, status, xhr)
-            {
+            success: function(data, status, xhr) {
                 Log('Success:' + this.url);
                 retrying = false;
                 data = null;
-                callUrlCallBack(requestedLocation, cbSucces, status, xhr)
+                callUrlCallBack(requestedLocation, cbSucces, status, xhr);
                 xhr.destroy();
                 xhr = null;
                 if (extra.cookie)
                     deleteCookie(extra.cookie);
             },
-            error: function(xhr, textStatus, errorThrown)
-            {
+            error: function(xhr, textStatus, errorThrown) {
                 retrying = false;
                 if (isRequestStillValid(requestedLocation)) {
-                    Log('Failure:' + this.url + " status:" + textStatus + " error:" + errorThrown);
+                    Log('Failure:' + this.url + ' status:' + textStatus + ' error:' + errorThrown);
                     this.tryCount++;
           	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
                         this.tryCount <= this.retryLimit) {
@@ -645,8 +626,7 @@ requestUrl = function(url, cbSucces, extra) {
                 if (extra.cookie)
                     deleteCookie(extra.cookie)
             },
-            complete: function(xhr, status)
-            {
+            complete: function(xhr, status) {
                 if (retrying)
                     return;
                 callUrlCallBack(requestedLocation, extra.cbComplete, status, xhr);
@@ -655,38 +635,38 @@ requestUrl = function(url, cbSucces, extra) {
             }
         }
     );
-};
+}
 
-callUrlCallBack = function(requestedLocation,cb,status,xhr, errorThrown) {
+function callUrlCallBack(requestedLocation,cb,status,xhr, errorThrown) {
     if (cb && (requestedLocation.cached || isRequestStillValid(requestedLocation))) {
         cb(status, xhr, errorThrown);
     } else if (cb)
-        Log("Url skipped: " + requestedLocation.url + " Skipped:" + requestedLocation.loc + " " + requestedLocation.refLoc + " " + requestedLocation.channel + " New:" + myLocation + " " +  myRefreshLocation);
-};
+        Log('Url skipped: ' + requestedLocation.url + ' Skipped:' + requestedLocation.loc + ' ' + requestedLocation.refLoc + ' ' + requestedLocation.channel + ' New:' + myLocation + ' ' +  myRefreshLocation);
+}
 
-isRequestStillValid = function (request) {
+function isRequestStillValid(request) {
     return (request.loc == myLocation && request.refLoc == myRefreshLocation && request.channel==Channel.getName());
 }
 
-addUrlParam = function(url, key, value) {
-    url = url.replace(/[?&]$/,"");
-    url = (url.match(/\?/)) ? url+"&" : url+"?";
-    return url + key + "=" + encodeURIComponent(value)
-};
+function addUrlParam(url, key, value) {
+    url = url.replace(/[?&]$/,'');
+    url = (url.match(/\?/)) ? url+'&' : url+'?';
+    return url + key + '=' + encodeURIComponent(value);
+}
 
-getUrlParam = function(url, key, raw) {
-    var Value = new RegExp("[?&]" + key + "=([^?&]+)");
+function getUrlParam(url, key, raw) {
+    var Value = new RegExp('[?&]' + key + '=([^?&]+)');
     Value = url.match(Value);
     Value = Value && Value[1];
     if (Value) {
         if (raw)
-            return Value
+            return Value;
         else
-            return decodeURIComponent(Value)
+            return decodeURIComponent(Value);
     }
-};
+}
 
-httpRequest = function(url, extra) {
+function httpRequest(url, extra) {
     if (!extra) extra = {};
     var xhr = new XMLHttpRequest();
     var location = null, timer = null;
@@ -694,12 +674,12 @@ httpRequest = function(url, extra) {
         timer = window.setTimeout(function() {
             xhr.abort();
             xhr.destroy();
-            handleHttpResult(url, timer, extra, {status:"timeout"});
+            handleHttpResult(url, timer, extra, {status:'timeout'});
             timer=-1;
         }, extra.timeout);
     }
     xhr.onreadystatechange = function () {
-        // Log("xhr.readyState: "+ xhr.readyState);
+        // Log('xhr.readyState: '+ xhr.readyState);
         if (!extra.sync && xhr.readyState == 4) {
             handleHttpResult(url, timer, extra, 
                              {data:     xhr.responseText,
@@ -710,17 +690,17 @@ httpRequest = function(url, extra) {
             xhr.destroy();
             xhr = null;
         }
-    }
+    };
     if (extra.no_cache) {
-        url = addUrlParam(url, "_", new Date().getTime())
-        alert("no cache url:" + url)
+        url = addUrlParam(url, '_', new Date().getTime());
+        alert('no cache url:' + url);
     }
     if (extra.params) {
-        alert("POST Request params: "+ extra.params)
-        xhr.open("POST", url, !extra.sync);
-        xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        alert('POST Request params: '+ extra.params);
+        xhr.open('POST', url, !extra.sync);
+        xhr.setRequestHeader('Content-type', 'application/x-www-form-urlencoded');
     } else
-        xhr.open("GET", url, !extra.sync);
+        xhr.open('GET', url, !extra.sync);
     if (extra.headers) {
         for (var i=0;i<extra.headers.length;i++)
             xhr.setRequestHeader(extra.headers[i].key, extra.headers[i].value);
@@ -735,105 +715,105 @@ httpRequest = function(url, extra) {
         result = handleHttpResult(url, timer, extra, result);
         xhr.destroy();
         xhr = null;
-        return result
+        return result;
     }
-};
+}
 
-handleHttpResult = function(url, timer, extra, result) {
+function handleHttpResult(url, timer, extra, result) {
 
     if (timer == -1) {
         if (!extra.logging)
-            Log('httpRequest:' + url + " aborted by timeout")
+            Log('httpRequest:' + url + ' aborted by timeout');
         // else
-        //     alert('httpRequest:' + url + " aborted by timeout")
-        return
+        //     alert('httpRequest:' + url + ' aborted by timeout')
+        return;
     }
     window.clearTimeout(timer);
 
     if (extra.params)
-        alert(result.xhr.getAllResponseHeaders())
+        alert(result.xhr.getAllResponseHeaders());
     if (result.status == 200 || result.status == 206 || result.status == 304) {
         if (!extra.no_log)
             Log('Success:' + url);
     } else {
         if (!extra.logging)
-            Log('Failure:' + url + " status:" + result.status);
+            Log('Failure:' + url + ' status:' + result.status);
         // else
-        //     alert('Failure:' + url + " status:" + result.status);
+        //     alert('Failure:' + url + ' status: + result.status);
     }
     if (extra.cb) {
-        extra.cb(result.status, result.data, result.xhr)
+        extra.cb(result.status, result.data, result.xhr);
     }
     if (extra.sync) {
         result.success = (result.status == 200);
         if (result.status != 302)
             result.location = null;
-        return result
+        return result;
     }
 }
 
-httpLoop = function(urls, urlCallback, cbComplete, extra) {
-    runHttpLoop(urls, urlCallback, cbComplete, extra, "", 1)
-};
+function httpLoop(urls, urlCallback, cbComplete, extra) {
+    runHttpLoop(urls, urlCallback, cbComplete, extra, '', 1);
+}
 
-runHttpLoop = function(urls, urlCallback, cbComplete, extra, totalData, i) {
+function runHttpLoop(urls, urlCallback, cbComplete, extra, totalData, i) {
     if (!extra) extra = {};
     extra.cb =
         function(status,data) {
             try {
                 data = urlCallback(urls[0], data, status, totalData);
             } catch (err) {
-                Log("runHttpLoop: callback failed: " + err);
-                throw err
+                Log('runHttpLoop: callback failed: ' + err);
+                throw err;
             }
             if (data == -1) {
-                Log("httpLoop aborted")
-                return -1
+                Log('httpLoop aborted');
+                return -1;
             } else {
-                alert("data.length:" + data.length);
+                alert('data.length:' + data.length);
             }
 
             totalData = totalData + data;
             if (urls.length > 1) {
                 var this_extra = extra;
-                runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData, i+1)
+                runHttpLoop(urls.slice(1), urlCallback, cbComplete, this_extra, totalData, i+1);
             } else {
-                cbComplete(totalData)
+                cbComplete(totalData);
             }
         };
     httpRequest(urls[0], extra);
 }
 
-getHistory = function(Name,LinkPrefix) {
+function getHistory(Name,LinkPrefix) {
     var Prefix = document.title;
     if (!Prefix.match(/\//))
         // Encode the initial entry
         Prefix = encodeURIComponent(Prefix);
     if (myRefreshLocation) {
         if (myRefreshLocation.match(/.+&history=/)) {
-            Prefix = getUrlParam(myRefreshLocation, "history", true);
+            Prefix = getUrlParam(myRefreshLocation, 'history', true);
         } else {
-            Prefix = Prefix.replace(/\/[^\/]+\/$/, "");
+            Prefix = Prefix.replace(/\/[^\/]+\/$/, '');
         }
     } else if ((detailsOnTop || myLocation.match(/details.html/)) &&
                (!LinkPrefix || !LinkPrefix.match(/categoryDetail.html/))) {
-        Prefix = Prefix.replace(/\/[^\/]+\/$/, "")
+        Prefix = Prefix.replace(/\/[^\/]+\/$/, '');
     }
-    return Prefix.replace(/\/$/,"") + '/' + encodeURIComponent(Name) + '/';
+    return Prefix.replace(/\/$/,'') + '/' + encodeURIComponent(Name) + '/';
 }
 
-getItemCounter = function() {
+function getItemCounter() {
     if (htmlSection)
         return items.length;
     else
         return itemCounter;
 }
 
-loadFinished = function(status, refresh) {
+function loadFinished(status, refresh) {
     fixCss();
     finaliseHtml();
-    if (status == "success") {
-        Log("itemCounter:" + getItemCounter())
+    if (status == 'success') {
+        Log('itemCounter:' + getItemCounter());
         if (!restorePosition() && !refresh)
             contentShow();
     } else {
@@ -842,153 +822,153 @@ loadFinished = function(status, refresh) {
     }
 }
 
-contentShow = function() {
-    waitForImages(function() {$("#content-scroll").show()}, 20);
+function contentShow() {
+    waitForImages(function() {$('#content-scroll').show();}, 20);
 }
 
-waitForImages = function(callback, retries) {
-    alert("imgCounter:" + imgCounter);
+function waitForImages(callback, retries) {
+    alert('imgCounter:' + imgCounter);
     if (retries > 0 && imgCounter > 0)
-        window.setTimeout(function(){waitForImages(callback, retries--)}, 100)
+        window.setTimeout(function(){waitForImages(callback, retries--);}, 100);
     else
         callback();
 }
 
-fixCss = function() {
+function fixCss() {
     if (deviceYear >= 2014) {
-        $('#footer-clock').css({"bottom":"16px"});
-        $('.confirmExit').css({"padding":"6px 10px"});
+        $('#footer-clock').css({'bottom':'16px'});
+        $('.confirmExit').css({'padding':'6px 10px'});
     } else if (deviceYear > 2011) {
-        $('.confirmExit').css({"padding":"10px", "padding-bottom":"5px"});
-    };
-};
+        $('.confirmExit').css({'padding':'10px', 'padding-bottom':'5px'});
+    }
+}
 
-seasonToHtml = function(Name, Thumb, Link, Season, Variant) {
+function seasonToHtml(Name, Thumb, Link, Season, Variant) {
     showToHtml(Name, 
                Thumb, 
                Link, 
                makeSeasonLinkPrefix(Name, Season, Variant)
               );
-};
+}
 
-makeSeasonLinkPrefix = function(Name, Season, Variant) {
-    var LinkPrefix = '<a href="showList.html'
+function makeSeasonLinkPrefix(Name, Season, Variant) {
+    var LinkPrefix = '<a href="showList.html';
     if (!Season && Season != 0)
-        Season="1";
-    LinkPrefix = addUrlParam(LinkPrefix, "season", Season);
-    LinkPrefix = addUrlParam(LinkPrefix, "title", Name);
+        Season='1';
+    LinkPrefix = addUrlParam(LinkPrefix, 'season', Season);
+    LinkPrefix = addUrlParam(LinkPrefix, 'title', Name);
     if (Variant)
-        LinkPrefix = addUrlParam(LinkPrefix, "variant", Variant);
-    return LinkPrefix + "&name="
+        LinkPrefix = addUrlParam(LinkPrefix, 'variant', Variant);
+    return LinkPrefix + '&name=';
 }
 
 // Replace Current Location with the only Season existing
-callTheOnlySeason = function(Name, Link, Location) {
-    LinkPrefix = makeSeasonLinkPrefix(Name, "0")
+function callTheOnlySeason(Name, Link, Location) {
+    LinkPrefix = makeSeasonLinkPrefix(Name, '0');
     // Must keep the show name
-    var ShowName = Location.match(/[?&](show_name=[^&]+)/)
+    var ShowName = Location.match(/[?&](show_name=[^&]+)/);
     if (ShowName)
-        LinkPrefix = LinkPrefix.replace(/([&?])name=/, "$1" + ShowName[1] + "&name=")
-    replaceLocation(LinkPrefix + Link + "&history=" + getHistory(Name));
+        LinkPrefix = LinkPrefix.replace(/([&?])name=/, '$1' + ShowName[1] + '&name=');
+    replaceLocation(LinkPrefix + Link + '&history=' + getHistory(Name));
 }
 
-clipToHtml = function(Thumb, Link) {
-    showToHtml("Klipp", Thumb, Link, '<a href="showList.html?clips=1&title=Klipp&name=');
-};
+function clipToHtml(Thumb, Link) {
+    showToHtml('Klipp', Thumb, Link, '<a href="showList.html?clips=1&title=Klipp&name=');
+}
 
-categoryToHtml = function(Name, Thumb, LargeThumb, Link, UrlParams) {
+function categoryToHtml(Name, Thumb, LargeThumb, Link, UrlParams) {
     toHtml({name:        Name,
             link:        fixCategoryLink(Name, LargeThumb, Link),
             link_prefix: makeCategoryLinkPrefix(UrlParams),
             thumb:       Thumb,
-            description: "",
-            duration:    ""
+            description: '',
+            duration:    ''
            });
-};
+}
 
-showToHtml = function(Name, Thumb, Link, LinkPrefix) {
+function showToHtml(Name, Thumb, Link, LinkPrefix) {
     if (!LinkPrefix)
-        LinkPrefix = makeShowLinkPrefix()
+        LinkPrefix = makeShowLinkPrefix();
 
     toHtml({name: Name,
             link: Link,
             link_prefix: LinkPrefix,
             thumb: Thumb,
-            description: "",
-            duration:""
+            description: '',
+            duration:''
            });
-};
+}
 
-makeLinkPrefix = function(Link, Key, UrlParams) {
+function makeLinkPrefix(Link, Key, UrlParams) {
     if (UrlParams)
-        UrlParams = UrlParams + "&" + Key + "=";
+        UrlParams = UrlParams + '&' + Key + '=';
     else
-        UrlParams = Key + "=";
+        UrlParams = Key + '=';
     return '<a href="' + Link + '?' + UrlParams;
-};
+}
 
-makeCategoryLinkPrefix = function(UrlParams) {
-    return makeLinkPrefix("categoryDetail.html", "category", UrlParams);
-};
+function makeCategoryLinkPrefix(UrlParams) {
+    return makeLinkPrefix('categoryDetail.html', 'category', UrlParams);
+}
 
-makeShowLinkPrefix = function(UrlParams) {
-    return makeLinkPrefix("showList.html", "name", UrlParams)
-};
+function makeShowLinkPrefix(UrlParams) {
+    return makeLinkPrefix('showList.html', 'name', UrlParams);
+}
 
-makeCategoryLink = function(Name, Thumb, Url) {
+function makeCategoryLink(Name, Thumb, Url) {
     return makeLink(makeCategoryLinkPrefix(), Name, fixCategoryLink(Name,Thumb,Url));
 }
 
-fixCategoryLink = function(Name, Thumb, Url) {
-    return Url +"&catThumb=" + encodeURIComponent(Thumb) +
-        "&catName=" + encodeURIComponent(Name);
+function fixCategoryLink(Name, Thumb, Url) {
+    return Url +'&catThumb=' + encodeURIComponent(Thumb) +
+        '&catName=' + encodeURIComponent(Name);
 }
 
-makeShowLink = function(Name, Url) {
+function makeShowLink(Name, Url) {
     return makeLink(makeShowLinkPrefix(), Name, Url);
 }
 
-itemToLink = function(Item, UrlParams) {
+function itemToLink(Item, UrlParams) {
 
     var myTitle=null;
     if (Item.link_prefix.match(/\?ilink/) && Item.show) {
-        var showRegexp = new RegExp(Item.show + "[\\-. 	]*","i");
+        var showRegexp = new RegExp(Item.show + '[\\-. 	]*','i');
         if (Item.season && Item.episode) {
-            myTitle = Item.show + ".s" + Item.season + "e" + Item.episode + ".";
-            myTitle = myTitle + Item.name.replace(/s[0-9]+e[0-9]+[\-. 	]*/i,"").replace(showRegexp, "");
+            myTitle = Item.show + '.s' + Item.season + 'e' + Item.episode + '.';
+            myTitle = myTitle + Item.name.replace(/s[0-9]+e[0-9]+[\-. 	]*/i,'').replace(showRegexp, '');
             if (myTitle.match(/e[0-9]+\.$/i))
-                myTitle = myTitle + "Avsnitt " + Item.episode;
+                myTitle = myTitle + 'Avsnitt ' + Item.episode;
         } else if (!Item.name.match(showRegexp))
-            myTitle = Item.show + " - " + Item.name;
+            myTitle = Item.show + ' - ' + Item.name;
         if (myTitle) {
-            myTitle = myTitle.replace(/\bs[^.s]+song\b\s*[0-9]+\s*-\s*/i,"");
-            myTitle = "mytitle=" + escape(myTitle);
-            Item.link_prefix = Item.link_prefix.replace(/ilink/, myTitle + "&ilink"); 
+            myTitle = myTitle.replace(/\bs[^.s]+song\b\s*[0-9]+\s*-\s*/i,'');
+            myTitle = 'mytitle=' + escape(myTitle);
+            Item.link_prefix = Item.link_prefix.replace(/ilink/, myTitle + '&ilink'); 
         }
     }
 
-    return makeLink(Item.link_prefix,Item.name,Item.link, UrlParams)
-};
+    return makeLink(Item.link_prefix,Item.name,Item.link, UrlParams);
+}
 
-makeLink = function(LinkPrefix, Name, Url, UrlParams) {
+function makeLink(LinkPrefix, Name, Url, UrlParams) {
     if (UrlParams)
-        LinkPrefix = LinkPrefix.replace(/\?/, "?" + UrlParams + "&")
+        LinkPrefix = LinkPrefix.replace(/\?/, '?' + UrlParams + '&');
 
     return LinkPrefix + Url + '&history=' + getHistory(Name,LinkPrefix);
-};
+}
 
-toHtml = function(Item) {
-    // Item.name = "" + (items.length+1)
-    items.push(Item)
+function toHtml(Item) {
+    // Item.name = '' + (items.length+1)
+    items.push(Item);
     if (items.length <= 8*MAX_PAGES)
-        itemToHtml(Item)
-};
+        itemToHtml(Item);
+}
 
-itemToHtml = function(Item, OnlyReturn) {
-    var IsTop
+function itemToHtml(Item, OnlyReturn) {
+    var IsTop;
     var html;
     var IsLiveText;
-    var Background="";
+    var Background='';
 
     if(itemCounter % 2 == 0){
 	if(itemCounter > 0 || htmlSection){
@@ -1002,13 +982,13 @@ itemToHtml = function(Item, OnlyReturn) {
 	html = '<div class="scroll-content-item bottomitem">';
     }
     if ((Item.is_live && Item.is_running) || Item.is_channel) {
-        IsLiveText = " is-live";
+        IsLiveText = ' is-live';
     } else {
-        IsLiveText = (Item.is_live) ? " not-yet-available" : "";
+        IsLiveText = (Item.is_live) ? ' not-yet-available' : '';
     }
 
     if (Item.background)
-        Background = " data-background='" + Item.background + "'";
+        Background = ' data-background=\'' + Item.background + '\'';
 
     html += '<div class="scroll-item-img">';
     html += itemToLink(Item) + '" class="ilink" data-length="' + Item.duration + '"' + Background + IsLiveText + '/>';
@@ -1023,7 +1003,7 @@ itemToHtml = function(Item, OnlyReturn) {
                   2000
                  );
     } else {
-        loadImage(Item.thumb)
+        loadImage(Item.thumb);
     }
     thumbsLoaded[itemsIndex] = 1;
     Item.starttime = dateToHuman(Item.starttime);
@@ -1035,16 +1015,16 @@ itemToHtml = function(Item, OnlyReturn) {
 	html += '<div class="topoverlayred">LIVE';
         if (Item.starttime)
 	    html += '<div class="bottomoverlayred">' + Item.starttime + '</div>';
-        html += '</div>'
+        html += '</div>';
     }
     html += '</div><div class="scroll-item-border"/>';
     Item.name = Item.name.trim();
     html += '<div class="scroll-item-name">';
     html +=	'<p><a href="#">' + Item.name + '</a></p>';
-    Item.description = (Item.description) ? Item.description.trim() : "";
+    Item.description = (Item.description) ? Item.description.trim() : '';
     html += '<span class="item-date"';
     if (Item.name.length > 2*LINE_LENGTH)
-        Item.description = "";
+        Item.description = '';
     else if (Item.name.length > LINE_LENGTH)
         html += ' style=" max-height:11px;"';
     html += '>' + Item.description + '</span>';
@@ -1052,7 +1032,7 @@ itemToHtml = function(Item, OnlyReturn) {
     html += '</div>';
  
     if (OnlyReturn)
-        return {top:itemCounter++ % 2 == 0, html:html}
+        return {top:itemCounter++ % 2 == 0, html:html};
 
     if(itemCounter % 2 == 0){
         $('#topRow').append($(html));
@@ -1062,22 +1042,22 @@ itemToHtml = function(Item, OnlyReturn) {
     }
     html = null;
     itemCounter++;
-};
+}
 
-finaliseHtml = function() {
+function finaliseHtml() {
     if (htmlSection) {
         loadSection();
     } else {
         if (items.length > 8*MAX_PAGES) {
             if (items.length < 8*(MAX_PAGES+1)) {
                 for (var i=8*MAX_PAGES; i<items.length; i++)
-                    itemToHtml(items[i])
+                    itemToHtml(items[i]);
             } else {
                 htmlSection = getInitialSection();
                 preloadAdjacentSectionThumbs();
-                alert("loaded from:" + htmlSection.index + " to:" + itemCounter)
-                alert("Section itemCounter:" + itemCounter);
-                alert(JSON.stringify(htmlSection))
+                alert('loaded from:' + htmlSection.index + ' to:' + itemCounter);
+                alert('Section itemCounter:' + itemCounter);
+                alert(JSON.stringify(htmlSection));
             }
         }
     }
@@ -1085,13 +1065,13 @@ finaliseHtml = function() {
         items = [];
         thumbsLoaded = [];
     }
-};
+}
 
-loadSection = function(maxIndex) {
+function loadSection(maxIndex) {
     if (!maxIndex) maxIndex = getMaxIndex();
-    itemCounter = 0
-    var topHtml="", bottomHtml="", result;
-    alert("loading from:" + htmlSection.index + " to:" + maxIndex)
+    itemCounter = 0;
+    var topHtml='', bottomHtml='', result;
+    alert('loading from:' + htmlSection.index + ' to:' + maxIndex);
     for (var i=htmlSection.index; i<items.length && i<maxIndex; i++) {
         result = itemToHtml(items[i], true);
         if (result.top)
@@ -1105,7 +1085,7 @@ loadSection = function(maxIndex) {
     return maxIndex;
 }
 
-preloadAdjacentSectionThumbs = function() {
+function preloadAdjacentSectionThumbs() {
     // First load next section thumbs
     var startIndex = htmlSection.index+(8*MAX_PAGES);
     if (startIndex > items.length)
@@ -1113,10 +1093,10 @@ preloadAdjacentSectionThumbs = function() {
         startIndex = 0;
     var endIndex   = startIndex + (8*MAX_PAGES);
     for (var i=startIndex; i < items.length && i < endIndex; i++) {
-        // alert("pre-loading 1 index:" + i);
+        // alert('pre-loading 1 index:' + i);
         if (!thumbsLoaded[i]) {
-            loadImage(items[i].thumb)
-            thumbsLoaded[i]=1
+            loadImage(items[i].thumb);
+            thumbsLoaded[i]=1;
         }
     }
 
@@ -1124,33 +1104,33 @@ preloadAdjacentSectionThumbs = function() {
     endIndex = htmlSection.index-1;
     if (endIndex < 0) {
         // We're at initial page - load last section instead.
-        endIndex = items.length-1
+        endIndex = items.length-1;
     }
     startIndex = endIndex - (8*MAX_PAGES);
     if (endIndex == (items.length-1))
         startIndex = startIndex - (items.length % 8);
     if (startIndex < 0) startIndex = 0;
-    for (var i=endIndex; i >= 0 && i >= startIndex; i--) {
-        // alert("pre-loading 2 index:" + i);
-        if (!thumbsLoaded[i]) {
-            loadImage(items[i].thumb)
-            thumbsLoaded[i]=1;
+    for (var k=endIndex; k >= 0 && k >= startIndex; k--) {
+        // alert('pre-loading 2 index:' + k);
+        if (!thumbsLoaded[k]) {
+            loadImage(items[k].thumb);
+            thumbsLoaded[k]=1;
         }
     }
 }
 
-getInitialSection = function() {
-    return {index:0, load_next_column:LOAD_NEXT_COLUMN, load_prior_column:-1}
+function getInitialSection() {
+    return {index:0, load_next_column:LOAD_NEXT_COLUMN, load_prior_column:-1};
 }
 
-getMaxIndex = function() {
+function getMaxIndex() {
     var maxIndex = htmlSection.index+(8*MAX_PAGES);
     if  (items.length-maxIndex < 8)
         maxIndex = items.length;
-    return maxIndex
+    return maxIndex;
 }
 
-getNextSection = function() {
+function getNextSection() {
     if (htmlSection.load_next_column > 0) {
         // We need to keep 2 pages
         htmlSection.index = htmlSection.index+(8*(MAX_PAGES-2));
@@ -1166,53 +1146,52 @@ getNextSection = function() {
         htmlSection.load_next_column=LOAD_NEXT_COLUMN;
         htmlSection.load_prior_column=-1;
     }
-    return maxIndex
+    return maxIndex;
 }
 
-loadNextSection = function() {
+function loadNextSection() {
     var maxIndex = getNextSection();
-    loadSection(maxIndex)
+    loadSection(maxIndex);
     if (htmlSection.load_next_column > 0 ||
-        maxIndex >= items.length) 
-    {
+        maxIndex >= items.length) {
         // Check if we're gonna be on second or first page. Depends on which page we're on now.
         if (columnCounter >= 4*(MAX_PAGES-1))
-            columnCounter = (columnCounter % 4) + 4
+            columnCounter = (columnCounter % 4) + 4;
         else
             // We're on second page - we will be on first page now
-            columnCounter = (columnCounter % 4)
+            columnCounter = (columnCounter % 4);
         Buttons.refresh();
     } else {
         columnCounter = 0;
     }
-    alert("Section itemCounter:" + itemCounter);
-    alert(JSON.stringify(htmlSection))
-    preloadAdjacentSectionThumbs()
+    alert('Section itemCounter:' + itemCounter);
+    alert(JSON.stringify(htmlSection));
+    preloadAdjacentSectionThumbs();
     if (isTopRowSelected)
         return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
     else
-        return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected')
-};
+        return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected');
+}
 
-loadPriorSection = function() {
-    var maxIndex = htmlSection.index+(8*MAX_PAGES)
+function loadPriorSection() {
+    var maxIndex = htmlSection.index+(8*MAX_PAGES);
     if (htmlSection.load_prior_column > -1) {
         // We need to keep 2 pages
         htmlSection.index = htmlSection.index-(8*(MAX_PAGES-2));
-        maxIndex = htmlSection.index+(8*MAX_PAGES)
+        maxIndex = htmlSection.index+(8*MAX_PAGES);
     } else {
         htmlSection.index = items.length-(8*MAX_PAGES);
-        htmlSection.index = htmlSection.index - (htmlSection.index % 8)
-        maxIndex = items.length
+        htmlSection.index = htmlSection.index - (htmlSection.index % 8);
+        maxIndex = items.length;
     }
     if (htmlSection.index < 0) {
         htmlSection.index = 0;
     }
-    loadSection(maxIndex)
+    loadSection(maxIndex);
     if (htmlSection.load_prior_column > -1) {
         // Check if we're gonna be on next last or last page. Depends on which page we're on now.
         if (columnCounter >= 4)
-            columnCounter = (columnCounter % 4) + (4*(MAX_PAGES-1))
+            columnCounter = (columnCounter % 4) + (4*(MAX_PAGES-1));
         else
             // We're on second page - we will be on next last page
             columnCounter = (columnCounter % 4) + (4*(MAX_PAGES-2));
@@ -1225,23 +1204,23 @@ loadPriorSection = function() {
         htmlSection.load_prior_column=LOAD_PRIOR_COLUMN;
         htmlSection.load_next_column=0;
     }
-    alert("Section itemCounter:" + itemCounter);
-    alert(JSON.stringify(htmlSection))
+    alert('Section itemCounter:' + itemCounter);
+    alert(JSON.stringify(htmlSection));
     preloadAdjacentSectionThumbs();
     if (isTopRowSelected  || ((columnCounter+1) > $('.bottomitem').length)) {
         isTopRowSelected = true;
         return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
     } else
-        return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected')
+        return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected');
 }
 
-setClock = function(id, callback) {
+function setClock(id, callback) {
     var time = getCurrentDate();
     id.html(msToClock(time.getTime()));
     return window.setTimeout(callback, (60-time.getSeconds())*1000);
 }
 
-slideToggle = function(id, timer, callback) {
+function slideToggle(id, timer, callback) {
     if (deviceYear < 2011) {
         if (id.is(':visible'))
             id.hide();
@@ -1254,50 +1233,48 @@ slideToggle = function(id, timer, callback) {
         id.slideToggle(timer, callback);
 }
 
-loadImage = function (image, callback, timeout) {
+function loadImage(image, callback, timeout) {
     var thisTimeout = null;
     // if (alt)
     //     return callback();
-    // alert("image:" + image + " noretry:" + noretry);
+    // alert('image:' + image + ' noretry:' + noretry);
     if (image) {
-        var img = document.createElement("img");
+        var img = document.createElement('img');
         if (timeout) {
             thisTimeout = window.setTimeout(function () {
                 img.onload=img.onerror=img.onabort = null;
                 if (isEmulator)
-                    alert("IMG TIMEOUT: " + image)
+                    alert('IMG TIMEOUT: ' + image);
                 else
-                    Log("IMG TIMEOUT")
-                callback()
+                    Log('IMG TIMEOUT');
+                callback();
             }, timeout);
         }
         if (callback) {
             img.onload = img.onerror = img.onabort = function() {
                 window.clearTimeout(thisTimeout);
-                // alert("READY")
-                callback()
-            }
+                // alert('READY')
+                callback();
+            };
         }
         img.src = image;
     } else if (callback)
         callback();
-};
+}
 
-RedirectIfEmulator = function(url) {
+function RedirectIfEmulator(url) {
     if (isEmulator) {
-        return Redirect(url)
+        return Redirect(url);
     }
-    return url
+    return url;
 }
 
-Redirect = function(url, no_log) {
+function Redirect(url, no_log) {
     var redirectUrl = url;
-    return redirectUrl
+    return redirectUrl;
 }
 
-
-Log = function (msg, timeout) 
-{
-    // httpRequest("http://<LOGSERVER>/log?msg='[" + curWidget.name + "] " + seqNo++ % 10 + " : " + msg + "'", null, {no_log:true, logging:true, timeout:((timeout) ? 100: null)});
+function Log(msg, timeout) {
+    // httpRequest('http://<LOGSERVER>/log?msg=\'[' + curWidget.name + '] ' + seqNo++ % 10 + ' : ' + msg + '\'', null, {no_log:true, logging:true, timeout:((timeout) ? 100: null)});
     // alert(msg);
-};
+}

@@ -10,14 +10,12 @@ var BACKGROUND_THUMB_FACTOR = MAX_WIDTH/THUMB_WIDTH;
 var recommendedLinks = [];
 var isEmulator = false;
 var deviceYear  = null;
-var Main =
-{
+var Main = {
     loaded         : false,
     clockTimer     : null
 };
 
-Main.onLoad = function(refresh)
-{
+Main.onLoad = function(refresh) {
     Config.init();
     Channel.init();
     Language.fixAButton();
@@ -28,13 +26,13 @@ Main.onLoad = function(refresh)
     if (!this.loaded) {
         // Cache Viasat since slow
         httpRequest(Viasat.getMainUrl());
-        $("#page-cover").hide();
-        var model = document.getElementById("pluginObjectDEVICE").GetRealModel();
-        isEmulator = (model === "VALENCIA" || model === "SDK" | !model);
+        $('#page-cover').hide();
+        var model = document.getElementById('pluginObjectDEVICE').GetRealModel();
+        isEmulator = (model === 'VALENCIA' || model === 'SDK' || !model);
         deviceYear = getDeviceYear();
         if (deviceYear > 2011)
             LINE_LENGTH = 36;
-        Log("Model:" + model +  " DeviceYear:" + deviceYear + " IsEmulator:" + isEmulator + " curWidget:" + curWidget.name + " Cookies:" + document.cookie);
+        Log('Model:' + model +  ' DeviceYear:' + deviceYear + ' IsEmulator:' + isEmulator + ' curWidget:' + curWidget.name + ' Cookies:' + document.cookie);
         loadingStart();
         Main.setClock();
         checkDateFormat();
@@ -59,35 +57,33 @@ Main.onLoad = function(refresh)
     }
 };
 
-Main.onUnload = function()
-{
+Main.onUnload = function() {
 	Player.deinit();
 };
 
 Main.setClock = function() {
     window.clearTimeout(Main.clockTimer);
     Main.clockTimer = setClock($('#footer-clock'), Main.setClock);
-}
+};
 
 Main.loadXml = function(refresh){
-    $("#content-scroll").hide();
+    $('#content-scroll').hide();
     Channel.login(
         function() {
-            var url = Channel.getUrl("main", {refresh:refresh});
-            var cbComplete = function(status){loadFinished(status, refresh)};
+            var url = Channel.getUrl('main', {refresh:refresh});
+            var cbComplete = function(status){loadFinished(status, refresh);};
             requestUrl(url,
-                       function(status, data)
-                       {
+                       function(status, data) {
                            Channel.decodeMain(data, 
                                               {url:url, 
                                                refresh:refresh,
-                                               cbComplete:function(){cbComplete(status)}
+                                               cbComplete:function(){cbComplete(status);}
                                               });
                            data = null;
                        },
-                       {cbError:function(status){cbComplete(status)},
+                       {cbError:function(status){cbComplete(status);},
                         headers:Channel.getHeaders()
                        });
         }
-    )
+    );
 };

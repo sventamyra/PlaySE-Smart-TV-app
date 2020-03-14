@@ -1,7 +1,6 @@
 var categoryDetail = {};
 
-categoryDetail.onLoad = function(location, refresh)
-{
+categoryDetail.onLoad = function(location, refresh) {
     if (!refresh)
 	PathHistory.GetPath();
 
@@ -10,28 +9,25 @@ categoryDetail.onLoad = function(location, refresh)
     }
 };
 
-categoryDetail.getCategoryName = function()
-{
+categoryDetail.getCategoryName = function() {
     return decodeURIComponent(document.title.match(/[^\/]+\/([^\/]+)/)[1]);
 };
 
-categoryDetail.onUnload = function()
-{
+categoryDetail.onUnload = function() {
 };
 
 categoryDetail.loadXml = function(location, refresh) {
-    $("#content-scroll").hide();
+    $('#content-scroll').hide();
     var url = location;
     if (location.match(/category=/))
         url = location.match(/category=(.+)&catThumb/)[1]
-    url = Channel.getUrl("categoryDetail", {refresh:refresh, location:url});
+    url = Channel.getUrl('categoryDetail', {refresh:refresh, location:url});
     var cbComplete = function(status) {
         if (refresh || myPos || !Channel.checkResume(location))
             loadFinished(status, refresh);
     };
     requestUrl(url,
-               function(status, data)
-               {
+               function(status, data) {
                    // Clear to avoid something with setPosition?
                    itemCounter = 0;
                    Channel.decodeCategoryDetail(data, 

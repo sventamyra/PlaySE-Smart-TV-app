@@ -1,6 +1,4 @@
-
-var Header =
-{
+var Header = {
    
 };
 
@@ -16,25 +14,23 @@ Header.urldecode = function(str) {
    return decodeURIComponent((str+'').replace(/\+/g, '%20'));
 };
 
-Header.insertTitle = function(path)
-{
+Header.insertTitle = function(path) {
     var title;
     var html = '';
-    while(path.indexOf("/")>0){
-	title = path.substring(0, path.indexOf("/"));
+    while(path.indexOf('/')>0){
+	title = path.substring(0, path.indexOf('/'));
 	title = this.urldecode(title);
 	if(title.length > 30){
-	    title = title.substring(0, 30)+ "...";
+	    title = title.substring(0, 30)+ '...';
 	}
-	path = path.substring(path.indexOf("/") + 1 , path.length);
+	path = path.substring(path.indexOf('/') + 1 , path.length);
 	html +='<li class="root-item"><a href="index.html" class="active">' + title + '</a></li>';
     }
     return html
 };
 
 
-Header.display = function(location)
-{
+Header.display = function(location) {
     if (location && location.length > 0) {
         location = Header.addPrefix(location);
     }
