@@ -18,7 +18,7 @@ History.checkPosition = function(pos) {
             !itemSelected.find('.ilink').attr('href').match('tmp_channel_id=' + pos.channel_id)) {
             if (htmlSection) {
                 htmlSection = getInitialSection();
-                loadSection()
+                loadSection();
             }
             return {col:0, top:true, section:htmlSection};
         }

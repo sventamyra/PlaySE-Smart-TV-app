@@ -839,7 +839,7 @@ Svt.decodeShowList = function(data, extra) {
 
     if (extra.cbComplete)
         extra.cbComplete();
-}
+};
 
 Svt.decodeSearchList = function (data, extra) {
     try {
@@ -1410,9 +1410,9 @@ Svt.IsNewer = function(a,b) {
         return a.season > b.season;
     } else
         return a.season;
-}
+};
 
 // Is this needed any longer? We don't know if a clip or not anylonger
 Svt.IsClip = function(a) {
     return false;
-}
+};

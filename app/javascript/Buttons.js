@@ -264,7 +264,7 @@ function selectItemIndex(i) {
     isTopRowSelected = (i % 2 == 0);
     if (items.length >= 8*(MAX_PAGES+1)) {
         htmlSection = getInitialSection();
-        orgColumnCounter = columnCounter;
+        var orgColumnCounter = columnCounter;
         while (columnCounter >= htmlSection.load_next_column &&
                htmlSection.load_next_column > 0) {
             getNextSection();

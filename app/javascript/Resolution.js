@@ -1,8 +1,7 @@
-var resButton = ['#resauto', '#res1', '#res2', '#res3', '#res4', '#res5', '#res6'];
 var bwidths = ['Auto', 'Min', 500000, 1500000, 3000000, 5000000, 'Max'];
 
 var Resolution = {
-   
+
 };
 
 Resolution.init = function() {

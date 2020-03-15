@@ -245,7 +245,7 @@ Channel.keyBlue = function() {
             this.main_impl.keyBlue();
         else {
             Language.hide();
-            Search.imeShow()
+            Search.imeShow();
         }
     }
 };

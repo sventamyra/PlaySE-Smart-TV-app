@@ -129,10 +129,10 @@ Config.remove = function(key) {
     return this.data.deleteItem(key);
 };
 
-cookieToConfig = function(name) {
+function cookieToConfig(name) {
     var value = getCookie(name);
     if (value) {
         Config.save(name, value);
         // Log('Cookie for ' + name + ' moved:' + Config.read(name));
     }
-};
+}

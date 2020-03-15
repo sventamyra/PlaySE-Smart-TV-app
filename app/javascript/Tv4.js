@@ -297,7 +297,7 @@ Tv4.decodeShowList = function(data, extra) {
                 data[k].loadMoreParams = data[k].loadMoreParams.replace(/\\/g,'').replace(/"rows":[0-9]+/,'"limit":100').replace(/episode/,'EPISODE').replace(/node_nids/,'nodeNids').replace(/clip/,'CLIP');
                 all_items_url = Tv4.makeApiLink('searchQuery',
                                                 data[k].loadMoreParams,
-                                                '7de088d655c4127b060af63cc1cefbe52e4229cfbe930dd109b8fce67a63a0f8'
+                                                '12ad45e4cebb69e34b849dee4ce045aff7cb5786b30c28a3dced805676c65b7c'
                                                );
                 if (data[k].assetType != 'CLIP') {
                     if (data[k].videoList.totalHits == 0)

@@ -281,14 +281,14 @@ function resetHtml(oldPos, isDetails) {
 
 function goBack(location) {
     if (myHistory.length > 0) {
-        oldLocation = myHistory.pop(),
+        var oldLocation = myHistory.pop();
         setLocation(oldLocation.loc, oldLocation.pos);
     }
     // history.go(-1);
 }
 
 function refreshSectionInHistory() {
-    oldLocation = myHistory.pop();
+    var oldLocation = myHistory.pop();
     oldLocation.pos.section = htmlSection;
     myHistory.push(oldLocation);
 }
@@ -334,9 +334,8 @@ function getIndex(MaxIndex, IndexToSkip) {
     var thisLocation = getIndexLocation();
     var anyIndex = thisLocation.match(/\?tab_index=([0-9]+)/);
     var nextIndex;
-    if (!anyIndex) {
-        currentIndex = 0;
-    } else {
+    var currentIndex = 0;
+    if (anyIndex) {
         currentIndex = +anyIndex[1];
         anyIndex     = true;
     }
@@ -624,7 +623,7 @@ function requestUrl(url, cbSucces, extra) {
         	    }
                 }
                 if (extra.cookie)
-                    deleteCookie(extra.cookie)
+                    deleteCookie(extra.cookie);
             },
             complete: function(xhr, status) {
                 if (retrying)
@@ -999,7 +998,7 @@ function itemToHtml(Item, OnlyReturn) {
     if (Item.thumb && itemCounter < THUMBS_PER_PAGE) {
         imgCounter = (itemCounter == 0) ? 0 : imgCounter+1;
         loadImage(Item.thumb,
-                  function(){if (imgCounter > 0) imgCounter--},
+                  function(){if (imgCounter > 0) imgCounter--;},
                   2000
                  );
     } else {
