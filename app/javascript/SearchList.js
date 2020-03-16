@@ -31,7 +31,7 @@ SearchList.setPath = function(query, count, refresh) {
     Header.display('');
     var title = document.title;
     if (count != undefined)
-        title = title + '/' + count + '/'
+        title = title + '/' + count + '/';
     Header.display(title);
 };
 
@@ -39,7 +39,7 @@ SearchList.loadXml = function(refresh) {
     $('#content-scroll').hide();
     var parentThis = this;
     var query      = SearchList.getQuery(refresh);
-    var cbComplete = function(status){SearchList.finish(query, status, refresh)};
+    var cbComplete = function(status){SearchList.finish(query, status, refresh);};
     var url = Channel.getUrl('searchList', {refresh:refresh, query:query});
     requestUrl(url,
                function(status, data) {
@@ -47,11 +47,11 @@ SearchList.loadXml = function(refresh) {
                                             {url:url, 
                                              refresh:refresh,
                                              query:query,
-                                             cbComplete:function(){cbComplete(status)}
+                                             cbComplete:function(){cbComplete(status);}
                                             });
                    data = null;
                },
-               {cbError:function(status){cbComplete(status)},
+               {cbError:cbComplete,
                 headers:Channel.getHeaders()
                });
 };

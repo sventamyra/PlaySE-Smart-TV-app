@@ -61,7 +61,7 @@ Details.loadXml = function(isBackground) {
                         link        : this.getUrl(),
                         description : '',
                         name        : decodeURIComponent(myLocation.match(/catName=([^&]+)/)[1]),
-                        thumb       : decodeURIComponent(catThumb),
+                        thumb       : decodeURIComponent(catThumb)
                        });
         window.setTimeout(loadingStop, 0);
         return;

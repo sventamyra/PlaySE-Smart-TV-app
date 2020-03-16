@@ -7,11 +7,6 @@ var keyHeldCounter = 0;
 var keyTs;
 var keyTimer;
 var itemSelected;
-var shift = false;
-var capslock = false;
-var rowCount = 1;
-var keyCount = 0;
-var first = true;
 var resButton = ['#resauto', '#res1', '#res2', '#res3', '#res4', '#res5', '#res6'];
 var reslButton = ['#reslauto', '#resl1', '#resl2', '#resl3', '#resl4', '#resl5', '#resl6'];
 var langButton = ['#english', '#swedish'];
@@ -142,7 +137,7 @@ Buttons.getMargin = function() {
     return xaxis;
 };
 
-Buttons.refresh = function(hide) {
+Buttons.refresh = function() {
     $('.content-holder').css({marginLeft: Buttons.getMargin()});
 };
 
@@ -327,7 +322,7 @@ function checkLoadPriorSection(column, steps) {
 function nextInList(topItems, bottomItems, itemSelected, steps) {
     var nextLoaded = checkLoadNextSection(columnCounter, steps);
     if (nextLoaded) {
-        itemSelected = nextLoaded.selected,
+        itemSelected = nextLoaded.selected;
         topItems     = nextLoaded.top;
         bottomItems  = nextLoaded.bottom;
     }
@@ -364,7 +359,7 @@ function prevInList(topItems, bottomItems, itemSelected, steps) {
 
     var priorLoaded = checkLoadPriorSection(columnCounter, steps);
     if (priorLoaded) {
-        itemSelected = priorLoaded.selected,
+        itemSelected = priorLoaded.selected;
         topItems     = priorLoaded.top;
         bottomItems  = priorLoaded.bottom;
     }
@@ -386,7 +381,7 @@ function prevInList(topItems, bottomItems, itemSelected, steps) {
     } else {
         priorLoaded = checkLoadPriorSection(columnCounter, 0);
         if (priorLoaded) {
-            itemSelected = priorLoaded.selected.removeClass('selected'),
+            itemSelected = priorLoaded.selected.removeClass('selected');
             topItems     = priorLoaded.top;
             bottomItems  = priorLoaded.bottom;
         }
@@ -724,7 +719,7 @@ Buttons.handleMenuKeys = function(keyCode){
 	break;
     case tvKey.KEY_RETURN:
 	widgetAPI.blockNavigation(event);
-	var urlpath = myLocation;
+	// var urlpath = myLocation;
 	// var ifound = urlpath.indexOf('index.html');
 	if(index == 6 || $('.slider-language').is(':visible')){
 	    Language.hide();

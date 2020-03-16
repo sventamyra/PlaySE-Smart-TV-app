@@ -136,7 +136,7 @@ Language.show = function() {
         $('.slider-language').show();
     }
     else{
-        Language.hide()
+        Language.hide();
     }
 
 };
@@ -166,26 +166,26 @@ Language.fixAButton = function(language) {
     if (!language)
         language = this.checkLanguage();
 
-    $('#a-button').text(Channel.getAButtonText(language))
+    $('#a-button').text(Channel.getAButtonText(language));
 };
 
 Language.fixBButton = function(language) {
     if (!language)
         language = this.checkLanguage();
 
-    $('#b-button').text(Channel.getBButtonText(language))
+    $('#b-button').text(Channel.getBButtonText(language));
 };
 
 Language.fixCButton = function(language) {
     if (!language)
         language = this.checkLanguage();
 
-    $('#c-button').text(Channel.getCButtonText(language))
+    $('#c-button').text(Channel.getCButtonText(language));
 };
 
 Language.fixDButton = function(language) {
     if (!language)
         language = this.checkLanguage();
 
-    $('#d-button').text(Channel.getDButtonText(language))
+    $('#d-button').text(Channel.getDButtonText(language));
 };

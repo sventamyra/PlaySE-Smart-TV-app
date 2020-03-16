@@ -40,11 +40,11 @@ showList.loadXml = function(refresh) {
                                            is_clips:(location.indexOf('clips=1') != -1),
                                            season:season,
                                            variant:variant,
-                                           cbComplete:function(){cbComplete(status)}
+                                           cbComplete:function(){cbComplete(status);}
                                           });
                    data = null;
                },
-               {cbError:function(status, data) {cbComplete(status)},
+               {cbError:cbComplete,
                 headers:Channel.getHeaders()
                }
               );

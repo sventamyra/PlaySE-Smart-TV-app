@@ -59,15 +59,13 @@ function setTmpChannel(newId) {
 
 function getDeviceYear() {
     var pluginNNavi = document.getElementById('pluginObjectNNavi');
-    var firmwareVersion = pluginNNavi.GetFirmware();
-
-    if (firmwareVersion === '') {
+    var version = pluginNNavi.GetFirmware();
+    version = version && version.match(/INFOLINK([0-9]+)/);
+    if (version)
+        return +version[1];
+    else
         // emulator
         return 666;
-    }
-
-    // Log('JTDEBUG getDeviceYear: ' + Number(firmwareVersion.substr(10, 4)))
-    return Number(firmwareVersion.substr(10, 4));
 }
 
 function deleteAllCookies(name) {
@@ -863,7 +861,7 @@ function makeSeasonLinkPrefix(Name, Season, Variant) {
 
 // Replace Current Location with the only Season existing
 function callTheOnlySeason(Name, Link, Location) {
-    LinkPrefix = makeSeasonLinkPrefix(Name, '0');
+    var LinkPrefix = makeSeasonLinkPrefix(Name, '0');
     // Must keep the show name
     var ShowName = Location.match(/[?&](show_name=[^&]+)/);
     if (ShowName)

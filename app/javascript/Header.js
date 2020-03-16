@@ -7,8 +7,8 @@ Header.addPrefix = function(location) {
         location = location + '/';
     if (Channel.getHeaderPrefix())
         location = Channel.getHeaderPrefix() + '/' + location;
-    return location
-}
+    return location;
+};
 
 Header.urldecode = function(str) {
    return decodeURIComponent((str+'').replace(/\+/g, '%20'));
@@ -26,7 +26,7 @@ Header.insertTitle = function(path) {
 	path = path.substring(path.indexOf('/') + 1 , path.length);
 	html +='<li class="root-item"><a href="index.html" class="active">' + title + '</a></li>';
     }
-    return html
+    return html;
 };
 
 
@@ -52,8 +52,3 @@ Header.display = function(location) {
 	$('.header').html(html);
     return true;
 };
-
-
-
-
-

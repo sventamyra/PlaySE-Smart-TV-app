@@ -356,7 +356,7 @@ Dplay.preFetchAllShows = function(nextPage) {
         return;
     var extra = {only_save:true,
                  all_shows:true,
-                 url      :(nextPage) ? nextPage : Dplay.getAllShowsUrl(),
+                 url      :(nextPage) ? nextPage : Dplay.getAllShowsUrl()
                 };
     httpRequest(extra.url,
                 {cb:function(status, text) {

@@ -15,17 +15,17 @@ Categories.onUnload = function() {
 Categories.loadXml = function(refresh) {
     $('#content-scroll').hide();
     var url = Channel.getUrl('categories', {refresh:refresh});
-    var cbComplete = function(status){loadFinished(status, refresh)};
+    var cbComplete = function(status){loadFinished(status, refresh);};
     requestUrl(url,
                function(status, data) {
-                   Channel.decodeCategories(data, 
-                                            {url:url, 
+                   Channel.decodeCategories(data,
+                                            {url:url,
                                              refresh:refresh,
-                                             cbComplete:function(){cbComplete(status)}
+                                             cbComplete:function(){cbComplete(status);}
                                             });
                    data = null;
                },
-               {cbError:function(status){cbComplete(status)},
+               {cbError:cbComplete,
                 headers:Channel.getHeaders()
                });
 };

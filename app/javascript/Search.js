@@ -2,52 +2,48 @@ var tvKey = new Common.API.TVKeyValue();
 var input = null;
 var search_text = '';
 
-var timeout;
 var oldKeyHandle = 0;
-var Search = {
-   
-};
+var Search = {};
 
-function Input(/**Object*/id) {
-    // var parent = null;
-    var imeReady = function() {
+function Input(id) {
+    function imeReady() {
         installFocusKeyCallbacks();
         installStatusCallbacks();
         // document.getElementById(id).focus()
         Search.imeReady();
-    };
-    var self = this;   
+    }
+    var self = this;
     var ime = new IMEShell(id, imeReady, 'sv');
     var element = document.getElementById( id );
-    var installFocusKeyCallbacks = function() {
+    function installFocusKeyCallbacks() {
         ime.setEnterFunc(onEnter);
         ime.setKeyFunc(tvKey.KEY_RETURN, onReturn);
-        ime.setKeyFunc(tvKey.KEY_EXIT, onReturn); 
-        ime.setKeyFunc(tvKey.KEY_RED, onRed); 
-    };
-    
-    var installStatusCallbacks = function() {
+        ime.setKeyFunc(tvKey.KEY_EXIT, onReturn);
+        ime.setKeyFunc(tvKey.KEY_RED,  onRed);
+    }
+
+    function installStatusCallbacks() {
         // ime.setKeySetFunc('12key'); 
         ime.setKeypadPos(350, 155);
         ime.setWordBoxPos(290, -1);
         // ime.setKeypadPos(350, 169);
         // ime.setQWERTYPos(215, 169);
-    };
-    
-    var onEnter = function(string) {
+    }
+
+    function onEnter() {
         Search.imeShow(0);
 	setLocation('SearchList.html?sok=' + $('#ime_write').val());
-    };
+    }
 
-    var onReturn = function() {
+    function onReturn() {
         Search.imeShow();
 	return true;
-    };
+    }
 
-    var onRed = function() {
-        ime.setString('');
-        return true
-    };
+    function onRed() {
+        $('#ime_write').val('');
+        return true;
+    }
 }
 
 Search.init = function() {
@@ -65,7 +61,7 @@ Search.init = function() {
 Search.imeShow = function(slideDuration) {
     if (slideDuration == undefined)
         // Default value
-        slideDuration = 500
+        slideDuration = 500;
 
     if(Buttons.getKeyHandleID()!=7){
         oldKeyHandle = Buttons.getKeyHandleID();
@@ -95,7 +91,7 @@ Search.imeShow = function(slideDuration) {
     }
     else{
         slideToggle($('.slider-imesearch'), slideDuration, function() {});
-        document.getElementById('ime_write').blur()
+        document.getElementById('ime_write').blur();
         document.body.focus();
         Buttons.setKeyHandleID(oldKeyHandle); 
         Buttons.enableKeys();
@@ -103,7 +99,6 @@ Search.imeShow = function(slideDuration) {
 };
 
 Search.imeReady = function() {
-    true;
     // document.getElementById('ime_write').focus();
 };
 

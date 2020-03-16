@@ -20,7 +20,7 @@ categoryDetail.loadXml = function(location, refresh) {
     $('#content-scroll').hide();
     var url = location;
     if (location.match(/category=/))
-        url = location.match(/category=(.+)&catThumb/)[1]
+        url = location.match(/category=(.+)&catThumb/)[1];
     url = Channel.getUrl('categoryDetail', {refresh:refresh, location:url});
     var cbComplete = function(status) {
         if (refresh || myPos || !Channel.checkResume(location))
@@ -33,11 +33,11 @@ categoryDetail.loadXml = function(location, refresh) {
                    Channel.decodeCategoryDetail(data, 
                                                 {url:url, 
                                                  refresh:refresh,
-                                                 cbComplete:function(){cbComplete(status)}
+                                                 cbComplete:function(){cbComplete(status);}
                                                 });
                    data = null;
                },
-               {cbError:function(status){cbComplete(status)},
+               {cbError:cbComplete,
                 headers:Channel.getHeaders()
                });
 };

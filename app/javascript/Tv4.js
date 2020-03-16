@@ -1,3 +1,4 @@
+// var TV4_API_BASE = 'https://graphql.tv4play.se/graphql?operationName=';
 var TV4_API_BASE = 'https://tv4-graphql-web.b17g.net/graphql?operationName=';
 var Tv4 = {
     result:[],
@@ -152,7 +153,7 @@ Tv4.getUrl = function(tag, extra) {
         else
             return Tv4.makeApiLink('ProgramSearchQuery',
                                    '{"q":"' + extra.query + '","offset":0,"limit":100}',
-                                   '12ad45e4cebb69e34b849dee4ce045aff7cb5786b30c28a3dced805676c65b7c'
+                                   '3585de8e12b3351186fa3b4f03f5703bc42eba205e9651c391e20d5a1565a1a1'
                                   );
         break;
 
@@ -1010,7 +1011,7 @@ Tv4.checkHlsRedirect = function (hlsUrl, cb) {
     var newHlsUrl = hlsUrl;
     requestUrl(RedirectIfEmulator(hlsUrl),
                function(status, data) {
-                   HOST_REGEXP = new RegExp('^(https?:\/\/[^\/]+)','m');
+                   var HOST_REGEXP = new RegExp('^(https?:\/\/[^\/]+)','m');
                    try {
                        data = data.responseText.match(HOST_REGEXP);
                        if (data) {

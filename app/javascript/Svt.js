@@ -533,7 +533,7 @@ Svt.decodeSection = function(data, extra) {
                 toHtml({name  : data[j].name,
                         thumb : Svt.getThumb(data[j].items[0]),
                         link_prefix: '<a href="tips.html?ilink=',
-                        link  : encodeURIComponent(addUrlParam(extra.url,'tipsId', data[j].id)),
+                        link  : encodeURIComponent(addUrlParam(extra.url,'tipsId', data[j].id))
                        });
             }
         } else {
@@ -594,7 +594,7 @@ Svt.decodeCategories = function (data, extra) {
                 if (data[l].urls.svtplay.match(/\/video\//)) {
                     toHtml({name: Name,
                             link: Svt.makeEpisodeLink(data[l]),
-                            link_prefix: '<a href="details.html?ilink=',
+                            link_prefix: '<a href="details.html?ilink='
                            });
                 } else {
                     Link = Svt.makeShowLink(data[l]);

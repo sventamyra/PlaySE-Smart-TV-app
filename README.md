@@ -1,10 +1,18 @@
+
+Uppdaterad med support för Öppet Arkiv, Viafree, TV4, Dplay (funkar dock inte).
+De olika brancherna:
+* master - orginalvarianten
+* hd_version - samma som master fast med 1280x720 upplösning
+* hd_3_rows_version - en annan design 3 rader med 5 kolumner
+* tizen - samma som master fast för Tizen TVs
+
 PlaySE-Smart-TV-app
 ===================
 
 Samsung Smart TV app for SVT Play. Se http://kantaris.net/?app=play-se-smart-tv-app
 
 
-Jag har lagt upp kÃ¤llkoden fÃ¶r att jag hoppas kunna fÃ¥ hjÃ¤lp med en del buggar. MÃ¥let Ã¤r att appen ska fungera pÃ¥ alla Samsungs Smart TV enheter av Ã¥rsmodell 2011 och senare.
+Jag har lagt upp källkoden för att jag hoppas kunna få hjälp med en del buggar. Målet Är att appen ska fungera på alla Samsungs Smart TV enheter av Årsmodell 2011 och senare.
 
 
 
