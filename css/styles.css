@@ -1273,34 +1273,27 @@ small {
     z-index: 1;
 }
 
-.currentTime {
-    position: absolute;
-    width: auto;
-    height: 18px;
-    left: 5px;
-    font-size: 16px;
-    font-family: Arial, sans-serif;
-    color: #e0e7ea;
-    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-    margin-top: 10px;
-    -webkit-text-stroke-color: #e0e7ea;
-    -webkit-text-stroke-width: 1px;
-
-}
-
+.currentTime,
 .totalTime {
     position: absolute;
     width: auto;
     height: 18px;
-    right: 5px;
     font-size: 16px;
     font-family: Arial, sans-serif;
-    color: #e0e7ea;
     text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
-    text-align: right;
+    color: #e0e7ea;
     margin-top: 10px;
     -webkit-text-stroke-color: #e0e7ea;
     -webkit-text-stroke-width: 1px;
+}
+
+.currentTime {
+    left: 5px;
+}
+
+.totalTime {
+    right: 5px;
+    text-align: right;
 }
 
 .topoverlay,

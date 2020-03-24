@@ -1172,6 +1172,8 @@ Svt.decode = function(data, extra) {
             Description = Description || data[k].longDescription;
             Duration = data[k].duration;
             IsLive = data[k].live;
+            if (IsLive && data[k].live.plannedEnd)
+                IsLive = getCurrentDate() < timeToDate(data[k].live.plannedEnd);
             starttime = (IsLive) ? Svt.getAirDate(data[k]) : null;
             IsRunning = IsLive && (data[k].live.liveNow || getCurrentDate() > starttime);
             if (extra.strip_show && !IgnoreEpisodes) {

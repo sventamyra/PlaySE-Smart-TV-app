@@ -5,6 +5,7 @@ De olika brancherna:
 * hd_version - samma som master fast med 1280x720 upplösning
 * hd_3_rows_version - en annan design 3 rader med 5 kolumner
 * tizen - samma som master fast för Tizen TVs
+* tizen_3_rows_version - samma som hd_3_rows_version fast för Tizen TVs
 
 PlaySE-Smart-TV-app
 ===================
