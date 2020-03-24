@@ -1075,7 +1075,6 @@ Player.OnAuthenticationFailed = function() {
 
 Player.PlaybackFailed = function(text) {
     Log('Player.PlaybackFailed:' + text);
-    Log(text);
     $('.bottomoverlaybig').html(text);
     if (!Channel.tryAltPlayUrl(videoUrl,
                                function(){
@@ -1476,6 +1475,12 @@ Player.enableScreenSaver = function() {
 Player.disableScreenSaver = function() {
     pluginAPI.setOffScreenSaver();
 };
+
+Player.internalError = function(err) {
+    if (startup && !videoUrl)
+        // Error during stream fetching?
+        Player.PlaybackFailed('Internal Error:' + err);
+}
 
 function GetMaxVideoWidth() {
     // Seems 1280x720 doesn't really work for HD variants either...

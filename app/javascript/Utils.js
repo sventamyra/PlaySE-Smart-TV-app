@@ -636,7 +636,12 @@ function requestUrl(url, cbSucces, extra) {
 
 function callUrlCallBack(requestedLocation,cb,status,xhr, errorThrown) {
     if (cb && (requestedLocation.cached || isRequestStillValid(requestedLocation))) {
-        cb(status, xhr, errorThrown);
+        try {
+            cb(status, xhr, errorThrown);
+        } catch (err) {
+            Log('callUrlCallBack failed: ' + err);
+            Player.internalError(err);
+        }
     } else if (cb)
         Log('Url skipped: ' + requestedLocation.url + ' Skipped:' + requestedLocation.loc + ' ' + requestedLocation.refLoc + ' ' + requestedLocation.channel + ' New:' + myLocation + ' ' +  myRefreshLocation);
 }
