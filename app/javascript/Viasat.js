@@ -987,7 +987,7 @@ Viasat.getPlayUrl = function(orgStreamUrl, isLive) {
                    if (Player.checkPlayUrlStillValid(orgStreamUrl)) {
                        var stream = null;
                        data = JSON.parse(data.responseText);
-                       if (data.streams.hls)
+                       if (data.streams.hls && data.streams.hls.match(/\.m3u8/))
                            stream = data.streams.hls;
                        else if (data.streams.high)
                            stream = data.streams.high;

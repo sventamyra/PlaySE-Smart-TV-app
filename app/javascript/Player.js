@@ -1366,7 +1366,9 @@ Player.setVideoBackground = function(img) {
     Player.hideVideoBackground();
     var complete = function() {
         Player.showControls();
-        loadingStart();
+        if (!$('.bottomoverlaybig').html().match(/error/i))
+            // Avoid in case of internal errors.
+            loadingStart();
         $('#outer').hide();
     };
     if (img) {
