@@ -636,8 +636,8 @@ Dplay.decodeEpisode = function (data, includes, extra) {
 
     Show = Dplay.findShowName(data, includes);
     Name = Dplay.determineEpisodeName(data, Show);
-    StartTime = extra.strip_show && Dplay.getPlayableDate(data);
-    IsUpcoming = StartTime && Dplay.isPlayable(Name,data) && Dplay.isCorrectChannel(Name,data);
+    StartTime = extra.strip_show && Dplay.getUpcomingDate(data);
+    IsUpcoming = StartTime && Dplay.isFree(Name,data) && Dplay.isCorrectChannel(Name,data);
     if (!IsUpcoming && !Dplay.isItemOk(Name,data)) {
         return
     }
@@ -962,7 +962,7 @@ Dplay.fixThumb = function(thumb, factor) {
     return thumb;
 };
 
-Dplay.isPlayable = function(Name, data) {
+Dplay.isFree = function(Name, data) {
     var isPremium = false;
     if (data.relationships.contentPackages) {
         for (var k=0; k < data.relationships.contentPackages.data.length; k++) {
@@ -1038,7 +1038,7 @@ Dplay.isAvailable = function(data) {
 };
 
 Dplay.isItemOk = function(Name, data, genre) {
-    if (!Dplay.isPlayable(Name, data)) {
+    if (!Dplay.isFree(Name, data)) {
         // alert(JSON.stringify(data))
         // alert(Name + ': Premium');
         return false;
@@ -1196,21 +1196,27 @@ Dplay.getAvailDate = function(data) {
 };
 
 Dplay.getAirDate = function(data) {
-    return timeToDate(Dplay.getMinDate(data.attributes.airDate, Dplay.getPlayableDate(data)));
+    return timeToDate(Dplay.getMinDate(data.attributes.airDate, Dplay.getPlayableStart(data)));
 };
 
-Dplay.getPlayableDate = function(data) {
-    var PlayableDate = null;
+Dplay.getPlayableStart = function(data) {
     if (data.attributes.availabilityWindows) {
         for (var i=0; i < data.attributes.availabilityWindows.length; i++) {
             if (data.attributes.availabilityWindows[i].package == 'Free' &&
                 data.attributes.availabilityWindows[i].playableStart) {
+                return data.attributes.availabilityWindows[i].playableStart;
                 PlayableDate = timeToDate(data.attributes.availabilityWindows[i].playableStart);
                 return (getCurrentDate() < PlayableDate) && PlayableDate;
             }
         }
     }
-    return PlayableDate;
+    return null;
+};
+
+Dplay.getUpcomingDate = function(data) {
+    var PlayableDate = Dplay.getPlayableStart(data);
+    PlayableDate = PlayableDate && timeToDate(PlayableDate);
+    return (getCurrentDate() < PlayableDate) && PlayableDate;
 };
 
 Dplay.getMinDate = function (a, b) {
