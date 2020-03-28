@@ -845,15 +845,15 @@ function fixCss() {
     }
 }
 
-function seasonToHtml(Name, Thumb, Link, Season, Variant) {
-    showToHtml(Name, 
-               Thumb, 
-               Link, 
-               makeSeasonLinkPrefix(Name, Season, Variant)
+function seasonToHtml(Name, Thumb, Link, Season, Variant, UserData) {
+    showToHtml(Name,
+               Thumb,
+               Link,
+               makeSeasonLinkPrefix(Name, Season, Variant, UserData)
               );
 }
 
-function makeSeasonLinkPrefix(Name, Season, Variant) {
+function makeSeasonLinkPrefix(Name, Season, Variant, UserData) {
     var LinkPrefix = '<a href="showList.html';
     if (!Season && Season != 0)
         Season='1';
@@ -861,12 +861,14 @@ function makeSeasonLinkPrefix(Name, Season, Variant) {
     LinkPrefix = addUrlParam(LinkPrefix, 'title', Name);
     if (Variant)
         LinkPrefix = addUrlParam(LinkPrefix, 'variant', Variant);
+    if (UserData)
+        LinkPrefix = addUrlParam(LinkPrefix, 'user_data', UserData);
     return LinkPrefix + '&name=';
 }
 
 // Replace Current Location with the only Season existing
-function callTheOnlySeason(Name, Link, Location) {
-    var LinkPrefix = makeSeasonLinkPrefix(Name, '0');
+function callTheOnlySeason(Name, Link, Location, UserData) {
+    var LinkPrefix = makeSeasonLinkPrefix(Name, '0', null, UserData);
     // Must keep the show name
     var ShowName = Location.match(/[?&](show_name=[^&]+)/);
     if (ShowName)
@@ -986,7 +988,7 @@ function itemToHtml(Item, OnlyReturn) {
     if ((Item.is_live && Item.is_running) || Item.is_channel) {
         IsLiveText = ' is-live';
     } else {
-        IsLiveText = (Item.is_live) ? ' not-yet-available' : '';
+        IsLiveText = (Item.is_live || Item.is_upcoming) ? ' not-yet-available' : '';
     }
 
     if (Item.background)
@@ -1018,7 +1020,8 @@ function itemToHtml(Item, OnlyReturn) {
         if (Item.starttime)
 	    html += '<div class="bottomoverlayred">' + Item.starttime + '</div>';
         html += '</div>';
-    }
+    } else if (Item.is_upcoming)
+        html += '<div class="upcomingoverlay"><span>' + Item.starttime + '</span></div>';
     html += '</div><div class="scroll-item-border"/>';
     Item.name = Item.name.trim();
     html += '<div class="scroll-item-name">';

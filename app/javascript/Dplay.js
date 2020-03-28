@@ -631,11 +631,16 @@ Dplay.decodeEpisode = function (data, includes, extra) {
     var Season=null;
     var Episode=null;
     var IsLive=false;
+    var IsUpcoming=false;
+    var StartTime = null;
 
     Show = Dplay.findShowName(data, includes);
     Name = Dplay.determineEpisodeName(data, Show);
-    if (!Dplay.isItemOk(Name, data))
-        return;
+    StartTime = extra.strip_show && Dplay.getPlayableDate(data);
+    IsUpcoming = StartTime && Dplay.isPlayable(Name,data) && Dplay.isCorrectChannel(Name,data);
+    if (!IsUpcoming && !Dplay.isItemOk(Name,data)) {
+        return
+    }
     // if (data.attributes.drmEnabled)
     //     continue;
     if (extra.strip_show && data.attributes.episodeNumber) {
@@ -658,6 +663,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
     Season  = (data.attributes.seasonNumber) ? data.attributes.seasonNumber : null;
     Episode = data.attributes.episodeNumber;
     IsLive = data.attributes.videoType.match(/LIVE/);
+    StartTime = (IsLive) ? Dplay.getAirDate(data) : StartTime;
     Dplay.result.push(
         {name:Name,
          show:Show,
@@ -671,9 +677,10 @@ Dplay.decodeEpisode = function (data, includes, extra) {
          airDate:AirDate,
          isFollowUp:data.attributes.videoType.match(/FOLLOWUP/),
          is_live : IsLive,
-         starttime : (IsLive) ? Dplay.getAirDate(data) : null,
+         starttime : StartTime,
          // Non-running live shows are skipped - so if here it's running...
-         is_running : IsLive
+         is_running : IsLive,
+         is_upcoming : IsUpcoming
         });
 };
 
@@ -824,6 +831,7 @@ Dplay.getDetailsData = function(url, data) {
     var Season = null;
     var Episode = null;
     var Includes = null;
+    var IsUnavailable = false;
     try {
         data = JSON.parse(data.responseText);
         Includes = Dplay.decodeIncludes(data);
@@ -840,6 +848,7 @@ Dplay.getDetailsData = function(url, data) {
         if (data.attributes.description)
 	    Description = data.attributes.description.trim();
         AvailDate = Dplay.getAvailDate(data);
+        IsUnavailable = !Dplay.isAvailable(data);
 
         if (Show && Dplay.isItemOk(Show.name, Show.includes)) {
             Show = {name  : Show.name,
@@ -867,7 +876,7 @@ Dplay.getDetailsData = function(url, data) {
             start_time    : AirDate,
             duration      : VideoLength,
             description   : Description,
-            not_available : false,
+            not_available : IsUnavailable,
             thumb         : DetailsImgLink,
             season        : Season,
             episode       : Episode,
@@ -989,7 +998,7 @@ Dplay.isCorrectChannel = function(Name, data) {
     return true;
 };
 
-Dplay.isAvailable = function(Name, data) {
+Dplay.isAvailable = function(data) {
 
     if (data.attributes &&
         data.attributes.availabilityWindows) {
@@ -1038,7 +1047,7 @@ Dplay.isItemOk = function(Name, data, genre) {
         alert(Name + ': wrong channel');
         return false;
     }
-    if (!Dplay.isAvailable(Name, data)) {
+    if (!Dplay.isAvailable(data)) {
         alert(Name + ': not yet available');
         return false;
     }
@@ -1187,17 +1196,21 @@ Dplay.getAvailDate = function(data) {
 };
 
 Dplay.getAirDate = function(data) {
-    var airDate = data.attributes.airDate;
+    return timeToDate(Dplay.getMinDate(data.attributes.airDate, Dplay.getPlayableDate(data)));
+};
+
+Dplay.getPlayableDate = function(data) {
+    var PlayableDate = null;
     if (data.attributes.availabilityWindows) {
         for (var i=0; i < data.attributes.availabilityWindows.length; i++) {
             if (data.attributes.availabilityWindows[i].package == 'Free' &&
                 data.attributes.availabilityWindows[i].playableStart) {
-                airDate = Dplay.getMinDate(airDate, data.attributes.availabilityWindows[i].playableStart);
-                break;
+                PlayableDate = timeToDate(data.attributes.availabilityWindows[i].playableStart);
+                return (getCurrentDate() < PlayableDate) && PlayableDate;
             }
         }
     }
-    return timeToDate(airDate);
+    return PlayableDate;
 };
 
 Dplay.getMinDate = function (a, b) {

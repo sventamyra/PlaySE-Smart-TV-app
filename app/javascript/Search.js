@@ -41,7 +41,7 @@ function Input(id) {
     }
 
     function onRed() {
-        $('#ime_write').val('');
+        ime.setString('');
         return true;
     }
 }

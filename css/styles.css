@@ -1322,6 +1322,23 @@ small {
     top: 18px;
 }
 
+.upcomingoverlay {
+    position: absolute;
+    top: 0;
+    height:100%;
+    width:100%;
+    line-height:135px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.upcomingoverlay span{
+    color: #e0e7ea;
+    font: bold 17px Helvetica, Sans-Serif;
+    letter-spacing: -1px;
+    white-space: nowrap;
+}
+
 .topoverlayresolution,
 .topoverlayclock {
     position: absolute;

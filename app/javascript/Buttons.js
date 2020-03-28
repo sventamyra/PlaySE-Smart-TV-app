@@ -224,6 +224,8 @@ Buttons.keyHandleForList = function() {
     case tvKey.KEY_PLAY:
 	var ilink = itemSelected.find('.ilink').attr('href');
         if (ilink != undefined) {
+            if (ilink.match('upcoming.html'))
+                return;
             if (keyCode != tvKey.KEY_INFO && Buttons.isPlayable(ilink)) {
                 Buttons.playItem();
                 return;
@@ -239,8 +241,7 @@ Buttons.keyHandleForList = function() {
                 return;
             }
 	    return setLocation(ilink);
-        }
-        else {
+        } else {
 	    itemSelected.removeClass('selected');
             itemSelected = false;
         }
@@ -461,7 +462,6 @@ Buttons.keyHandleForDetails = function() {
 	break;
     }
     this.handleMenuKeys(keyCode);
-
 };
 
 Buttons.keyHandleForSettings = function() {

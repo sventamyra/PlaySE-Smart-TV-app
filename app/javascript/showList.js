@@ -26,6 +26,7 @@ showList.loadXml = function(refresh) {
     var season   = getUrlParam(location, 'season');
     season = (isNaN(+season)) ? season : +season;
     var variant = getUrlParam(location, 'variant');
+    var user_data = getUrlParam(location, 'user_data');
     var cbComplete = function(status) {
         if (refresh || myPos || !Channel.checkResume(location))
             loadFinished(status, refresh);
@@ -40,6 +41,7 @@ showList.loadXml = function(refresh) {
                                            is_clips:(location.indexOf('clips=1') != -1),
                                            season:season,
                                            variant:variant,
+                                           user_data:user_data,
                                            cbComplete:function(){cbComplete(status);}
                                           });
                    data = null;

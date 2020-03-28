@@ -118,7 +118,6 @@ Svt.makeEpisodeLink = function (data) {
                           );
 };
 
-
 Svt.checkThumbIndex = function(index, data) {
     if (data && Svt.getThumbIndex(+index)!=data) {
         Svt.thumbs_index[+index] = data;
@@ -756,6 +755,7 @@ Svt.decodeShowList = function(data, extra) {
     var hasZeroSeason = false;
     var useSeasonName = false;
     var showName;
+    var latestSeasonName = extra.user_data && JSON.parse(extra.user_data).latest_season;
 
     showName = data.name;
     data = data.associatedContent;
@@ -777,14 +777,16 @@ Svt.decodeShowList = function(data, extra) {
             //     hasZeroSeason = true;
             // }
         }
-
+        latestSeasonName = null;
         if (seasons.length > 1) {
-            if (!useSeasonName)
+            if (!useSeasonName) {
                 seasons.sort(function(a, b){
                     a = +a.replace(/[^0-9]+/g,'');
                     b = +b.replace(/[^0-9]+/g,'');
                     return b-a;
                 });
+                latestSeasonName = seasons[0]
+            }
             for (var k=0; k < seasons.length; k++) {
                 var Season = (useSeasonName) ?
                     seasons[k] :
@@ -792,7 +794,9 @@ Svt.decodeShowList = function(data, extra) {
                 seasonToHtml(seasons[k],
                              showThumb,
                              extra.url,
-                             Season
+                             Season,
+                             null,
+                             JSON.stringify({latest_season:latestSeasonName})
                             );
             }
         } else if (extra.season!=0 && seasons.length == 1) {
@@ -810,6 +814,35 @@ Svt.decodeShowList = function(data, extra) {
     //     }
     //     data = data.filtered;
     // }
+
+    // Add upcoming episodes
+    var upcoming = null;
+    var lastSeasonIndex = -1;
+
+    for (var k=0; k < data.length; k++) {
+        if (data[k].type=='Upcoming' && data[k].items && data[k].items.length > 0) {
+            // Limit to 5...
+            data[k].items.splice(5);
+            // ...and reverse
+            data[k].items.reverse();
+            upcoming = data[k]
+        } else if (data[k].type=='Season') {
+            if (latestSeasonName) {
+                if (data[k].name == latestSeasonName)
+                    lastSeasonIndex = k;
+            } else if (!upcoming) {
+                // Assume Upcoming belongs to the prior season.
+                lastSeasonIndex = k;
+            } else {
+                // Upcoming Index prior to seasons - assume they belong to the season after
+                lastSeasonIndex = k
+                break;
+            }
+        }
+    }
+    if (upcoming) {
+        data[lastSeasonIndex].items = upcoming.items.concat(data[lastSeasonIndex].items);
+    }
 
     if (extra.season===0 || extra.season || extra.is_clips || seasons.length < 2) {
         for (var j=0; j < data.length; j++) {
@@ -1124,6 +1157,7 @@ Svt.decode = function(data, extra) {
         var Shows = [];
         var IgnoreEpisodes = false;
         var Links = [];
+        var IsUpcoming = false;
 
         if (!extra)
             extra = {};
@@ -1174,7 +1208,9 @@ Svt.decode = function(data, extra) {
             IsLive = data[k].live;
             if (IsLive && data[k].live.plannedEnd)
                 IsLive = getCurrentDate() < timeToDate(data[k].live.plannedEnd);
-            starttime = (IsLive) ? Svt.getAirDate(data[k]) : null;
+            starttime = Svt.getAirDate(data[k]);
+            IsUpcoming = extra.strip_show && (starttime > getCurrentDate());
+            starttime = (IsLive || IsUpcoming) ? starttime : null;
             IsRunning = IsLive && (data[k].live.liveNow || getCurrentDate() > starttime);
             if (extra.strip_show && !IgnoreEpisodes) {
                 if (!Name.match(/(avsnitt|del)\s*([0-9]+)/i) && Episode) {
@@ -1212,7 +1248,10 @@ Svt.decode = function(data, extra) {
 
             // if (data[k].contentUrl && data[k].contentType != 'titel') {
             LinkPrefix = '<a href="details.html?ilink=';
-            if (extra.variant) {
+            if (IsUpcoming) {
+                LinkPrefix = '<a href="upcoming.html?ilink=';
+                Link = null;
+            } else if (extra.variant) {
                 Link = null;
                 // Find correct variant
                 for (var l=0; l < data[k].variants.length; l++) {
@@ -1224,6 +1263,14 @@ Svt.decode = function(data, extra) {
                 if (!Link) continue;
             } else if (data[k].variants) {
                 Link = Svt.makeEpisodeLink(data[k].variants[0]);
+            } else if (data[k].episode && data[k].episode.variants) {
+                // Find correct "variant"
+                for (var v=0; v < data[k].episode.variants.length; v++) {
+                    if (data[k].episode.variants[v].id == data[k].id) {
+                        Link = Svt.makeEpisodeLink(data[k].episode.variants[v]);
+                        break;
+                    }
+                }
             } else if (extra.is_clips) {
                 Link = Svt.makeEpisodeLink({articleId:data[k].id});
             } else if (data[k].__typename == 'Single' ||
@@ -1265,6 +1312,7 @@ Svt.decode = function(data, extra) {
                         is_live:IsLive,
                         is_channel:false,
                         is_running:IsRunning,
+                        is_upcoming:IsUpcoming,
                         starttime:starttime,
                         link:Link,
                         link_prefix:LinkPrefix,
@@ -1314,7 +1362,7 @@ Svt.getVariantName = function(accessService) {
 Svt.getSeasonNumber = function(data) {
     var Season = (data.episode &&
                   data.episode.positionInSeason &&
-                  data.episode.positionInSeason.match(/^[^ —\–\-0-9]*([0-9]+)/)
+                  data.episode.positionInSeason.match(/^[^0-9]+([0-9]+)[^0-9]+/)
                  );
     if (Season)
         return +Season[1];

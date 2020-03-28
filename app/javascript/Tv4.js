@@ -277,20 +277,24 @@ Tv4.decodeLive = function(data, extra) {
 
 Tv4.decodeShowList = function(data, extra) {
 
+    var UserData = extra.user_data && JSON.parse(extra.user_data);
+    extra.upcoming = UserData && UserData.upcoming;
     if (!extra.is_clips && !extra.season) {
         data = JSON.parse(data.responseText).data;
         var showThumb;
         var seasons = [];
         var non_seasons = [];
         var cbComplete = extra.cbComplete;
-        var clips_url = null;
+        var clips_url = UserData && UserData.clips_url;
         var nid;
         var season;
         var all_items_url;
+        var upcoming;
 
         // 0 Means the only season
         if (extra.season != 0) {
             showThumb = Tv4.fixThumb(data.program.image);
+            upcoming = data.program.upcoming;
             nid = data.program.id;
             data = data.program.panels;
             // Find seasons and non-seasons
@@ -305,9 +309,16 @@ Tv4.decodeShowList = function(data, extra) {
                         continue;
                     season = data[k].videoList.videoAssets[0].season;
                     if (season > 0) {
-                        seasons.push({name   : data[k].name,
-                                      url    : all_items_url,
-                                      season : season
+                        if (upcoming && seasons.length == 0) {
+                            // Assume it belongs to the first season
+                            upcoming.thumb = showThumb;
+                        } else
+                            // Reset it.
+                            upcoming = null;
+                        seasons.push({name     : data[k].name,
+                                      url      : all_items_url,
+                                      season   : season,
+                                      upcoming : upcoming
                                      });
                     } else {
                         // Will only find maximum of 15(?) hits...
@@ -321,11 +332,14 @@ Tv4.decodeShowList = function(data, extra) {
                     seasonToHtml(seasons[i].name,
                                  showThumb,
                                  seasons[i].url,
-                                 seasons[i].season
+                                 seasons[i].season,
+                                 null,
+                                 JSON.stringify({upcoming:seasons[i].upcoming})
                                 );
                 }
             } else if (seasons.length == 1) {
-                return callTheOnlySeason(seasons[0].name, seasons[0].url, extra.loc);
+                UserData = JSON.stringify({clips_url:clips_url, upcoming:seasons[0].upcoming});
+                return callTheOnlySeason(seasons[0].name, seasons[0].url, extra.loc, UserData);
             }
         }
         extra.cbComplete      = false;
@@ -547,6 +561,10 @@ Tv4.decode = function(data, extra) {
             IsRunning = IsLive && starttime && (getCurrentDate() > starttime);
 
             if (extra.strip_show) {
+                if (Tv4.result.length==0 && extra.upcoming) {
+                    extra.upcoming.program = data[k].program;
+                    extra.upcoming.name = Tv4.determineEpisodeName(extra.upcoming)
+                }
                 Name = Tv4.determineEpisodeName(data[k]);
             }
             if (!data[k].image && data[k].images)
@@ -599,6 +617,16 @@ Tv4.decode = function(data, extra) {
                 } else
                     return 1;
             });
+
+            if (extra.upcoming) {
+                toHtml({name:extra.upcoming.name,
+                        starttime:extra.upcoming.humanBroadcastDateWithWeekday,
+                        link_prefix:'<a href="upcoming.html?ilink=',
+                        thumb:extra.upcoming.thumb,
+                        is_upcoming: true
+                       });
+            }
+
         }
 
         for (var i=0; i < Tv4.result.length; i++) {
