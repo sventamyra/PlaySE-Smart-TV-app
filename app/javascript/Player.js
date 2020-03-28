@@ -18,7 +18,7 @@ var videoData = {};
 var detailsUrl;
 var requestedUrl = null;
 var backgroundLoading = false;
-var startup = true;
+var startup = false;
 var smute = 0;
 var retries = 0;
 var SEPARATOR = '&nbsp;&nbsp;&nbsp;&nbsp;';
@@ -450,6 +450,7 @@ Player.pauseVideo = function() {
 Player.stopVideo = function(keep_playing) {
     this.state = this.STOPPED;
     requestedUrl = null;
+    startup = false;
     Subtitles.stop();
     Player.storeResumeInfo();
     widgetAPI.putInnerHTML(document.getElementById('srtId'), '');

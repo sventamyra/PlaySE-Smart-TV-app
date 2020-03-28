@@ -1403,6 +1403,7 @@ small {
     left: 0;
     color: #e0e7ea;
     font: bold 30px/60px Helvetica, Sans-Serif;
+    max-width: 100%;
     width: inherit;
     height: inherit;
     white-space: nowrap;

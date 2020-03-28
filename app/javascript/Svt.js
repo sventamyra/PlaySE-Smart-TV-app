@@ -840,11 +840,19 @@ Svt.decodeShowList = function(data, extra) {
             }
         }
     }
+    extra.strip_show = true;
+    extra.show_thumb = showThumb;
+    extra.show_name = showName;
+
     if (upcoming) {
-        data[lastSeasonIndex].items = upcoming.items.concat(data[lastSeasonIndex].items);
+        if (lastSeasonIndex == -1)
+            // No seasons yet...
+            Svt.decode(upcoming.items, extra);
+        else
+            data[lastSeasonIndex].items = upcoming.items.concat(data[lastSeasonIndex].items);
     }
 
-    if (extra.season===0 || extra.season || extra.is_clips || seasons.length < 2) {
+    if (extra.season===0 || extra.season || extra.is_clips || (seasons.length && seasons.length < 2)) {
         for (var j=0; j < data.length; j++) {
             if (extra.is_clips && data[j].id=='clips') {
                 data = data[j].items;
@@ -861,9 +869,6 @@ Svt.decodeShowList = function(data, extra) {
                 break;
             }
         }
-        extra.strip_show = true;
-        extra.show_thumb = showThumb;
-        extra.show_name = showName;
         Svt.decode(data, extra);
     }
 
