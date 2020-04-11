@@ -844,13 +844,9 @@ Svt.decodeShowList = function(data, extra) {
     extra.show_thumb = showThumb;
     extra.show_name = showName;
 
-    if (upcoming) {
-        if (lastSeasonIndex == -1)
+    if (upcoming && lastSeasonIndex == -1)
             // No seasons yet...
-            Svt.decode(upcoming.items, extra);
-        else
-            data[lastSeasonIndex].items = upcoming.items.concat(data[lastSeasonIndex].items);
-    }
+        Svt.decode(upcoming.items, extra);
 
     if (extra.season===0 || extra.season || extra.is_clips || (seasons.length && seasons.length < 2)) {
         for (var j=0; j < data.length; j++) {
@@ -865,6 +861,10 @@ Svt.decodeShowList = function(data, extra) {
                         data[j].name :
                         +data[j].name.replace(/[^0-9]+/g,'');
                 }
+                // Decode upcoming first to avoid messing with multiple episodes
+                // with same episode numbers in case part of a new season.
+                if (upcoming && j==lastSeasonIndex)
+                    Svt.decode(upcoming.items, extra);
                 data = data[j].items;
                 break;
             }
@@ -918,9 +918,10 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl) {
 
     var video_urls=[], extra = {isLive:isLive};
 
-    if (url.match(/=ChannelsQuery/))
+    if (url.match(/=ChannelsQuery/)) {
+        extra.use_offset = true;
         streamUrl = SVT_ALT_API_URL + getUrlParam(url,'chId');
-    else if(!streamUrl) {
+    } else if(!streamUrl) {
         streamUrl = url;
     }
 
@@ -1470,4 +1471,14 @@ Svt.IsNewer = function(a,b) {
 // Is this needed any longer? We don't know if a clip or not anylonger
 Svt.IsClip = function(a) {
     return false;
+};
+
+Svt.requestDateString = function(Callback) {
+    httpRequest(Svt.getUrl("live"),
+                {cb:function(status,data) {
+                    data = JSON.parse(data).data.channels.channels[0].running.start;
+                    Callback(data);
+                },
+                 no_log:true
+                });
 };

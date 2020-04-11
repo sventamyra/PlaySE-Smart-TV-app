@@ -185,7 +185,6 @@ Player.OnEvent = function(EventType, param1, param2) {
         //'16' : 'AD_END',
     case 17: // 'RESOLUTION_CHANGED'
         Player.OnStreamInfoReady(true);
-        Player.updateTopOSD();
         break;
     case 18: // 'BITRATE_CHANGED'
         // Ignore BW since it seems it reacts on new data instead of buffered data. 
@@ -271,9 +270,12 @@ Player.setVideoURL = function(master, url, srtUrl, extra) {
     }
 
     videoUrl                = url;
+    videoData.component     = videoUrl.match(/\|COMPONENT=([^|]+)/);
+    videoData.component     = videoData.component && videoData.component[1];
     videoData.url           = videoUrl;
     videoData.audio_idx     = extra.audio_idx;
     videoData.subtitles_idx = extra.subtitles_idx;
+    videoData.use_offset    = extra.use_offset;
 
     if (deviceYear >= 2011 && videoUrl.match(/=WMDRM/)) {
         Player.plugin.Execute('InitPlayer', videoUrl);
@@ -595,7 +597,6 @@ Player.OnBufferingProgress = function(percent) {
         return;
     this.showControls();
     Player.SetBufferingText(percent);
-    Player.refreshDetailsTimer();
 };
 
 Player.OnBufferingComplete = function() {
@@ -834,8 +835,11 @@ Player.SetCurTime = function(time) {
 	    startup = false;
             // work-around for samsung bug. Mute sound first after the player started.
 	    Audio.setCurrentMode(smute);
-            if (Player.isLive && +Player.startTime != 0 && +time < 30000) {
-                Player.updateOffset(Player.startTime);
+            if (videoData.use_offset) {
+                Player.refreshDetailsTimer();
+                if (+Player.startTime != 0 && +time < 30000) {
+                    Player.updateOffset(Player.startTime);
+                }
             }
             Player.setResolution(Player.GetResolution());
 	} else
@@ -903,6 +907,7 @@ Player.BwToString = function(bw) {
 
 Player.OnStreamInfoReady = function(forced) {
     Log('OnStreamInfoReady, forced:' + forced);
+    var oldTopOsd = $('.topoverlayresolution').html();
     var resolution = Player.GetResolution();
     videoBw = Player.plugin.Execute('GetCurrentBitrates');
     if (this.bw && videoBw && this.bw != (' ' + Player.BwToString(videoBw)))
@@ -910,6 +915,8 @@ Player.OnStreamInfoReady = function(forced) {
     this.setResolution(resolution);
     Player.pluginDuration = Player.plugin.Execute('GetDuration');
     this.setTotalTime();
+    if ($('.topoverlayresolution').html() != oldTopOsd)
+        Player.updateTopOSD();
     if (videoData.audio_idx)
         Log('SetStreamID Audio: ' + videoData.audio_idx + ' res: ' + Player.plugin.Execute('SetStreamID', 1, videoData.audio_idx));
     if (Subtitles.exists()) {
@@ -970,7 +977,8 @@ Player.showDetails = function() {
         window.clearTimeout(osdTimer);
     } else {
         // Update in case of channel where details may change
-        Details.fetchData(detailsUrl, true);
+        if (videoData.use_offset)
+            Details.fetchData(detailsUrl, true);
         this.hideDetailedInfo();
     }
 };
@@ -998,7 +1006,7 @@ Player.OnNetworkDisconnected = function(text) {
         text = 'Network Error!';
     }
     // Avoid reload loop in case constant failure in the end....
-    if ((Player.GetDuration()-ccTime) < 500)
+    if (!startup && (Player.GetDuration()-ccTime) < 500)
         Player.OnRenderingComplete();
     else
         Player.retryVideo(text);
@@ -1039,7 +1047,7 @@ Player.OnStreamNotFound = function() {
 
 Player.OnRenderError = function(number) {
     // Avoid reload loop in case constant failure in the end....
-    if ((Player.GetDuration()-ccTime) < 500)
+    if (!startup && (Player.GetDuration()-ccTime) < 500)
         Player.OnRenderingComplete();
     else {
         Log('Player.OnRenderError:' + number);
@@ -1052,7 +1060,7 @@ Player.checkHls = function(OtherCalback, text) {
     // Seems stop before OnBufferingStart gives e.g. OnRenderError
     // Can also happen in case 'resume' is chosen too late...
     if (Player.state != Player.STOPPED && delayedPlayTimer != -1) {
-        if (videoUrl.match('=HLS') && !videoUrl.match(/\/downgradehls\//)) {
+        if (videoData.component=='HLS' && !videoUrl.match(/\/downgradehls\//)) {
             var thisVideoUrl = videoUrl;
             Player.getHlsVersion(videoUrl.replace(/\|.+/,''),
                                  function(hls_version) {
@@ -1401,7 +1409,7 @@ Player.hideVideoBackground = function() {
 };
 
 Player.refreshStartData = function(details) {
-    if (Player.isLive && details && details.start_time != 0 && details.start_time != Player.startTime) {
+    if (videoData.use_offset && details && details.start_time != 0 && details.start_time != Player.startTime) {
         Log('refreshStartData, new start:' + details.start_time + ' old start:' + Player.startTime);
         Player.setNowPlaying(details.title);
         Player.pluginDuration = Player.plugin.Execute('GetDuration');
@@ -1462,13 +1470,11 @@ Player.refreshOsdTimer = function(value) {
 };
 
 Player.refreshDetailsTimer = function() {
-    window.clearTimeout(detailsTimer); 
-    if (detailsUrl.indexOf('/kanaler/') > -1) {
-        detailsTimer = window.setTimeout(function () {
-            Details.fetchData(detailsUrl, true);
-            Player.refreshDetailsTimer();
-        }, 1*60*1000);
-    }
+    window.clearTimeout(detailsTimer);
+    detailsTimer = window.setTimeout(function () {
+        Details.fetchData(detailsUrl, true);
+        Player.refreshDetailsTimer();
+    }, 1*60*1000);
 };
 
 Player.enableScreenSaver = function() {

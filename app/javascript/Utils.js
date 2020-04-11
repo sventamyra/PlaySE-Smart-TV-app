@@ -448,31 +448,27 @@ function setDateOffset() {
     // Retry once a minute in case of failure
     window.clearTimeout(setDateOffsetTimer);
     setDateOffsetTimer = window.setTimeout(setDateOffset, 60*1000);
-    httpRequest('https://www.svtplay.se/api/server_time',
-                {cb:function(status,data) {
-                    dateOffset = 0;
-                    data = JSON.parse(data).time;
-                    var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
-                    var actualSeconds = actualData[2]*3600 + actualData[3]*60;
-                    var actualDateString = actualData[1].replace(/-/g, '');
-                    var tsDate = timeToDate(data);
-                    var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
-                    var tsDateString = dateToString(tsDate);
-                    if (actualDateString > tsDateString) {
-                        // Add 24 hours to actual
-                        actualSeconds = actualSeconds + 24*3600;
-                    } else if (tsDateString > actualDateString) {
-                        // Add 24 hours to ts
-                        tsSeconds = tsSeconds + 24*3600;
-                    }
-                    dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
-                    if (checkOffsetCounter == -1) {
-                        Log('dateOffset (hours):' + dateOffset/3600/1000 + ' actualDate:' + actualDateString + ' tsDate:' + tsDateString + ' tsDate:' + tsDate + ' data:' + data + ' starttime:' + actualData[0]);
-                    }
-	            window.clearTimeout(setDateOffsetTimer);
-                },
-                 no_log:true
-                });
+    Svt.requestDateString(function(data) {
+        dateOffset = 0;
+        var actualData = data.match(/([0-9\-]+)T([0-9]+).([0-9]+)/);
+        var actualSeconds = actualData[2]*3600 + actualData[3]*60;
+        var actualDateString = actualData[1].replace(/-/g, '');
+        var tsDate = timeToDate(data);
+        var tsSeconds = tsDate.getHours()*3600 + tsDate.getMinutes()*60 + tsDate.getSeconds();
+        var tsDateString = dateToString(tsDate);
+        if (actualDateString > tsDateString) {
+            // Add 24 hours to actual
+            actualSeconds = actualSeconds + 24*3600;
+        } else if (tsDateString > actualDateString) {
+            // Add 24 hours to ts
+            tsSeconds = tsSeconds + 24*3600;
+        }
+        dateOffset = Math.round((actualSeconds-tsSeconds)/3600)*3600*1000;
+        if (checkOffsetCounter == -1) {
+            Log('dateOffset (hours):' + dateOffset/3600/1000 + ' actualDate:' + actualDateString + ' tsDate:' + tsDateString + ' tsDate:' + tsDate + ' data:' + data + ' starttime:' + actualData[0]);
+        }
+	window.clearTimeout(setDateOffsetTimer);
+    });
 }
 
 function makeDate(year, month, day, time) {

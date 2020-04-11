@@ -43,7 +43,7 @@ History.checkResume = function(location) {
 
 History.findSeason = function(show, meta) {
     alert('Resume Season ' + meta.season);
-    if (History.findLinkPrefix(show, new RegExp('[?&]season=' + encodeURIComponent(meta.season) + '(&.+)?$','i')))
+    if (History.findLinkPrefix(show, "season", new RegExp('^(S[^s]+song? )?' + meta.season + '$','i')))
         return true;
     else
         return History.findVariant(show, meta);
@@ -51,15 +51,17 @@ History.findSeason = function(show, meta) {
 
 History.findVariant = function(show, meta) {
     alert('Resume Variant ' + meta.variant + ' season:' + meta.season);
-    if (History.findLinkPrefix(show, new RegExp('[?&]variant=' + meta.variant + '(&.+)?$','i')))
+    if (History.findLinkPrefix(show, "variant", new RegExp('^' + meta.variant + '$','i')))
         return true;
     else
         return History.findEpisode(show, meta);
 };
 
-History.findLinkPrefix = function(show, regexp) {
+History.findLinkPrefix = function(show, variable, regexp) {
+
     for (var i=0; i < items.length; i++) {
-        if (items[i].link_prefix.match(regexp)) {
+        var value = getUrlParam(items[i].link_prefix, variable)
+        if (value && value.match(regexp)) {
             var link = itemToLink(items[i], 'show_name=' + encodeURIComponent(show)) + '"/>';
             window.setTimeout(function() {
                 selectItemIndex(i);
