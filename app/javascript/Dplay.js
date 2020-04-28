@@ -678,8 +678,7 @@ Dplay.decodeEpisode = function (data, includes, extra) {
          isFollowUp:data.attributes.videoType.match(/FOLLOWUP/),
          is_live : IsLive,
          starttime : StartTime,
-         // Non-running live shows are skipped - so if here it's running...
-         is_running : IsLive,
+         is_running : getCurrentDate() > StartTime,
          is_upcoming : IsUpcoming
         });
 };

@@ -575,7 +575,8 @@ Player.skipLongBackwardVideo = function(longMinutes) {
 
 Player.SetBufferingText = function(percent) {
     var buff = (Language.getisSwedish()) ? 'Buffrar' : 'Buffering';
-    $('.bottomoverlaybig').html(buff + ': ' + percent + '%');
+    buff = (percent) ?  buff + ': ' + percent + '%' : buff;
+    $('.bottomoverlaybig').html(buff);
 };
 
 Player.OnBufferingStart = function() {
@@ -586,7 +587,7 @@ Player.OnBufferingStart = function() {
         // No Resume
         resumeTime = 0;
     }
-    Player.SetBufferingText(0);
+    Player.SetBufferingText();
 };
 
 Player.OnBufferingProgress = function(percent) {
@@ -837,7 +838,7 @@ Player.SetCurTime = function(time) {
 	    Audio.setCurrentMode(smute);
             if (videoData.use_offset) {
                 Player.refreshDetailsTimer();
-                if (+Player.startTime != 0 && +time < 30000) {
+                if (+Player.startTime != 0) {
                     Player.updateOffset(Player.startTime);
                 }
             }
@@ -915,8 +916,7 @@ Player.OnStreamInfoReady = function(forced) {
     this.setResolution(resolution);
     Player.pluginDuration = Player.plugin.Execute('GetDuration');
     this.setTotalTime();
-    if ($('.topoverlayresolution').html() != oldTopOsd)
-        Player.updateTopOSD();
+    Player.updateTopOSD(oldTopOsd);
     if (videoData.audio_idx)
         Log('SetStreamID Audio: ' + videoData.audio_idx + ' res: ' + Player.plugin.Execute('SetStreamID', 1, videoData.audio_idx));
     if (Subtitles.exists()) {
@@ -1150,11 +1150,13 @@ Player.setTopOSDText = function(init_text) {
     $('.topoverlayresolution').html(resolution_text.replace(/^(&nbsp;)+/,''));
 };
 
-Player.updateTopOSD = function() {
+Player.updateTopOSD = function(oldTopOsd) {
     Player.setTopOSDText();
-    if ($('.topoverlayresolution').is(':hidden')) {
-        $('.topoverlayresolution').show();
-        Player.refreshOsdTimer(3000);
+    if (!oldTopOsd || (oldTopOsd != $('.topoverlayresolution').html())) {
+        if ($('.topoverlayresolution').is(':hidden')) {
+            $('.topoverlayresolution').show();
+            Player.refreshOsdTimer(3000);
+        }
     }
 };
 

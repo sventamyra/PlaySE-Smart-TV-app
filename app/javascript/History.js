@@ -96,7 +96,8 @@ History.findEpisode = function(show, meta) {
     alert('Resume Episode ' + meta.episode + ' season ' + meta.season + ' name ' + meta.episode_name);
     var hits = [];
     for (var i=0; meta.episode && i < items.length; i++) {
-        if ((!meta.season || History.match(meta.season,items[i].season)) &&
+        if (!items[i].is_upcoming &&
+            (!meta.season || History.match(meta.season,items[i].season)) &&
             History.match(meta.episode, items[i].episode)) {
             hits.push(i);
         }

@@ -968,12 +968,12 @@ Tv4.getDetailsUrl = function(streamUrl) {
 Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
 
     var asset = decodeURIComponent(streamUrl).match(/"id":([^}]+)/)[1];
-    var protocol = (drm) ? '&device=samsung-orsay&protocol=mss' : '&device=browser&protocol=dash';
+    var protocol = (drm || isLive) ? '&device=samsung-orsay&protocol=mss' : '&device=browser&protocol=dash';
     var reqUrl = 'https://playback-api.b17g.net/media/' + asset + '?service=tv4&drm=playready' + protocol;
     hlsUrl = hlsUrl || reqUrl.replace(/dash/,'hls');
 
-    if (isLive)
-        reqUrl = reqUrl + '&is_live=true';
+    // if (isLive)
+    //     reqUrl = reqUrl + '&is_live=true';
 
     var cbComplete = function(stream, srtUrl, license) {
         if (!stream) {
@@ -981,11 +981,9 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
         } else {
             Resolution.getCorrectStream(stream,
                                         srtUrl,
-                                        {useBitrates:!isLive,
+                                        {useBitrates:true,
                                          license:license,
-                                         isLive:isLive,
-                                         // Seems we get 304 response which ajax doesn't like?
-                                         no_cache:true
+                                         isLive:isLive
                                         });
         }};
 
@@ -1006,12 +1004,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                                              cbComplete(stream, srtUrl, license);
                                          });
                        } else {
-                           // Seems URL is redirected which Player doesn't support when Auto
-                           // is used as target.
-                           Tv4.checkHlsRedirect(stream,
-                                                function(newStream) {
-                                                    cbComplete(newStream, null, license);
-                                                });
+                           cbComplete(stream, null, license)
                        }
                    }
                }
@@ -1032,24 +1025,6 @@ Tv4.getSrtUrl = function (hlsUrl, cb) {
                    }
                },
                {cbComplete: function() {cb(srtUrl);}}
-              );
-};
-
-Tv4.checkHlsRedirect = function (hlsUrl, cb) {
-    var newHlsUrl = hlsUrl;
-    requestUrl(RedirectIfEmulator(hlsUrl),
-               function(status, data) {
-                   var HOST_REGEXP = new RegExp('^(https?:\/\/[^\/]+)','m');
-                   try {
-                       data = data.responseText.match(HOST_REGEXP);
-                       if (data) {
-                           newHlsUrl = hlsUrl.replace(HOST_REGEXP, data[1]);
-                       }
-                   } catch (err) {
-                       Log('Tv4.checkHlsRedirect: ' + err + ' hlsUrl:' + hlsUrl);
-                   }
-               },
-               {cbComplete: function() {cb(newHlsUrl);}}
               );
 };
 

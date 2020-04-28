@@ -576,6 +576,7 @@ function requestUrl(url, cbSucces, extra) {
             retryLimit : 3,
 	    timeout: 15000,
             cache: cache,
+            // withCredentials: true,
             beforeSend: function (request) {
                 if (extra.headers) {
                     for (var i=0;i<extra.headers.length;i++) {
@@ -703,6 +704,7 @@ function httpRequest(url, extra) {
         for (var i=0;i<extra.headers.length;i++)
             xhr.setRequestHeader(extra.headers[i].key, extra.headers[i].value);
     }
+    // xhr.withCredentials = true;
     xhr.send(extra.params);
     if (extra.sync) {
         var result = {data:     xhr.responseText,
@@ -730,7 +732,7 @@ function handleHttpResult(url, timer, extra, result) {
 
     if (extra.params)
         alert(result.xhr.getAllResponseHeaders());
-    if (result.status == 200 || result.status == 206 || result.status == 304) {
+    if (isHttpStatusOk(result.status)) {
         if (!extra.no_log)
             Log('Success:' + url);
     } else {
@@ -743,11 +745,15 @@ function handleHttpResult(url, timer, extra, result) {
         extra.cb(result.status, result.data, result.xhr);
     }
     if (extra.sync) {
-        result.success = (result.status == 200);
+        result.success = isHttpStatusOk(result.status);
         if (result.status != 302)
             result.location = null;
         return result;
     }
+}
+
+function isHttpStatusOk(status) {
+    return (status==200 || status==206 || status==304);
 }
 
 function httpLoop(urls, urlCallback, cbComplete, extra) {
