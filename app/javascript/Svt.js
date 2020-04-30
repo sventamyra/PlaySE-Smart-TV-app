@@ -785,7 +785,7 @@ Svt.decodeShowList = function(data, extra) {
                     b = +b.replace(/[^0-9]+/g,'');
                     return b-a;
                 });
-                latestSeasonName = seasons[0]
+                latestSeasonName = seasons[0];
             }
             for (var k=0; k < seasons.length; k++) {
                 var Season = (useSeasonName) ?
@@ -878,7 +878,7 @@ Svt.checkUpoming = function(data, latestSeasonName) {
             data[k].items.splice(5);
             // ...and reverse
             data[k].items.reverse();
-            upcoming = data[k]
+            upcoming = data[k];
         } else if (data[k].type=='Season') {
             if (latestSeasonName) {
                 if (data[k].name == latestSeasonName)
@@ -888,7 +888,7 @@ Svt.checkUpoming = function(data, latestSeasonName) {
                 lastSeasonIndex = k;
             } else {
                 // Upcoming Index prior to seasons - assume they belong to the season after
-                lastSeasonIndex = k
+                lastSeasonIndex = k;
                 break;
             }
         }
@@ -1317,9 +1317,12 @@ Svt.decode = function(data, extra) {
                 }
             }
 
-            for (var m=0; !extra.variant && data[k].accessibilities && m < data[k].accessibilities.length; m++) {
-                if (Variants.indexOf(data[k].accessibilities[m]) == -1)
-                    Variants.push(data[k].accessibilities[m]);
+            // What about variants inside episode - is that another "variant"?
+            if (!extra.variant && data[k].accessibilities && data[k].variants) {
+                for (var m=0; m < data[k].accessibilities.length; m++) {
+                    if (Variants.indexOf(data[k].accessibilities[m]) == -1)
+                        Variants.push(data[k].accessibilities[m]);
+                }
             }
             // Why was this done?
             // if (data[k].versions &&

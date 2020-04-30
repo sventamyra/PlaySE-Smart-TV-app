@@ -23,8 +23,11 @@ categoryDetail.loadXml = function(location, refresh) {
         url = location.match(/category=(.+)&catThumb/)[1];
     url = Channel.getUrl('categoryDetail', {refresh:refresh, location:url});
     var cbComplete = function(status) {
-        if (refresh || myPos || !Channel.checkResume(location))
+        if (refresh || myPos || !Channel.checkResume(location)) {
+            if (refresh || myPos)
+                Channel.markResumed();
             loadFinished(status, refresh);
+        }
     };
     requestUrl(url,
                function(status, data) {

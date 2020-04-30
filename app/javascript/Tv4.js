@@ -975,7 +975,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
     // if (isLive)
     //     reqUrl = reqUrl + '&is_live=true';
 
-    var cbComplete = function(stream, srtUrl, license) {
+    var cbComplete = function(stream, srtUrl, license, useOffset) {
         if (!stream) {
             $('.bottomoverlaybig').html('Not Available!');
         } else {
@@ -983,7 +983,8 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                                         srtUrl,
                                         {useBitrates:true,
                                          license:license,
-                                         isLive:isLive
+                                         isLive:isLive,
+                                         use_offset:useOffset
                                         });
         }};
 
@@ -1004,7 +1005,11 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                                              cbComplete(stream, srtUrl, license);
                                          });
                        } else {
-                           cbComplete(stream, null, license)
+                           // Use offset for live shows with 'startOver'
+                           Tv4.checkUseOffset(streamUrl,
+                                              function(useOffset) {
+                                                  cbComplete(stream, null, license, useOffset)
+                                              });
                        }
                    }
                }
@@ -1026,6 +1031,14 @@ Tv4.getSrtUrl = function (hlsUrl, cb) {
                },
                {cbComplete: function() {cb(srtUrl);}}
               );
+};
+
+Tv4.checkUseOffset = function(streamUrl, cb) {
+    requestUrl(Tv4.getDetailsUrl(streamUrl),
+               function(status, data) {
+                   data = JSON.parse(data.responseText).data.videoAsset.startOver;
+                   cb(data)
+               });
 };
 
 Tv4.makeApiLink = function(Operation, variables, sha) {

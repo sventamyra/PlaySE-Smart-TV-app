@@ -975,17 +975,20 @@ function itemToHtml(Item, OnlyReturn) {
     var html;
     var IsLiveText;
     var Background='';
+    var itemRow = (itemCounter % 2 == 0) ? 'topitem' : 'bottomitem';
+    var borderStyle = (Item.watched) ? ' style="width:' + Item.watched + '%;"' : '';
 
-    if(itemCounter % 2 == 0){
+    itemRow = ((Item.watched) ? ' resumed' : '') + ' ' + itemRow;
+    if(itemCounter % 2 == 0) {
 	if(itemCounter > 0 || htmlSection){
-	    html = '<div class="scroll-content-item topitem">';
+	    html = '<div class="scroll-content-item' + itemRow  + '">';
 	}
 	else{
-	    html = '<div class="scroll-content-item selected topitem">';
+	    html = '<div class="scroll-content-item selected' + itemRow  + '">';
 	}
     }
     else{
-	html = '<div class="scroll-content-item bottomitem">';
+	html = '<div class="scroll-content-item' + itemRow  + '">';
     }
     if ((Item.is_live && Item.is_running) || Item.is_channel) {
         IsLiveText = ' is-live';
@@ -1024,7 +1027,7 @@ function itemToHtml(Item, OnlyReturn) {
         html += '</div>';
     } else if (Item.is_upcoming)
         html += '<div class="upcomingoverlay"><span>' + Item.starttime + '</span></div>';
-    html += '</div><div class="scroll-item-border"/>';
+    html += '</div><div class="scroll-item-border"' + borderStyle + '/>';
     Item.name = Item.name.trim();
     html += '<div class="scroll-item-name">';
     html +=	'<p><a href="#">' + Item.name + '</a></p>';
@@ -1037,7 +1040,7 @@ function itemToHtml(Item, OnlyReturn) {
     html += '>' + Item.description + '</span>';
     html += '</div>';
     html += '</div>';
- 
+
     if (OnlyReturn)
         return {top:itemCounter++ % 2 == 0, html:html};
 
@@ -1219,6 +1222,41 @@ function loadPriorSection() {
         return itemSelected = $('.topitem').eq(columnCounter).addClass('selected');
     } else
         return itemSelected = $('.bottomitem').eq(columnCounter).addClass('selected');
+}
+
+function getVisibleIndex(index) {
+    if (!htmlSection)
+        return index;
+    if (htmlSection && index >= htmlSection.index) {
+        if (htmlSection.load_next_column == 0 || index <= htmlSection.load_next_column) {
+            return index - htmlSection.index;
+        }
+    }
+    return -1;
+}
+
+function addResumed(index, percentage) {
+    index = getVisibleIndex(index);
+    if (index >= 0) {
+        var row = (index % 2 == 0) ? $('.topitem') : $('.bottomitem');
+        $(row).eq(Math.floor(index/2)).addClass('resumed');
+        $('.scroll-content-item.resumed .scroll-item-border').css({'width':percentage+'%'});
+    }
+}
+
+function removeResumed() {
+    $('.topitem').removeClass('resumed');
+    $('.bottomitem').removeClass('resumed');
+    // Need to reset borderStyle as well...
+    $('.scroll-content-item .scroll-item-border').css({'width':'100%'});
+}
+
+function updateResumed(percentage) {
+    // First remove old
+    removeResumed();
+    // Assume selected item is the one to be resumed.
+    itemSelected.addClass('resumed');
+    $('.scroll-content-item.resumed .scroll-item-border').css({'width':percentage+'%'});
 }
 
 function setClock(id, callback) {

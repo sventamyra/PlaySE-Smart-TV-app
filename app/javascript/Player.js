@@ -635,8 +635,7 @@ Player.OnRenderingStart = function() {
 
     resumeJump = null;
 
-    if (Details.fetchedDetails && Details.fetchedDetails.parent_show)
-        History.addShow(Details.fetchedDetails);
+    History.addShow(Details.fetchedDetails);
 };
 
 Player.OnRenderingComplete = function() {
@@ -681,11 +680,13 @@ Player.removeResumeInfo = function(key) {
 Player.storeResumeInfo = function() {
     if (videoData.key && resumeTime > 20 && !Player.isLive) {
         Log('Player.storeResumeInfo, resumeTime:' + resumeTime + ' duration:' + Player.GetDuration() + ' videoData.key:' + JSON.stringify(videoData.key) + ' !Player.isLive:' + !Player.isLive);
-
+        var percentage = Math.floor(100*resumeTime/(Player.GetDuration()/1000));
+        // Update history with resumeTime
+        History.addShow(Details.fetchedDetails, percentage);
         var resumeList = Player.removeResumeInfo(videoData.key);
-        if (resumeTime < (0.97*Player.GetDuration()/1000)) {
+        if (percentage < 97) {
             resumeList.unshift({id:videoData.key.id, url:videoData.key.url, time:resumeTime});
-            resumeList = resumeList.slice(0,20);
+            resumeList = resumeList.slice(0,30);
         }
         Config.save('resumeList', resumeList);
         resumeTime = 0;
@@ -1491,7 +1492,7 @@ Player.internalError = function(err) {
     if (startup && !videoUrl)
         // Error during stream fetching?
         Player.PlaybackFailed('Internal Error:' + err);
-}
+};
 
 function GetMaxVideoWidth() {
     // Seems 1280x720 doesn't really work for HD variants either...

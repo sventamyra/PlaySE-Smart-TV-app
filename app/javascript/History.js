@@ -37,8 +37,40 @@ History.checkResume = function(location) {
             return History.findVariant(show, meta);
         else
             return History.findEpisode(show, meta);
+    } else {
+        History.markResumed(true);
     }
     return false;
+};
+
+History.markResumed = function(select) {
+    var showRegexp = new RegExp('^' + History.getMainTitle() + '\/([^/]+)/');
+    show = document.title.match(showRegexp);
+    if (show) {
+        show = decodeURIComponent(show[1]);
+        var meta = History.lookup(show);
+        var combinedString = '^' + History.getMainTitle() + '\/' + show + '\/';
+        if (meta && meta.season) {
+            combinedString += '(S[^s]+song? )?' + decodeURIComponent(meta.season) + '/';
+        }
+        if (meta && meta.variant) {
+            combinedString += Channel.getVariantName(meta.variant) + '/';
+        }
+        if (myRefreshLocation)
+            combinedString += '[^/]+\/';
+        var combinedRegexp = new RegExp(combinedString + '$','i');
+        if (decodeURIComponent(document.title).match(combinedRegexp))
+            return History.findEpisode(show, meta, !select);
+    }
+    return false;
+};
+
+History.updateResumed = function(percentage) {
+    if (items.length)
+        // Items are available and must be updated - i.e. same as mark
+        History.markResumed();
+    else
+        updateResumed(percentage);
 };
 
 History.findSeason = function(show, meta) {
@@ -60,7 +92,7 @@ History.findVariant = function(show, meta) {
 History.findLinkPrefix = function(show, variable, regexp) {
 
     for (var i=0; i < items.length; i++) {
-        var value = getUrlParam(items[i].link_prefix, variable)
+        var value = getUrlParam(items[i].link_prefix, variable);
         if (value && value.match(regexp)) {
             var link = itemToLink(items[i], 'show_name=' + encodeURIComponent(show)) + '"/>';
             window.setTimeout(function() {
@@ -92,8 +124,8 @@ History.match = function(a, b) {
         return true;
 };
 
-History.findEpisode = function(show, meta) {
-    alert('Resume Episode ' + meta.episode + ' season ' + meta.season + ' name ' + meta.episode_name);
+History.findEpisode = function(show, meta, noSelect) {
+    alert('Resume Episode:' + meta.episode + ' season:' + meta.season + ' name:' + meta.episode_name);
     var hits = [];
     for (var i=0; meta.episode && i < items.length; i++) {
         if (!items[i].is_upcoming &&
@@ -117,14 +149,35 @@ History.findEpisode = function(show, meta) {
         }
     }
     if (hits.length == 1) {
-        selectItemIndex(hits[0]);
-        myPos = Channel.savePosition({col     : columnCounter,
-                                      top     : isTopRowSelected,
-                                      section : htmlSection
-                                     });
+        // First remove possibly old resumed
+        for (var l=0; l < items.length; l++) {
+            if (items[l].watched) {
+                items[l].watched = null;
+                removeResumed(l);
+                break;
+            }
+        }
+        var percentage = History.fixResumePercentage(meta.watched);
+        items[hits[0]].watched = percentage;
+        if (!noSelect) {
+            selectItemIndex(hits[0]);
+            myPos = Channel.savePosition({col     : columnCounter,
+                                          top     : isTopRowSelected,
+                                          section : htmlSection
+                                         });
+        }
+        addResumed(hits[0], percentage);
         alert('Resumed episode ' + meta.episode);
     }
     return false;
+};
+
+History.fixResumePercentage = function(percentage) {
+    if (!percentage || percentage < 3)
+        percentage = 3;
+    if (percentage > 96)
+        percentage = 100;
+    return percentage;
 };
 
 History.getHeaderPrefix = function(MainName) {
@@ -244,14 +297,22 @@ History.getDButtonText = function(language) {
         return 'Ta bort';
 };
 
-History.addShow = function(details) {
-    if (details.is_live || details.is_channel || !details.parent_show)
+History.addShow = function(details, percentage) {
+    if (!details || details.is_live || details.is_channel || !details.parent_show)
         return;
+
+
+    // Keep old percentage in case none provided. At least consistent behaviour with how
+    // resume info is handled in player.
+    if (!percentage) {
+        percentage = History.lookup(details.parent_show.name);
+        percentage = percentage && percentage.watched;
+    }
 
     var savedShows = History.removeShow(details.parent_show.name, Channel.id(), true);
     if (!savedShows)
         savedShows = [];
-    savedShows.unshift({channel_id   : Channel.id(), 
+    savedShows.unshift({channel_id   : Channel.id(),
                         name         : details.parent_show.name,
                         thumb        : details.parent_show.thumb,
                         large_thumb  : details.parent_show.large_thumb,
@@ -260,9 +321,11 @@ History.addShow = function(details) {
                         variant      : details.variant,
                         episode      : details.episode,
                         episode_name : details.episode_name,
-                        is_category  : details.parent_show.is_category
+                        is_category  : details.parent_show.is_category,
+                        watched      : percentage
                        });
     Config.save('History', savedShows.slice(0,30));
+    Channel.updateResumed(History.fixResumePercentage(percentage));
 };
 
 History.removeShow = function(showName, channelId, noSave) {

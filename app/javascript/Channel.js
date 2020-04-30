@@ -89,6 +89,18 @@ Channel.checkResume = function(location) {
     return false;
 };
 
+Channel.markResumed = function() {
+    if (this.main_impl.markResumed)
+        return this.main_impl.markResumed();
+    return false;
+};
+
+Channel.updateResumed = function(percentage) {
+    if (this.main_impl.updateResumed)
+        return this.main_impl.updateResumed(percentage);
+    return false;
+};
+
 Channel.getName = function() {
     return this.getHeaderPrefix(true).toLowerCase();
 };
@@ -277,6 +289,10 @@ Channel.getLiveTitle = function() {
         return this.impl.getLiveTitle();
     else
         return 'Kanaler & livesändningar';
+};
+
+Channel.getVariantName = function(variant) {
+    return this.impl.getVariantName(variant);
 };
 
 Channel.getAButtonText = function(language) {

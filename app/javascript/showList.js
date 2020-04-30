@@ -28,8 +28,11 @@ showList.loadXml = function(refresh) {
     var variant = getUrlParam(location, 'variant');
     var user_data = getUrlParam(location, 'user_data');
     var cbComplete = function(status) {
-        if (refresh || myPos || !Channel.checkResume(location))
+        if (refresh || myPos || !Channel.checkResume(location)) {
+            if (refresh || myPos)
+                Channel.markResumed();
             loadFinished(status, refresh);
+        }
     };
     requestUrl(url,
                function(status, data) {
