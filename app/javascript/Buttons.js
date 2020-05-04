@@ -255,6 +255,21 @@ Buttons.keyHandleForList = function() {
     this.sscroll();
 };
 
+function skipUpcoming() {
+    if (!myPos && columnCounter==0 && items!=[] && items[0].is_upcoming) {
+        for (var i=1; i < items.length; i++) {
+            if (!items[i].is_upcoming) {
+                selectItemIndex(i);
+                myPos = Channel.savePosition({col     : columnCounter,
+                                              top     : isTopRowSelected,
+                                              section : htmlSection
+                                             });
+                break;
+            }
+        }
+    }
+}
+
 function selectItemIndex(i) {
     columnCounter = Math.floor(i/2);
     isTopRowSelected = (i % 2 == 0);

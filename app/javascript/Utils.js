@@ -814,6 +814,8 @@ function getItemCounter() {
 }
 
 function loadFinished(status, refresh) {
+    // Do before clearing items
+    skipUpcoming();
     fixCss();
     finaliseHtml();
     if (status == 'success') {

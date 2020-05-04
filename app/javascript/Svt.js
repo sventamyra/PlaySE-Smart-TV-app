@@ -874,8 +874,6 @@ Svt.checkUpoming = function(data, latestSeasonName) {
                 else
                     return 0;
             });
-            // Limit to 5...
-            data[k].items.splice(5);
             // ...and reverse
             data[k].items.reverse();
             upcoming = data[k];
