@@ -970,7 +970,7 @@ Svt.getPlayUrl = function(url, isLive, streamUrl, cb, failedUrl) {
                                   )
 		                   hls_url = videoReferences[i].url;
                            } else if (videoReferences[i].format &&
-                                      videoReferences[i].format.match('dash-hbbtv')) {
+                                      videoReferences[i].format == 'dash-hbbtv') {
                                dash_hbbtv_url = videoReferences[i].url;
                            } else if (!other_url && videoReferences[i].url.match(/\.mpd/))
                                other_url = videoReferences[i].url;

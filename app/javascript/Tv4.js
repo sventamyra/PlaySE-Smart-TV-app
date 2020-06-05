@@ -1,13 +1,14 @@
 // var TV4_API_BASE = 'https://graphql.tv4play.se/graphql?operationName=';
 var TV4_API_BASE = 'https://tv4-graphql-web.b17g.net/graphql?operationName=';
 
-var START_PAGE_SHA = '43a909d2f6e98341bec3da70a183b8bc11199dc1ef2d38986c7f80226c6edb8d';
+var START_PAGE_SHA = 'ce253e3933a7de579878336774016bd9c2a6c8043233629ab035739c3b832af9';
+var START_PAGE_SHA_LOGGED_IN = '0de74fcc0be0c13d524eb76cf3f9d6519417237b4b2514e702ba3f773e390c4e';
 var PROGRAM_SEARCH_QUERY_SHA = '3585de8e12b3351186fa3b4f03f5703bc42eba205e9651c391e20d5a1565a1a1';
 var PROGRAM_SEARCH_SHA = '78cdda0280f7e6b21dea52021406cc44ef0ce37102cb13571804b1a5bd3b9aa1'
 var CATEGORY_PAGE_SHA = 'af5d3fd1a0a57608dca2f031580d80528c17d96fd146adf8a6449d3114ca2174';
 var SEARCH_QUERY_SHA = '12ad45e4cebb69e34b849dee4ce045aff7cb5786b30c28a3dced805676c65b7c';
-var CDP_SHA = '4c7c4fcc14fa9d458235bdfe805dab462ff1ff9e125b7624503a934a5b7dce5f';
-var VIDEO_ASSET_SHA = 'afeb5edbc7bec288b84ebe7ff98751120e06a76d2bbb24695aef57db0414ea1b';
+var CDP_SHA = 'ddbc962b49fa943495c5b4b6f6a1fc34f3131e0ee9491b4060e96186cb6fd791';
+var VIDEO_ASSET_SHA = 'd7da6ec5c9e4f283fc78106c43db214282c6af8d5cdcf4ebe6a8ad902c37df8c';
 
 var Tv4 = {
     result:[],
@@ -1075,7 +1076,7 @@ Tv4.makeApiLink = function(Operation, variables, sha) {
 Tv4.makeStartPageLink = function(id) {
     return Tv4.makeApiLink('StartPage',
                            '{"loggedIn":false}',
-                           '0de74fcc0be0c13d524eb76cf3f9d6519417237b4b2514e702ba3f773e390c4e'
+                           START_PAGE_SHA_LOGGED_IN
                           );
 };
 
