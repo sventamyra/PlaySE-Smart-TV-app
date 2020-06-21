@@ -85,7 +85,7 @@ Subtitles.fetch = function (srtUrls, hlsSubs, usedRequestedUrl, extra) {
                  if (status != 200)
                      anyFailed = true;
                  else if (data) {
-                     if (url.match(/\.(web)?vtt/)) {
+                     if (url.match(/\.(web)?vtt/) || data.match(/(WEB)?VTT/)) {
                          data   = Subtitles.parseVtt(data, offset, delta);
                          offset = data.offset;
                          delta  = data.delta;
@@ -258,11 +258,13 @@ Subtitles.fetchHls = function (hlsSubs, usedRequestedUrl, extra) {
                  }
 
                  var urls = data.match(/^([^#].+)$/mg);
-                 var prefix  = url.replace(/[^\/]+(\?.+)?$/,'');
                  if (urls) {
+                     var prefix = getUrlPrefix(url);
                      for (var i=0; i < urls.length; i++) {
                          if (!urls[i].match(/http[s]?:/))
                              urls[i] = prefix + urls[i];
+                         if (prefix.match('http:'))
+                             urls[i] = urls[i].toHttp();
                      }
                      return urls.join(' ') + ' ';
                  }
@@ -271,7 +273,7 @@ Subtitles.fetchHls = function (hlsSubs, usedRequestedUrl, extra) {
              },
              function (urls) {
                  urls = urls.trim().split(' ');
-                 if (Player.checkPlayUrlStillValid(usedRequestedUrl)) {
+                 if (urls.length > 0 && Player.checkPlayUrlStillValid(usedRequestedUrl)) {
                      // Doesn't necessarily work in case of multiple hlsSubs...
                      hlsSubsState = {urls      : urls,
                                      duration  : duration,

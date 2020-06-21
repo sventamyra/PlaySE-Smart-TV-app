@@ -333,8 +333,8 @@ Player.GetDigits = function(type, data) {
 };
 
 Player.getHlsVersion = function(url, callback) {
-    var prefix = url.replace(/[^\/]+(\?.+)?$/,'');
-    httpRequest(url, 
+    var prefix = getUrlPrefix(url);
+    httpRequest(url,
                 {cb:function(status, data) {
                     var hls_version = data.match(/^#.*EXT-X-VERSION:\s*([0-9]+)/m);
                     if (hls_version)
@@ -345,7 +345,7 @@ Player.getHlsVersion = function(url, callback) {
                             url = prefix + url;
                         return Player.getHlsVersion(url, callback);
                     }
-                    else 
+                    else
                         hls_version = null;
                     callback(hls_version);
                 },

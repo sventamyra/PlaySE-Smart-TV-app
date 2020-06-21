@@ -26,13 +26,14 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra) {
     if (!extra) extra  = {};
     if (!extra.cb) extra.cb = function() {Player.playVideo();};
 
-    var prefix = videoUrl.replace(/[^\/]+(\?.+)?$/,'');
+    var prefix = getUrlPrefix(videoUrl);
     var target = Resolution.getTarget(extra.isLive);
     var master = videoUrl;
     requestUrl(videoUrl,
-               function(status, data) {
-                   if (data.responseText.length == 0) {
-                       Log('No data, Status: ' + status + ' ' + JSON.stringify(data));
+               null,
+               {cbComplete:function(status, data) {
+                   if (!data.responseText || data.responseText.length == 0) {
+                       Log('No data, use Auto and hope for the best');
                        target = 'Auto';
                    } else {
                        var streams, is_hls = videoUrl.match(/\.m3u8/);
@@ -102,7 +103,9 @@ Resolution.getCorrectStream = function(videoUrl, srtUrl, extra) {
                    Player.setVideoURL(master, videoUrl, srtUrl, extra);
                    extra.cb();
                },
-               {headers:Channel.getHeaders(), no_cache:extra.no_cache}
+                headers:Channel.getHeaders(),
+                no_cache:extra.no_cache
+               }
               );
 };
 

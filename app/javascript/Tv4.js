@@ -363,7 +363,7 @@ Tv4.decodeShowList = function(data, extra) {
                 return callTheOnlySeason(seasons[0].name, seasons[0].url, extra.loc, UserData);
             }
         }
-        extra.cbComplete      = false;
+        extra.cbComplete = false;
         if (extra.season == 0) {
             data = data.videoAssetSearch.videoAssets;
             // Init the data needed for Clips below...
@@ -999,7 +999,7 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
         if (!stream) {
             $('.bottomoverlaybig').html('Not Available!');
         } else {
-            Resolution.getCorrectStream(stream,
+            Resolution.getCorrectStream(stream.toHttp(),
                                         srtUrl,
                                         {useBitrates:true,
                                          license:license,
@@ -1015,12 +1015,16 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
                        data = JSON.parse(data.responseText).playbackItem;
                        stream = data.manifestUrl;
                        license = data.license && data.license.url;
+                       // license = data.license && data.license.castlabsServer;
+                       // customData = data.license && data.license.castlabsToken;
+                       // if (customData)
+                           // customData = btoa('{"userId":"userId","merchant":"bonnierbroadcasting","sessionId":"sessionId","authToken":"' + customData + '"}');
                        if (!drm && license && reqUrl != hlsUrl) {
                            hlsUrl = stream.replace(/\.mpd/,'.m3u8');
                            return Tv4.getPlayUrl(streamUrl, isLive, true, hlsUrl);
                        } else if (!isLive) {
                            hlsUrl = (drm) ? hlsUrl : stream.replace(/\.mpd/,'.m3u8');
-                           Tv4.getSrtUrl(hlsUrl,
+                           Tv4.getSrtUrl(asset,
                                          function(srtUrl){
                                              cbComplete(stream, srtUrl, license);
                                          });
@@ -1036,17 +1040,15 @@ Tv4.getPlayUrl = function(streamUrl, isLive, drm, hlsUrl) {
               );
 };
 
-Tv4.getSrtUrl = function (hlsUrl, cb) {
+Tv4.getSrtUrl = function (asset, cb) {
+    var url = 'https://playback-api.b17g.net/subtitles/' + asset + '?service=tv4&format=webvtt'
     var srtUrl = null;
-    requestUrl(RedirectIfEmulator(hlsUrl),
+    requestUrl(RedirectIfEmulator(url),
                function(status, data) {
                    try {
-                       srtUrl = data.responseText.match(/TYPE=SUBTITLES.+URI="([^"]+)/)[1];
-                       if (!srtUrl.match(/https?:\//)) {
-                           srtUrl = hlsUrl.replace(/[^\/]+(\?.+)?$/,srtUrl);
-                       }
+                       srtUrl = JSON.parse(data.responseText)[0].url.toHttp();
                    } catch (err) {
-                       Log('No subtitles: ' + err + ' hlsUrl:' + hlsUrl);
+                       Log('No subtitles: ' + err + ' url:' + url);
                    }
                },
                {cbComplete: function() {cb(srtUrl);}}
@@ -1056,8 +1058,8 @@ Tv4.getSrtUrl = function (hlsUrl, cb) {
 Tv4.checkUseOffset = function(streamUrl, cb) {
     requestUrl(Tv4.getDetailsUrl(streamUrl),
                function(status, data) {
-                   data = JSON.parse(data.responseText).data.videoAsset.startOver;
-                   cb(data)
+                   data = JSON.parse(data.responseText).data;
+                   cb(data && data.videoAsset.startOver)
                });
 };
 

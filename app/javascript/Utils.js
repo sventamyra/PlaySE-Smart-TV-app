@@ -119,6 +119,10 @@ String.prototype.capitalize = function() {
     return this.replace(/^./,this[0].toUpperCase());
 };
 
+String.prototype.toHttp = function() {
+    return this.replace(/^https:/,'http:');
+};
+
 // Copied
 if (!String.prototype.startsWith) {
     String.prototype.startsWith = function(search, pos) {
@@ -592,12 +596,12 @@ function requestUrl(url, cbSucces, extra) {
                 }
             },
             success: function(data, status, xhr) {
+                if (xhr.status==0 && !xhr.responseText)
+                    return this.error(xhr, 'no status', xhr.errorString);
                 Log('Success:' + this.url);
                 retrying = false;
                 data = null;
                 callUrlCallBack(requestedLocation, cbSucces, status, xhr);
-                xhr.destroy();
-                xhr = null;
                 if (extra.cookie)
                     deleteCookie(extra.cookie);
             },
@@ -606,7 +610,7 @@ function requestUrl(url, cbSucces, extra) {
                 if (isRequestStillValid(requestedLocation)) {
                     Log('Failure:' + this.url + ' status:' + textStatus + ' error:' + errorThrown);
                     this.tryCount++;
-          	    if ((textStatus == 'timeout' || xhr.status == 1015) && 
+          	    if ((textStatus=='timeout' || xhr.status==1015) &&
                         this.tryCount <= this.retryLimit) {
                         //try again
                         retrying = true;
@@ -621,11 +625,13 @@ function requestUrl(url, cbSucces, extra) {
                     deleteCookie(extra.cookie);
             },
             complete: function(xhr, status) {
-                if (retrying)
-                    return;
-                callUrlCallBack(requestedLocation, extra.cbComplete, status, xhr);
-                if (extra.callLoadFinished && isRequestStillValid(requestedLocation))
-                    loadFinished(status, extra.refresh);
+                if (!retrying) {
+                    callUrlCallBack(requestedLocation, extra.cbComplete, status, xhr);
+                    if (extra.callLoadFinished && isRequestStillValid(requestedLocation))
+                        loadFinished(status, extra.refresh);
+                }
+                xhr.destroy();
+                xhr = null;
             }
         }
     );
@@ -663,6 +669,10 @@ function getUrlParam(url, key, raw) {
         else
             return decodeURIComponent(Value);
     }
+}
+
+function getUrlPrefix(url) {
+    return url.replace(/[^\/]+(\?.+)?$/,'')
 }
 
 function httpRequest(url, extra) {
@@ -737,7 +747,7 @@ function handleHttpResult(url, timer, extra, result) {
             Log('Success:' + url);
     } else {
         if (!extra.logging)
-            Log('Failure:' + url + ' status:' + result.status);
+            Log('Failure:' + url + ' status:' + result.status + ' error:' + result.xhr.errorString);
         // else
         //     alert('Failure:' + url + ' status: + result.status);
     }
